@@ -79,6 +79,27 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 .ctl [data-act="rot"],.ctl [data-act="drop"]{font-size:16px}
 .ctl [data-act="rot"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+input,select{-webkit-user-select:text;user-select:text}
+#ov{overflow:auto}
+#rk,#nbox button{padding:8px 14px;font-size:14px}
+#nbox{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+#nbox[hidden]{display:none}
+#nick{width:150px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:16px;text-align:center}
+#rank{position:fixed;inset:0;z-index:30;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:16px}
+#rank[hidden]{display:none}
+.rk-card{width:min(100%,420px);max-height:100%;overflow:auto;background:var(--well);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center}
+.rk-card h2{margin:0 0 10px;font-size:22px}
+#rank button{padding:10px 24px}
+#rlist{list-style:none;margin:0;padding:0;text-align:left}
+#rlist li{display:grid;grid-template-columns:28px 1fr auto;column-gap:10px;padding:8px 10px;border-radius:10px;line-height:1.3}
+#rlist li:nth-child(odd){background:var(--btn)}
+#rlist li.me{outline:2px solid var(--accent)}
+#rlist .rn{grid-row:1/3;align-self:center;font-weight:700;color:var(--mute)}
+#rlist li:first-child .rn{color:var(--accent)}
+#rlist .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#rlist b{font-variant-numeric:tabular-nums;text-align:right}
+#rlist small{grid-column:2/4;color:var(--mute)}
+#rnote{margin:10px 0;font-size:13px;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -91,11 +112,13 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
         <h1 id="ot">Tetris</h1>
         <p id="os">Drag to move, tap to rotate, flick down to drop</p>
         <p id="ob"></p>
+        <div id="nbox" hidden><input id="nick" maxlength="12" placeholder="Nickname" autocomplete="off" aria-label="Nickname"><button id="nsave">Save</button><button id="nskip">Skip</button></div>
         <button id="go">Start</button>
         <button id="rs">Restart</button>
         <button id="qt">Main menu</button>
         <label id="gv" class="sw"><span>Gravity mode</span><input type="checkbox" id="gvc" role="switch"><i></i></label>
         <button id="cpub">VS CPU</button>
+        <button id="rk">Ranking</button>
         <button id="vs">2P Battle</button>
         <div id="netbox" hidden><div class="ccr"><span id="ccf" class="fl"></span><select id="cc" aria-label="Your country"></select></div><input id="code" inputmode="numeric" maxlength="4" placeholder="4-digit code" aria-label="Room code"><button id="join">Join</button><button id="back">Back</button></div>
         <div id="lvbox" hidden><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
@@ -117,10 +140,11 @@ button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
     <button data-act="drop">Drop</button>
   </div>
 </div>
+<div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 10</h2><ol id="rlist"></ol><p id="rnote"></p><button id="rclose">Close</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
-/* Supabase 설정: 아래 두 값을 본인 프로젝트 값으로 바꾸세요. publishable/anon 공개 키만 사용하고 service_role/secret 키는 절대 넣지 마세요. */
+/* Supabase settings: replace these two values with your own project. Use only the publishable/anon public key; never put a service_role or secret key here. */
 var SUPABASE_URL = "https://reezmzkrzixjsfnuyerz.supabase.co";
 var SUPABASE_PUBLISHABLE_KEY = "sb_publishable_U5wG6wIbPQMDgu2OPh-tiA_ltIiXxX-";
 var COLS=10,ROWS=20;
@@ -251,7 +275,7 @@ function award(n,mult){
   score+=Math.round([0,100,300,500,800][Math.min(n,4)]*level*mult*(1+Math.min(streak,10)*0.1));
   lines+=n;level=1+Math.floor(lines/10);
 }
-/* 중력 모드: 줄이 지워진 뒤 아래가 빈 칸은 위의 조각이 떨어져 채움 */
+/* Gravity mode: after lines clear, pieces that lost their support fall */
 function settle(){
   for(var c=0;c<COLS;c++){
     var col=[],r;
@@ -259,7 +283,7 @@ function settle(){
     for(r=ROWS-1;r>=0;r--)grid[r][c]=col[ROWS-1-r]||0;
   }
 }
-/* 중력 애니메이션: 떠 있는 조각이 가속하며 내려오고, 착지 후 새 줄이 완성되면 연쇄 */
+/* Gravity animation: floating pieces fall with acceleration; lines completed on landing chain */
 var fall=[],fs=0,fv=0,combo=1,streak=0,fx=null,FLASH=90,FXD=330;
 function fullRows(){var a=[];for(var y=0;y<ROWS;y++)if(grid[y].every(Boolean))a.push(y);return a}
 function beginClear(rows,done){
@@ -353,7 +377,7 @@ function overlay(title,sub,btn,showBest){
   $('ov').hidden=false;
 }
 function start(){
-  grid=emptyGrid();score=0;lines=0;level=1;bag=[];next=null;acc=0;fall=[];fx=null;streak=0;showCombo();rnd=mode==='vs'?rng(gs):Math.random;pend=0;seen=0;atk=0;pt=0;lsec=-1;$('tm').textContent='00:00';
+  grid=emptyGrid();score=0;lines=0;level=1;bag=[];next=null;acc=0;fall=[];fx=null;streak=0;showCombo();rnd=mode==='vs'?rng(gs):Math.random;pend=0;seen=0;atk=0;pt=0;lsec=-1;$('tm').textContent='00:00';rankTok++;
   state='playing';hud();spawn();
   if(state==='playing')$('ov').hidden=true;
   last=performance.now();
@@ -363,9 +387,10 @@ function over(){
   if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});overlay('You lose','Score '+score+', lines '+lines,'Rematch',false);return}
   if(score>best){best=score;try{localStorage.setItem('tetris-best',String(best))}catch(e){}}
   overlay('Game over','Score '+score+', lines '+lines,'Play again',true);
+  rankCheck(score,lines,level);
 }
 function pause(){
-  if(state==='playing'&&mode!=='vs'){state='paused';overlay('Paused','','Resume',false);$('gv').style.display='none';$('cpub').style.display='none';$('vs').style.display='none';$('rs').style.display='';$('qt').style.display=''}
+  if(state==='playing'&&mode!=='vs'){state='paused';overlay('Paused','','Resume',false);$('gv').style.display='none';$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display='';$('qt').style.display=''}
 }
 function resume(){state='playing';$('ov').hidden=true;last=performance.now()}
 
@@ -462,7 +487,7 @@ function loop(t){
   requestAnimationFrame(loop);
 }
 
-/* 버튼 입력 (길게 누르면 반복) */
+/* Button input (hold to repeat) */
 var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,drop:hard};
 var repeatable={left:1,right:1,down:1};
 Array.prototype.forEach.call(document.querySelectorAll('.ctl button'),function(b){
@@ -477,7 +502,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.ctl button'),function(b
   b.addEventListener('contextmenu',function(e){e.preventDefault()});
 });
 
-/* 보드 터치: 탭=회전, 좌우 드래그=이동, 아래 드래그=내리기, 빠른 아래 스와이프=즉시 낙하 */
+/* Board touch: tap = rotate, horizontal drag = move, drag down = soft drop, fast down swipe = hard drop */
 var p=null;
 bc.addEventListener('pointerdown',function(e){
   if(state!=='playing')return;
@@ -503,8 +528,9 @@ function endTouch(e){
 bc.addEventListener('pointerup',endTouch);
 bc.addEventListener('pointercancel',function(){p=null});
 
-/* 키보드 (PC 확인용) */
+/* Keyboard (for PC testing) */
 document.addEventListener('keydown',function(e){
+  if(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='SELECT'))return;
   var k=e.key;
   if(k==='ArrowLeft'){move(-1)}else if(k==='ArrowRight'){move(1)}
   else if(k==='ArrowDown'){soft()}else if(k==='ArrowUp'||k==='x'){rotate()}
@@ -629,7 +655,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#lvbox [data-l]'),functi
   b.addEventListener('click',function(){startCpu(+b.getAttribute('data-l'))});
 });
 $('lback').addEventListener('click',function(){$('back').click()});
-function ovui(a){['go','gv','cpub','vs'].forEach(function(i){$(i).style.display=a?'':'none'});$('rs').style.display='none';$('qt').style.display='none';$('netbox').hidden=true;$('lvbox').hidden=true}
+function ovui(a){['go','gv','cpub','vs','rk'].forEach(function(i){$(i).style.display=a?'':'none'});$('nbox').hidden=true;$('rs').style.display='none';$('qt').style.display='none';$('netbox').hidden=true;$('lvbox').hidden=true}
 function attack(n,casc){
   if(mode==='solo')return;
   var a=(n>=4?4:Math.max(0,n-1))+(casc?1:0);
@@ -659,7 +685,7 @@ function drawOpp(){
   if(mode==='cpu'&&cpu){
     g='';
     for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)g+=(cpu.g[r][c]||'.');
-  }else if(opp){var P=opp.presence;if(P&&P.gs===gs&&typeof P.g==='string')g=P.g}
+  }else if(opp){var P=opp.presence;if(P&&P.gs===gs&&typeof P.g==='string'&&P.g.length===COLS*ROWS)g=P.g}
   if(g)for(var i=0;i<g.length;i++){var ch=g[i];if(ch!=='.'&&COL[ch])cell(ox,(i%COLS)*oc,Math.floor(i/COLS)*oc,oc,COL[ch])}
 }
 function sendBoard(t){
@@ -675,17 +701,31 @@ function sendBoard(t){
 }
 function leaveRoom(){if(room){var oldRoom=room;room=null;oldRoom.leave().catch(function(){})}opp=null;meP=null;myRdy=false}
 
-/* Supabase Realtime 어댑터: Presence는 접속/준비 상태, Broadcast는 게임판과 공격 등 자주 바뀌는 데이터에 사용합니다. */
+/* Supabase client: created once and shared by rooms and the ranking. */
+var sbClient=null;
+function supabaseReady(){
+  return !!(window.supabase&&window.supabase.createClient&&SUPABASE_URL&&SUPABASE_URL.indexOf('YOUR_PROJECT_ID')<0&&SUPABASE_PUBLISHABLE_KEY&&SUPABASE_PUBLISHABLE_KEY.indexOf('YOUR_SUPABASE_')<0);
+}
+function getClient(){
+  if(sbClient)return sbClient;
+  if(!window.supabase||!window.supabase.createClient)throw new Error('Could not load the Supabase library. Check your internet connection.');
+  if(!supabaseReady())throw new Error('Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY in the HTML file first.');
+  sbClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  return sbClient;
+}
+function connLost(){
+  fx=null;fall=[];cur=null;
+  $('back').click();
+  $('os').textContent='Connection lost. Check your network and try again.';
+}
+
+/* Supabase Realtime adapter: Presence carries join/ready state, Broadcast carries fast-changing data (board, attacks). */
 function createSupabaseRoom(code){
-  if(!window.supabase||!window.supabase.createClient)throw new Error('Supabase 라이브러리를 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.');
-  if(!SUPABASE_URL||SUPABASE_URL.indexOf('YOUR_PROJECT_ID')>=0||!SUPABASE_PUBLISHABLE_KEY||SUPABASE_PUBLISHABLE_KEY.indexOf('YOUR_SUPABASE_')>=0){
-    throw new Error('HTML 파일 안의 SUPABASE_URL과 SUPABASE_PUBLISHABLE_KEY를 먼저 설정해 주세요.');
-  }
-  var client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  var client=getClient();
   var peerId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('p-'+Date.now()+'-'+Math.random().toString(36).slice(2));
   var channel=client.channel('tt-'+code,{config:{presence:{key:peerId},broadcast:{self:false,ack:false}}});
   var localPresence={kind:'viewer',t:Date.now(),cc:myCC,rdy:false,dead:false,gs:0,atk:0};
-  var remoteData={},peerHandler=null,subscribed=false;
+  var remoteData={},peerHandler=null,lostHandler=null,lostTimer=null,subscribed=false,left=false;
   function getPeers(){
     var ps=channel.presenceState(),out=[];
     Object.keys(ps||{}).forEach(function(key){
@@ -705,11 +745,14 @@ function createSupabaseRoom(code){
   });
   return new Promise(function(resolve,reject){
     channel.subscribe(function(status){
+      if(left)return;
       if(status==='SUBSCRIBED'){
+        clearTimeout(lostTimer);
         subscribed=true;
         channel.track(localPresence).then(function(){notify();resolve({
           peers:getPeers,
           onPeers:function(fn){peerHandler=fn;notify()},
+          onLost:function(fn){lostHandler=fn},
           presence:function(data){
             var trackChanged=false,packet={};
             Object.keys(data||{}).forEach(function(k){
@@ -719,77 +762,121 @@ function createSupabaseRoom(code){
             var trackPromise=(subscribed&&trackChanged)?channel.track(localPresence):Promise.resolve('ok');
             return Promise.all([trackPromise,channel.send({type:'broadcast',event:'game',payload:{peerId:peerId,data:packet}})]);
           },
-          leave:function(){subscribed=false;return client.removeChannel(channel)}
+          leave:function(){left=true;subscribed=false;clearTimeout(lostTimer);return client.removeChannel(channel)}
         })}).catch(reject);
       }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
-        reject(new Error('Supabase Realtime 연결 실패: '+status));
+        if(subscribed){
+          clearTimeout(lostTimer);
+          lostTimer=setTimeout(function(){if(!left&&lostHandler)lostHandler(status)},8000);
+        }else reject(new Error('Realtime connection failed: '+status));
       }
     });
   });
 }
-function onPeers(ch){
-  var ps=ch.peers.filter(function(p){return p.kind==='viewer'});
-  ps.sort(function(a,b){return ((a.presence.t||0)-(b.presence.t||0))||(a.peer<b.peer?-1:1)});
-  var two=ps.slice(0,2);
-  opp=null;meP=null;
-  for(var i=0;i<two.length;i++){var p=two[i];if(p.sameTab)meP=p;else opp=p}
-  olabel();
-  if(!meP&&state==='net'&&ps.some(function(q){return q.sameTab})){
-    leaveRoom();state='ready';mode='solo';resize();
-    overlay('2P Battle','This room already has two players. Enter a different code.','',false);
-    ovui(false);$('netbox').hidden=false;
-    return;
+
+/* ===== Ranking (top 10): global via the Supabase table "scores", local fallback ===== */
+var RANK_N=10,rankTok=0,pendingScore=null;
+function localBoard(){try{var a=JSON.parse(localStorage.getItem('tetris-top10')||'[]');return Array.isArray(a)?a.slice(0,RANK_N):[]}catch(e){return[]}}
+function saveLocalEntry(e){
+  var a=localBoard();
+  a.push({nick:e.nick,score:e.score,lines:e.lines,cc:e.cc||''});
+  a.sort(function(x,y){return y.score-x.score});
+  try{localStorage.setItem('tetris-top10',JSON.stringify(a.slice(0,RANK_N)))}catch(err){}
+  return false;
+}
+function loadBoard(){
+  if(supabaseReady()){
+    try{
+      return getClient().from('scores').select('nick,score,lines,cc').order('score',{ascending:false}).order('created_at',{ascending:true}).limit(RANK_N)
+        .then(function(r){if(r.error)throw r.error;return{rows:r.data||[],remote:true}})
+        .catch(function(err){console.warn('Ranking load failed:',err);return{rows:localBoard(),remote:false}});
+    }catch(e){}
   }
-  if(state==='playing'||state==='anim'||state==='clear'){
-    if(!opp){win('Opponent left');return}
-    var P=opp.presence;
-    if(P.gs===gs){
-      if(P.atk>seen){pend+=P.atk-seen;seen=P.atk}
-      if(P.dead)win('Opponent topped out');
-    }
-    return;
+  return Promise.resolve({rows:localBoard(),remote:false});
+}
+function submitScore(e){
+  if(supabaseReady()){
+    try{
+      return getClient().from('scores').insert({nick:e.nick,score:e.score,lines:e.lines,level:e.level,cc:e.cc||null})
+        .then(function(r){if(r.error)throw r.error;return true})
+        .catch(function(err){console.warn('Ranking save failed:',err);return saveLocalEntry(e)});
+    }catch(err){}
   }
-  if(!opp&&myRdy){myRdy=false;push({rdy:false})}
-  if(state==='net'&&!myRdy){
-    $('os').textContent=opp?'Opponent joined'+(okc(opp.presence.cc)?' from '+cname(opp.presence.cc):'')+'. Press Ready.':'Waiting for an opponent, room '+roomCode;
-    $('go').style.display=opp?'':'none';
-  }
-  check();
+  return Promise.resolve(saveLocalEntry(e));
 }
-function ready(){
-  if(!room||!opp)return;
-  myRdy=true;mySeed=Math.floor(Math.random()*1e9)+1;
-  push({rdy:true,seed:mySeed,gv:gravity?1:0,dead:false,atk:0});
-  $('go').style.display='none';$('os').textContent='Waiting for your opponent to get ready';
-  check();
+function cleanNick(v){
+  v=String(v||'').replace(/[\u0000-\u001f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,12);
+  return v||'Player';
 }
-function check(){
-  if((state!=='net'&&state!=='over')||mode!=='vs'||!myRdy||!opp||!meP||!opp.presence.rdy||typeof opp.presence.seed!=='number')return;
-  var useMine=mySeed<=opp.presence.seed;
-  beginCount(useMine?mySeed:opp.presence.seed,useMine?gravity:!!opp.presence.gv);
+function menuBtns(on){['gv','cpub','vs','rk'].forEach(function(i){$(i).style.display=on?'':'none'})}
+function rankCheck(sc,ln,lv){
+  var tok=++rankTok;
+  pendingScore=null;
+  loadBoard().then(function(b){
+    if(tok!==rankTok||state!=='over'||mode!=='solo')return;
+    if(!(sc>0&&(b.rows.length<RANK_N||sc>b.rows[b.rows.length-1].score)))return;
+    var r=1;b.rows.forEach(function(x){if(x.score>=sc)r++});
+    pendingScore={score:sc,lines:ln,level:lv};
+    $('os').textContent=(r===1?'New #1! ':'Rank #'+r+'. ')+'Score '+sc+'. Enter your nickname.';
+    var inp=$('nick');
+    try{inp.value=localStorage.getItem('tetris-nick')||''}catch(e){inp.value=''}
+    menuBtns(false);
+    $('nbox').hidden=false;
+  });
 }
-function beginCount(seed,gv){
-  state='count';var n=3;
-  overlay('Match starting',String(n),'',false);ovui(false);
-  var t=setInterval(function(){
-    n--;
-    if(n>0){$('os').textContent=String(n);return}
-    clearInterval(t);
-    gs=seed;gravity=!!gv;myRdy=false;sentG='';
-    push({gs:gs,atk:0,dead:false,rdy:false,g:'',sc:0});
-    start();
-  },1000);
+function showRank(hl){
+  $('rank').hidden=false;
+  $('rlist').textContent='';
+  $('rnote').textContent='Loading...';
+  loadBoard().then(function(b){
+    var ol=$('rlist'),marked=false;
+    ol.textContent='';
+    if(!b.rows.length){$('rnote').textContent='No scores yet. Be the first!';return}
+    b.rows.forEach(function(x,i){
+      var li=document.createElement('li');
+      if(hl&&!marked&&x.score===hl.score&&x.nick===hl.nick){li.className='me';marked=true}
+      var n=document.createElement('span');n.className='rn';n.textContent=String(i+1);
+      var nm=document.createElement('span');nm.className='nm';
+      if(okc(x.cc)){var f=document.createElement('span');f.className='fl';f.textContent=flagOf(x.cc)+' ';nm.appendChild(f)}
+      nm.appendChild(document.createTextNode(String(x.nick||'Player').slice(0,12)));
+      var sc=document.createElement('b');sc.textContent=(Number(x.score)||0).toLocaleString('en-US');
+      var d=document.createElement('small');d.textContent=(Number(x.lines)||0)+' lines';
+      li.appendChild(n);li.appendChild(nm);li.appendChild(sc);li.appendChild(d);
+      ol.appendChild(li);
+    });
+    $('rnote').textContent=b.remote?'Global ranking':'Showing scores saved on this device';
+  });
 }
+$('rk').addEventListener('click',function(){showRank(null)});
+$('rclose').addEventListener('click',function(){$('rank').hidden=true});
+$('nsave').addEventListener('click',function(){
+  if(!pendingScore)return;
+  var e={nick:cleanNick($('nick').value),score:pendingScore.score,lines:pendingScore.lines,level:pendingScore.level,cc:myCC};
+  pendingScore=null;
+  try{localStorage.setItem('tetris-nick',e.nick)}catch(err){}
+  $('nbox').hidden=true;menuBtns(true);
+  $('os').textContent='Saving...';
+  submitScore(e).then(function(remote){
+    $('os').textContent=remote?'Saved to the global ranking!':'Saved on this device (global ranking unavailable).';
+    showRank(e);
+  });
+});
+$('nskip').addEventListener('click',function(){
+  pendingScore=null;$('nbox').hidden=true;menuBtns(true);
+  $('os').textContent='Score '+score+', lines '+lines;
+});
+
 function joinRoom(code){
   leaveRoom();
   $('join').disabled=true;
   createSupabaseRoom(code).then(function(rm){
     room=rm;mode='vs';state='net';
+    if(rm.onLost)rm.onLost(connLost);
     rm.onPeers(onPeers);
     return rm.presence({rdy:false,dead:false,gs:0,atk:0,g:'',sc:0,t:Date.now(),cc:myCC}).then(function(){
       resize();
       overlay('2P Battle','Room '+code+', waiting for an opponent','Ready',false);
-      $('go').style.display='none';$('gv').style.display='none';
+      $('go').style.display='none';$('gv').style.display='none';$('rk').style.display='none';
       onPeers({peers:rm.peers()});
     });
   }).catch(function(err){
