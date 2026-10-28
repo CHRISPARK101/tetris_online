@@ -141,7 +141,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
-<div id="ver" aria-hidden="true"><span id="vf" class="fl"></span> <span id="vl"></span> v0.3.2</div>
+<div id="ver" aria-hidden="true"><span id="vf" class="fl"></span> <span id="vl"></span> v0.3.3</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 10</h2><ol id="rlist"></ol><p id="rnote"></p><button id="rclose">Close</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -379,7 +379,7 @@ function overlay(title,sub,btn,showBest){
   $('ov').hidden=false;
 }
 function start(){
-  grid=emptyGrid();score=0;lines=0;level=1;bag=[];next=null;acc=0;fall=[];fx=null;streak=0;showCombo();rnd=mode==='vs'?rng(gs):Math.random;pend=0;seen=0;atk=0;pt=0;lsec=-1;$('tm').textContent='00:00';rankTok++;
+  grid=emptyGrid();score=0;lines=0;level=1;bag=[];next=null;acc=0;fall=[];fx=null;streak=0;showCombo();rnd=mode==='vs'?rng(gs):Math.random;pend=0;seen=0;atk=0;pt=0;cpuT=0;lsec=-1;lastSend=0;sentG='';pidc=0;$('tm').textContent='00:00';rankTok++;
   state='playing';hud();spawn();
   if(state==='playing')$('ov').hidden=true;
   last=performance.now();
@@ -543,7 +543,15 @@ document.addEventListener('keydown',function(e){
 
 var room=null,opp=null,meP=null,myRdy=false,mySeed=0,gs=0,pend=0,seen=0,atk=0,mode='solo',roomCode='',sentG='',lastSend=0,rnd=Math.random;
 function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-function push(p){if(room)room.presence(p).catch(function(e){console.warn('Realtime send failed:',e)})}
+function push(p){
+  if(!room)return Promise.resolve(false);
+  var target=room;
+  return target.presence(p).then(function(){return true}).catch(function(e){
+    console.warn('Realtime send failed:',e);
+    if(target===room&&state!=='over'&&state!=='ready')$('os').textContent='Connection is unstable. Your latest update may not have reached the opponent.';
+    return false;
+  });
+}
 var cpu=null,cpuLvl=1,cpuT=0,pt=0,lsec=-1,CPU_MS=[1500,1000,650],CPU_ERR=[.35,.12,0],CPU_NM=['Easy','Normal','Hard'];
 var CC='AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GT GU GW GY HK HN HR HT HU ID IE IL IM IN IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SI SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' '),myCC='',DN=null;
 try{DN=new Intl.DisplayNames(['en'],{type:'region'})}catch(e){}
@@ -650,7 +658,7 @@ function cpuStep(){
   }
 }
 $('cpub').addEventListener('click',function(){
-  leaveRoom();mode='solo';state='ready';resize();
+  joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';resize();
   overlay('VS CPU','Choose a difficulty','',false);
   ovui(false);$('lvbox').hidden=false;
 });
@@ -702,7 +710,7 @@ function sendBoard(t){
   var g=a.join('');
   if(g!==sentG){sentG=g;push({g:g,sc:score})}
 }
-function leaveRoom(){if(room){var oldRoom=room;room=null;oldRoom.leave().catch(function(){})}opp=null;meP=null;myRdy=false}
+function leaveRoom(){if(countTimer){clearInterval(countTimer);countTimer=null;}if(leftTimer){clearTimeout(leftTimer);leftTimer=null;}if(room){var oldRoom=room;room=null;oldRoom.leave().catch(function(){})}opp=null;meP=null;myRdy=false}
 
 /* Supabase client: created once and shared by rooms and the ranking. */
 var sbClient=null;
@@ -717,9 +725,11 @@ function getClient(){
   return sbClient;
 }
 function connLost(st){
-  fx=null;fall=[];cur=null;
-  $('back').click();
-  $('os').textContent='Connection lost'+(st?' ('+st+')':'')+'. Check your network and try again.';
+  if(mode!=='vs')return;
+  fx=null;fall=[];cur=null;state='ready';
+  leaveRoom();mode='solo';resize();
+  overlay('Connection lost',''+(st?'('+st+') ':'')+'Check your network, then reconnect to the same room.','',false);
+  ovui(false);$('netbox').hidden=false;
 }
 
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&room&&room.poke)room.poke()});
@@ -731,13 +741,24 @@ function createSupabaseRoom(code){
   var localPresence={kind:'viewer',t:Date.now(),cc:myCC,rdy:false,dead:false,gs:0,atk:0};
   var remoteData={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   var ALLOWED={rdy:1,dead:1,gs:1,atk:1,g:1,sc:1,seed:1,gv:1,cc:1,t:1,ver:1,kind:1};
+  function validValue(k,v){
+    if(k==='rdy'||k==='dead')return typeof v==='boolean';
+    if(k==='gs'||k==='seed'||k==='t'||k==='ver')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=Number.MAX_SAFE_INTEGER;
+    if(k==='atk')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
+    if(k==='sc')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=100000000;
+    if(k==='gv')return v===0||v===1||v===false||v===true;
+    if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
+    if(k==='kind')return v==='viewer';
+    if(k==='g')return typeof v==='string'&&v.length===COLS*ROWS&&/^[.IOTSZJLG]+$/.test(v);
+    return false;
+  }
   function getPeers(){
     var ps=channel?channel.presenceState():{},out=[];
     Object.keys(ps||{}).forEach(function(key){
       var arr=ps[key]||[];if(!arr.length)return;
       var meta=arr.reduce(function(a,b){return (b.ver||0)>=(a.ver||0)?b:a},arr[0]),pres={},rd=remoteData[key]||{};
-      Object.keys(meta).forEach(function(k){if(ALLOWED[k]===1)pres[k]=meta[k]});
-      Object.keys(rd).forEach(function(k){if(!(k in pres)||rd[k].v>=(pres.ver||0))pres[k]=rd[k].val});
+      Object.keys(meta).forEach(function(k){if(ALLOWED[k]===1&&validValue(k,meta[k]))pres[k]=meta[k]});
+      Object.keys(rd).forEach(function(k){if(ALLOWED[k]===1&&validValue(k,rd[k].val)&&(!(k in pres)||rd[k].v>=(pres.ver||0)))pres[k]=rd[k].val});
       out.push({kind:'viewer',peer:key,sameTab:key===peerId,presence:pres});
     });
     return out;
@@ -745,10 +766,10 @@ function createSupabaseRoom(code){
   function notify(){if(peerHandler)peerHandler({peers:getPeers()})}
   function onGame(message){
     var packet=message&&message.payload;
-    if(!packet||!packet.peerId||packet.peerId===peerId||!packet.data||typeof packet.data!=='object')return;
+    if(!packet||typeof packet.peerId!=='string'||packet.peerId.length>100||packet.peerId===peerId||!packet.data||typeof packet.data!=='object'||Array.isArray(packet.data))return;
     var rd=remoteData[packet.peerId]=remoteData[packet.peerId]||{},pv=Number(packet.v)||0;
     Object.keys(packet.data).forEach(function(k){
-      if(ALLOWED[k]!==1)return;
+      if(ALLOWED[k]!==1||!validValue(k,packet.data[k]))return;
       var c=rd[k];
       if(!c||pv>=c.v)rd[k]={v:pv,val:packet.data[k]};
     });
@@ -812,15 +833,23 @@ function createSupabaseRoom(code){
   });
 }
 
-/* ===== Ranking (top 10): global via the Supabase table "scores", local fallback ===== */
+/* ===== Ranking (top 10): global via Supabase table "scores", local fallback =====
+   Client-side validation improves reliability but is NOT a security boundary.
+   Enable RLS and restrictive INSERT/SELECT policies in Supabase; for cheat-resistant
+   rankings, validate scores on a trusted server/Edge Function rather than direct INSERT. */
 var RANK_N=10,rankTok=0,pendingScore=null;
 function localBoard(){try{var a=JSON.parse(localStorage.getItem('tetris-top10')||'[]');return Array.isArray(a)?a.slice(0,RANK_N):[]}catch(e){return[]}}
 function saveLocalEntry(e){
-  var a=localBoard();
+  e=normalizeScoreEntry(e);if(!e)return false;
+  var a=localBoard().filter(function(x){return x&&Number.isFinite(+x.score)&&+x.score>=0&&+x.score<=100000000;});
   a.push({nick:e.nick,score:e.score,lines:e.lines,cc:e.cc||''});
   a.sort(function(x,y){return y.score-x.score});
   try{localStorage.setItem('tetris-top10',JSON.stringify(a.slice(0,RANK_N)))}catch(err){}
   return false;
+}
+function normalizeScoreEntry(e){
+  if(!e||!Number.isSafeInteger(Number(e.score))||Number(e.score)<0||Number(e.score)>100000000||!Number.isSafeInteger(Number(e.lines))||Number(e.lines)<0||Number(e.lines)>100000||!Number.isSafeInteger(Number(e.level))||Number(e.level)<1||Number(e.level)>10000)return null;
+  return {nick:cleanNick(e.nick),score:Number(e.score),lines:Number(e.lines),level:Number(e.level),cc:okc(e.cc)?e.cc:''};
 }
 function loadBoard(){
   if(supabaseReady()){
@@ -833,6 +862,7 @@ function loadBoard(){
   return Promise.resolve({rows:localBoard(),remote:false});
 }
 function submitScore(e){
+  e=normalizeScoreEntry(e);if(!e)return Promise.resolve(false);
   if(supabaseReady()){
     try{
       return getClient().from('scores').insert({nick:e.nick,score:e.score,lines:e.lines,level:e.level,cc:e.cc||null})
@@ -862,11 +892,14 @@ function rankCheck(sc,ln,lv){
     $('nbox').hidden=false;
   });
 }
+var rankViewTok=0;
 function showRank(hl){
+  var viewTok=++rankViewTok;
   $('rank').hidden=false;
   $('rlist').textContent='';
   $('rnote').textContent='Loading...';
   loadBoard().then(function(b){
+    if(viewTok!==rankViewTok||$('rank').hidden)return;
     var ol=$('rlist'),marked=false;
     ol.textContent='';
     if(!b.rows.length){$('rnote').textContent='No scores yet. Be the first!';return}
@@ -886,11 +919,12 @@ function showRank(hl){
   });
 }
 $('rk').addEventListener('click',function(){showRank(null)});
-$('rclose').addEventListener('click',function(){$('rank').hidden=true});
+$('rclose').addEventListener('click',function(){rankViewTok++;$('rank').hidden=true});
 $('nsave').addEventListener('click',function(){
   if(!pendingScore)return;
-  var e={nick:cleanNick($('nick').value),score:pendingScore.score,lines:pendingScore.lines,level:pendingScore.level,cc:myCC};
+  var e=normalizeScoreEntry({nick:cleanNick($('nick').value),score:pendingScore.score,lines:pendingScore.lines,level:pendingScore.level,cc:myCC});
   pendingScore=null;
+  if(!e){$('os').textContent='Invalid score data; score was not saved.';return;}
   try{localStorage.setItem('tetris-nick',e.nick)}catch(err){}
   $('nbox').hidden=true;menuBtns(true);
   $('os').textContent='Saving...';
@@ -926,8 +960,8 @@ function onPeers(ch){
     clearTimeout(leftTimer);leftTimer=null;
     var P=opp.presence;
     if(P.gs===gs){
-      var a=Math.floor(+P.atk)||0;
-      if(a>seen){pend=Math.min(pend+Math.min(a-seen,8),ROWS);seen=a}
+      var a=Math.min(1000000,Math.max(0,Math.floor(Number(P.atk)||0)));
+      if(a>seen){pend=Math.min(pend+Math.min(a-seen,4),ROWS);seen=a}
       if(P.dead===true)win('Opponent topped out');
     }
     return;
@@ -952,22 +986,28 @@ function check(){
   var useMine=mySeed<=opp.presence.seed;
   beginCount(useMine?mySeed:opp.presence.seed,useMine?gravity:!!opp.presence.gv);
 }
+var countTimer=null;
 function beginCount(seed,gv){
+  if(countTimer)clearInterval(countTimer);
   state='count';var n=3;
   overlay('Match starting',String(n),'',false);ovui(false);
-  var t=setInterval(function(){
+  countTimer=setInterval(function(){
+    if(state!=='count'||mode!=='vs'||!room){clearInterval(countTimer);countTimer=null;return;}
     n--;
     if(n>0){$('os').textContent=String(n);return}
-    clearInterval(t);
+    clearInterval(countTimer);countTimer=null;
     gs=seed;gravity=!!gv;myRdy=false;sentG='';
     push({gs:gs,atk:0,dead:false,rdy:false,g:'',sc:0});
     start();
   },1000);
 }
+var joinToken=0;
 function joinRoom(code){
+  var token=++joinToken;
   leaveRoom();
   $('join').disabled=true;
   createSupabaseRoom(code).then(function(rm){
+    if(token!==joinToken){rm.leave().catch(function(){});return;}
     room=rm;mode='vs';state='net';
     if(rm.onLost)rm.onLost(connLost);
     rm.onPeers(onPeers);
@@ -978,9 +1018,12 @@ function joinRoom(code){
       onPeers({peers:rm.peers()});
     });
   }).catch(function(err){
+    if(token!==joinToken)return;
+    if(room){leaveRoom();}
+    mode='solo';state='ready';resize();
     console.error(err);
     $('os').textContent=err&&err.message?err.message:'Could not join the room. Check Supabase settings and try again.';
-  }).finally(function(){$('join').disabled=false;});
+  }).finally(function(){if(token===joinToken)$('join').disabled=false;});
 }
 $('go').addEventListener('click',function(){
   if(state==='paused')resume();
@@ -989,18 +1032,18 @@ $('go').addEventListener('click',function(){
   else{mode='solo';leaveRoom();resize();start()}
 });
 $('vs').addEventListener('click',function(){
-  leaveRoom();mode='solo';state='ready';resize();
+  joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';resize();
   overlay('2P Battle','Two players who enter the same room code get connected','',false);
   ovui(false);$('netbox').hidden=false;
 });
 $('join').addEventListener('click',function(){
-  var code=$('code').value.replace(/\D/g,'');
-  if(code.length<4){$('os').textContent='Enter a 4-digit room code';return}
+  var code=$('code').value.trim();
+  if(!/^\d{4}$/.test(code)){$('os').textContent='Enter a 4-digit room code';return}
   roomCode=code;$('os').textContent='Connecting...';
   joinRoom(code);
 });
 $('back').addEventListener('click',function(){
-  leaveRoom();mode='solo';state='ready';resize();
+  joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';resize();
   overlay('Tetris','Drag to move, tap to rotate, flick down to drop','Start',best>0);
 });
 function gvLabel(){$('gvc').checked=gravity}
@@ -1012,7 +1055,7 @@ gvLabel();
 $('rs').addEventListener('click',function(){if(mode==='cpu')startCpu(cpuLvl);else{mode='solo';resize();start()}});
 $('qt').addEventListener('click',function(){$('back').click()});
 $('pause').addEventListener('click',function(){state==='playing'?pause():state==='paused'&&resume()});
-document.addEventListener('visibilitychange',function(){if(document.hidden)pause()});
+document.addEventListener('visibilitychange',function(){if(document.hidden&&mode!=='vs')pause()});
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',function(){setTimeout(resize,200)});
 try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',theme)}catch(e){}
