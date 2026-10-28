@@ -82,7 +82,7 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 .ctl [data-act="rot"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 input,select{-webkit-user-select:text;user-select:text}
-#ov{overflow:auto}
+#ov{overflow:auto}\n#settingsbox[hidden]{display:none}\n.setting-title{font-size:18px;margin:8px 0 4px}\n#settingsbox{width:100%;display:flex;flex-direction:column;align-items:center;gap:8px}
 #rk,#nbox button{padding:8px 14px;font-size:14px}
 #nbox{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 #nbox[hidden]{display:none}
@@ -121,8 +121,14 @@ input,select{-webkit-user-select:text;user-select:text}
         <button id="go">Start</button>
         <button id="rs">Restart</button>
         <button id="qt">Main menu</button>
-        <label id="gv" class="sw"><span>Gravity mode</span><input type="checkbox" id="gvc" role="switch"><i></i></label>
-        <label id="ghv" class="sw"><span>Landing preview</span><input type="checkbox" id="ghvc" role="switch"><i></i></label>
+        <button id="settings">Settings</button>
+        <div id="settingsbox" hidden>
+          <h2 class="setting-title">Settings</h2>
+          <label id="gv" class="sw"><span>Gravity mode</span><input type="checkbox" id="gvc" role="switch"><i></i></label>
+          <label id="ghv" class="sw"><span>Landing preview</span><input type="checkbox" id="ghvc" role="switch"><i></i></label>
+          <label id="snd" class="sw"><span>Sound effects</span><input type="checkbox" id="sndc" role="switch"><i></i></label>
+          <button id="settingsback">Back</button>
+        </div>
         <button id="cpub">VS CPU</button>
         <button id="rk">Ranking</button>
         <button id="vs">2P Battle</button>
@@ -146,7 +152,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
-<div id="ver" aria-hidden="true">v0.3.5</div>
+<div id="ver" aria-hidden="true">v0.3.8</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 5</h2><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -170,6 +176,35 @@ var grid,cur,next,bag=[],score=0,lines=0,level=1,state='ready',acc=0,last=0,best
 try{best=+localStorage.getItem('tetris-best')||0}catch(e){}
 var gravity=true;try{gravity=localStorage.getItem('tetris-gravity')!=='0'}catch(e){}
 var ghostPreview=true;try{ghostPreview=localStorage.getItem('tetris-ghost')!=='0'}catch(e){}
+var soundOn=true;try{soundOn=localStorage.getItem('tetris-sound')!=='0'}catch(e){}
+var audioCtx=null;
+function unlockAudio(){
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;
+    if(!AC)return;
+    if(!audioCtx)audioCtx=new AC();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+  }catch(e){}
+}
+function tone(freq,dur,type,vol,delay){
+  if(!soundOn)return;
+  try{
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    if(!audioCtx)audioCtx=new AC();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    var t=audioCtx.currentTime+(delay||0),o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol||.045,t+.008);
+    g.gain.exponentialRampToValueAtTime(.0001,t+(dur||.12));
+    o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+(dur||.12)+.02);
+  }catch(e){}
+}
+function sfxMove(){tone(300,.045,'sine',.025)}
+function sfxRotate(){tone(420,.065,'triangle',.04);tone(560,.055,'sine',.025,.035)}
+function sfxPlace(){tone(240,.10,'triangle',.075);tone(145,.13,'sine',.055,.025)}
+function sfxClear(n){var seq=n>=4?[660,880,1100,1320]:n===3?[600,760,920]:n===2?[520,680]:[460,610];seq.forEach(function(f,i){tone(f,.14,'triangle',.045,i*.055)})}
+function sfxCombo(n){var base=500+Math.min(n,12)*65;tone(base,.12,'sine',.055);tone(base*1.25,.15,'triangle',.045,.075)}
+
 
 var $=function(id){return document.getElementById(id)};
 var bc=$('board'),bx=bc.getContext('2d'),nc=$('next'),nx=nc.getContext('2d');
@@ -228,17 +263,24 @@ function spawn(){
   drawNext();
   if(hit(cur.m,cur.x,cur.y))over();
 }
-function move(d){if(state==='playing'&&!hit(cur.m,cur.x+d,cur.y))cur.x+=d}
+function move(d){
+  if(state==='playing'&&!hit(cur.m,cur.x+d,cur.y)){
+    cur.x+=d;
+    // Sound is intentionally subtle; throttle rapid key-repeat movement.
+    var now=performance.now();
+    if(!move._lastSfx||now-move._lastSfx>85){sfxMove();move._lastSfx=now}
+  }
+}
 function rotate(){
   if(state!=='playing')return;
   var r=rot(cur.m),k=[0,-1,1,-2,2];
   for(var i=0;i<k.length;i++){
-    if(!hit(r,cur.x+k[i],cur.y)){cur.m=r;cur.x+=k[i];return}
+    if(!hit(r,cur.x+k[i],cur.y)){cur.m=r;cur.x+=k[i];sfxRotate();return}
   }
 }
 function soft(){
   if(state!=='playing')return;
-  if(!hit(cur.m,cur.x,cur.y+1)){cur.y++;score+=1;acc=0;hud()}else lock();
+  if(!hit(cur.m,cur.x,cur.y+1)){cur.y++;score+=1;acc=0;hud();tone(260,.035,'sine',.018)}else lock();
 }
 function hard(){
   if(state!=='playing')return;
@@ -247,6 +289,7 @@ function hard(){
   score+=2*n;lock();
 }
 function lock(){
+  sfxPlace();
   for(var r=0;r<cur.m.length;r++)for(var c=0;c<cur.m[r].length;c++){
     if(cur.m[r][c]){
       var gy=cur.y+r,gx=cur.x+c;
@@ -256,6 +299,7 @@ function lock(){
   var rows=fullRows(),n=rows.length;
   streak=0;
   if(n){
+    sfxClear(n);
     award(n,1);hud();attack(n,false);
     beginClear(rows,function(){
       clearRows();
@@ -307,7 +351,7 @@ function beginClear(rows,done){
 }
 function showCombo(){
   var e=$('cb');
-  if(streak>0){e.textContent='Gravity combo '+streak+', +'+Math.min(streak,10)*10+'%';e.hidden=false}
+  if(streak>0){e.textContent='COMBO '+streak+'  +'+Math.min(streak,10)*10+'%';e.hidden=false}
   else e.hidden=true;
 }
 function startFall(mult){
@@ -360,7 +404,7 @@ function landFall(){
   fall=[];
   var rows=fullRows();
   if(rows.length){
-    streak++;showCombo();award(rows.length,1);hud();attack(rows.length,true);
+    streak++;sfxClear(rows.length);sfxCombo(streak);showCombo();award(rows.length,1);hud();attack(rows.length,true);
     beginClear(rows,function(){
       clearRows();
       if(startFall(combo))return;
@@ -388,7 +432,7 @@ function overlay(title,sub,btn,showBest){
 }
 function start(){
   grid=emptyGrid();score=0;lines=0;level=1;bag=[];next=null;acc=0;fall=[];fx=null;streak=0;showCombo();rnd=mode==='vs'?rng(gs):Math.random;pend=0;seen=0;atk=0;pt=0;cpuT=0;lsec=-1;lastSend=0;sentG='';pidc=0;$('tm').textContent='00:00';rankTok++;
-  state='playing';hud();spawn();
+  state='playing';$('settingsbox').hidden=true;hud();spawn();
   if(state==='playing')$('ov').hidden=true;
   last=performance.now();
 }
@@ -400,7 +444,7 @@ function over(){
   rankCheck(score,lines,level);
 }
 function pause(){
-  if(state==='playing'&&mode!=='vs'){state='paused';overlay('Paused','','Resume',false);$('gv').style.display='none';$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display='';$('qt').style.display=''}
+  if(state==='playing'&&mode!=='vs'){state='paused';overlay('Paused','','Resume',false);$('gv').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display='';$('qt').style.display=''}
 }
 function resume(){state='playing';$('ov').hidden=true;last=performance.now()}
 
@@ -676,7 +720,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#lvbox [data-l]'),functi
   b.addEventListener('click',function(){startCpu(+b.getAttribute('data-l'))});
 });
 $('lback').addEventListener('click',function(){$('back').click()});
-function ovui(a){['go','gv','ghv','cpub','vs','rk'].forEach(function(i){$(i).style.display=a?'':'none'});$('nbox').hidden=true;$('rs').style.display='none';$('qt').style.display='none';$('netbox').hidden=true;$('lvbox').hidden=true}
+function ovui(a){['go','settings','cpub','vs','rk'].forEach(function(i){$(i).style.display=a?'':'none'});$('settingsbox').hidden=true;$('nbox').hidden=true;$('rs').style.display='none';$('qt').style.display='none';$('netbox').hidden=true;$('lvbox').hidden=true}
 function attack(n,casc){
   if(mode==='solo')return;
   var a=(n>=4?4:Math.max(0,n-1))+(casc?1:0);
@@ -886,7 +930,7 @@ function cleanNick(v){
   v=String(v||'').replace(/[\u0000-\u001f<>]/g,'').replace(/\s+/g,' ').trim().slice(0,12);
   return v||'Player';
 }
-function menuBtns(on){['gv','ghv','cpub','vs','rk'].forEach(function(i){$(i).style.display=on?'':'none'})}
+function menuBtns(on){['settings','cpub','vs','rk'].forEach(function(i){$(i).style.display=on?'':'none'});$('settingsbox').hidden=true}
 function rankCheck(sc,ln,lv){
   /* Show the nickname prompt immediately. Do not wait for a network ranking query;
      the ranking screen itself always displays only the top five scores. */
@@ -1059,7 +1103,17 @@ $('back').addEventListener('click',function(){
   joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';resize();
   overlay('Tetris','Drag to move, tap to rotate, flick down to drop','Start',best>0);
 });
-function gvLabel(){$('gvc').checked=gravity;$('ghvc').checked=ghostPreview}
+function gvLabel(){$('gvc').checked=gravity;$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn}
+$('settings').addEventListener('click',function(){
+  $('settingsbox').hidden=false;
+  ['settings','cpub','vs','rk','go'].forEach(function(i){$(i).style.display='none'});
+  gvLabel();
+});
+$('settingsback').addEventListener('click',function(){
+  $('settingsbox').hidden=true;
+  ['settings','cpub','vs','rk'].forEach(function(i){$(i).style.display=''});
+  $('go').style.display=(state==='over'||state==='paused')?'':'none';
+});
 $('gvc').addEventListener('change',function(){
   gravity=this.checked;
   try{localStorage.setItem('tetris-gravity',gravity?'1':'0')}catch(e){}
@@ -1068,7 +1122,15 @@ $('ghvc').addEventListener('change',function(){
   ghostPreview=this.checked;
   try{localStorage.setItem('tetris-ghost',ghostPreview?'1':'0')}catch(e){}
 });
+$('sndc').addEventListener('change',function(){
+  soundOn=this.checked;
+  try{localStorage.setItem('tetris-sound',soundOn?'1':'0')}catch(e){}
+  if(soundOn){unlockAudio();tone(740,.16,'sine',.06);tone(980,.16,'triangle',.04,.12)}
+});
 gvLabel();
+document.addEventListener('pointerdown',unlockAudio,{once:true});
+document.addEventListener('keydown',unlockAudio,{once:true});
+$('sndc').addEventListener('pointerdown',unlockAudio);
 $('rs').addEventListener('click',function(){if(mode==='cpu')startCpu(cpuLvl);else{mode='solo';resize();start()}});
 $('qt').addEventListener('click',function(){$('back').click()});
 $('pause').addEventListener('click',function(){state==='playing'?pause():state==='paused'&&resume()});
