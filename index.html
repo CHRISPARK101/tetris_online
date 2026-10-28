@@ -141,7 +141,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
-<div id="ver" aria-hidden="true"><span id="vf" class="fl"></span> <span id="vl"></span> v0.3</div>
+<div id="ver" aria-hidden="true"><span id="vf" class="fl"></span> <span id="vl"></span> v0.3.1</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 10</h2><ol id="rlist"></ol><p id="rnote"></p><button id="rclose">Close</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -692,7 +692,7 @@ function drawOpp(){
   if(g)for(var i=0;i<g.length;i++){var ch=g[i];if(ch!=='.'&&COL[ch])cell(ox,(i%COLS)*oc,Math.floor(i/COLS)*oc,oc,COL[ch])}
 }
 function sendBoard(t){
-  if(mode!=='vs'||!room||!(state==='playing'||state==='anim'||state==='clear')||t-lastSend<120)return;
+  if(mode!=='vs'||!room||!(state==='playing'||state==='anim'||state==='clear')||t-lastSend<200)return;
   lastSend=t;
   var a=[],r,c;
   for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++)a.push(grid[r][c]||'.');
@@ -728,12 +728,15 @@ function createSupabaseRoom(code){
   var peerId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('p-'+Date.now()+'-'+Math.random().toString(36).slice(2));
   var channel=client.channel('tt-'+code,{config:{presence:{key:peerId},broadcast:{self:false,ack:false}}});
   var localPresence={kind:'viewer',t:Date.now(),cc:myCC,rdy:false,dead:false,gs:0,atk:0};
-  var remoteData={},peerHandler=null,lostHandler=null,lostTimer=null,subscribed=false,left=false;
+  var remoteData={},peerHandler=null,lostHandler=null,lostTimer=null,subscribed=false,left=false,verCounter=0;
+  var ALLOWED={rdy:1,dead:1,gs:1,atk:1,g:1,sc:1,seed:1,gv:1,cc:1,t:1,ver:1,kind:1};
   function getPeers(){
     var ps=channel.presenceState(),out=[];
     Object.keys(ps||{}).forEach(function(key){
       var arr=ps[key]||[];if(!arr.length)return;
-      var pres=Object.assign({},arr[0]||{},remoteData[key]||{});
+      var meta=arr.reduce(function(a,b){return (b.ver||0)>=(a.ver||0)?b:a},arr[0]),pres={},rd=remoteData[key]||{};
+      Object.keys(meta).forEach(function(k){if(ALLOWED[k]===1)pres[k]=meta[k]});
+      Object.keys(rd).forEach(function(k){if(!(k in pres)||rd[k].v>=(pres.ver||0))pres[k]=rd[k].val});
       out.push({kind:'viewer',peer:key,sameTab:key===peerId,presence:pres});
     });
     return out;
@@ -742,8 +745,13 @@ function createSupabaseRoom(code){
   channel.on('presence',{event:'sync'},notify);
   channel.on('broadcast',{event:'game'},function(message){
     var packet=message&&message.payload;
-    if(!packet||!packet.peerId||packet.peerId===peerId||!packet.data)return;
-    remoteData[packet.peerId]=Object.assign(remoteData[packet.peerId]||{},packet.data);
+    if(!packet||!packet.peerId||packet.peerId===peerId||!packet.data||typeof packet.data!=='object')return;
+    var rd=remoteData[packet.peerId]=remoteData[packet.peerId]||{},pv=Number(packet.v)||0;
+    Object.keys(packet.data).forEach(function(k){
+      if(ALLOWED[k]!==1)return;
+      var c=rd[k];
+      if(!c||pv>=c.v)rd[k]={v:pv,val:packet.data[k]};
+    });
     notify();
   });
   return new Promise(function(resolve,reject){
@@ -757,13 +765,14 @@ function createSupabaseRoom(code){
           onPeers:function(fn){peerHandler=fn;notify()},
           onLost:function(fn){lostHandler=fn},
           presence:function(data){
-            var trackChanged=false,packet={};
+            var trackChanged=false,packet={},v=++verCounter;
             Object.keys(data||{}).forEach(function(k){
               packet[k]=data[k];
               if(k!=='g'&&k!=='sc'){localPresence[k]=data[k];trackChanged=true}
             });
+            if(trackChanged)localPresence.ver=v;
             var trackPromise=(subscribed&&trackChanged)?channel.track(localPresence):Promise.resolve('ok');
-            return Promise.all([trackPromise,channel.send({type:'broadcast',event:'game',payload:{peerId:peerId,data:packet}})]);
+            return Promise.all([trackPromise,channel.send({type:'broadcast',event:'game',payload:{peerId:peerId,v:v,data:packet}})]);
           },
           leave:function(){left=true;subscribed=false;clearTimeout(lostTimer);return client.removeChannel(channel)}
         })}).catch(reject);
@@ -893,6 +902,7 @@ function onPeers(ch){
     return;
   }
   if(!opp&&myRdy){myRdy=false;push({rdy:false})}
+  if(state==='over'&&mode==='vs'&&!myRdy&&opp&&opp.presence.rdy===true)$('os').textContent='Your opponent wants a rematch!';
   if(state==='net'&&!myRdy){
     $('os').textContent=opp?'Opponent joined'+(okc(opp.presence.cc)?' from '+cname(opp.presence.cc):'')+'. Press Ready.':'Waiting for an opponent, room '+roomCode;
     $('go').style.display=opp?'':'none';
@@ -900,10 +910,10 @@ function onPeers(ch){
   check();
 }
 function ready(){
-  if(!room||!opp)return;
+  if(!room||!opp){$('os').textContent='Opponent is not connected. Choose Main menu and join again.';$('qt').style.display='';return}
   myRdy=true;mySeed=Math.floor(Math.random()*1e9)+1;
   push({rdy:true,seed:mySeed,gv:gravity?1:0,dead:false,atk:0});
-  $('go').style.display='none';$('os').textContent='Waiting for your opponent to get ready';
+  $('go').style.display='none';$('os').textContent='Waiting for your opponent to get ready';$('qt').style.display='';
   check();
 }
 function check(){
