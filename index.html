@@ -87,6 +87,7 @@ input,select{-webkit-user-select:text;user-select:text}
 #nick{width:150px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:16px;text-align:center}
 #rank{position:fixed;inset:0;z-index:30;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:16px}
 #rank[hidden]{display:none}
+#ov #ver{margin:4px 0 0;font-size:11px;color:var(--mute);opacity:.7}
 .rk-card{width:min(100%,420px);max-height:100%;overflow:auto;background:var(--well);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center}
 .rk-card h2{margin:0 0 10px;font-size:22px}
 #rank button{padding:10px 24px}
@@ -126,6 +127,7 @@ input,select{-webkit-user-select:text;user-select:text}
     </div>
     <div id="side">
       <div class="top"><button id="pause" aria-label="Pause">II</button><div class="stat"><small>Score <span id="mf" class="fl"></span></small><b id="sc">0</b></div></div>
+        <p id="ver">build 3</p>
       <div class="meta"><span>Lv <span id="lv">1</span></span><span>Lines <span id="ln">0</span></span><span id="tm">00:00</span></div>
       <canvas id="next" aria-label="Next piece"></canvas>
       <div id="ol" hidden>CPU</div>
