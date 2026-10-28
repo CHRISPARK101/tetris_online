@@ -866,6 +866,60 @@ $('nskip').addEventListener('click',function(){
   $('os').textContent='Score '+score+', lines '+lines;
 });
 
+function onPeers(ch){
+  var ps=ch.peers.filter(function(p){return p.kind==='viewer'});
+  ps.sort(function(a,b){return ((a.presence.t||0)-(b.presence.t||0))||(a.peer<b.peer?-1:1)});
+  var two=ps.slice(0,2);
+  opp=null;meP=null;
+  for(var i=0;i<two.length;i++){var p=two[i];if(p.sameTab)meP=p;else opp=p}
+  olabel();
+  if(!meP&&state==='net'&&ps.some(function(q){return q.sameTab})){
+    leaveRoom();state='ready';mode='solo';resize();
+    overlay('2P Battle','This room already has two players. Enter a different code.','',false);
+    ovui(false);$('netbox').hidden=false;
+    return;
+  }
+  if(state==='playing'||state==='anim'||state==='clear'){
+    if(!opp){win('Opponent left');return}
+    var P=opp.presence;
+    if(P.gs===gs){
+      var a=Math.floor(+P.atk)||0;
+      if(a>seen){pend=Math.min(pend+Math.min(a-seen,8),ROWS);seen=a}
+      if(P.dead===true)win('Opponent topped out');
+    }
+    return;
+  }
+  if(!opp&&myRdy){myRdy=false;push({rdy:false})}
+  if(state==='net'&&!myRdy){
+    $('os').textContent=opp?'Opponent joined'+(okc(opp.presence.cc)?' from '+cname(opp.presence.cc):'')+'. Press Ready.':'Waiting for an opponent, room '+roomCode;
+    $('go').style.display=opp?'':'none';
+  }
+  check();
+}
+function ready(){
+  if(!room||!opp)return;
+  myRdy=true;mySeed=Math.floor(Math.random()*1e9)+1;
+  push({rdy:true,seed:mySeed,gv:gravity?1:0,dead:false,atk:0});
+  $('go').style.display='none';$('os').textContent='Waiting for your opponent to get ready';
+  check();
+}
+function check(){
+  if((state!=='net'&&state!=='over')||mode!=='vs'||!myRdy||!opp||!meP||!opp.presence.rdy||typeof opp.presence.seed!=='number')return;
+  var useMine=mySeed<=opp.presence.seed;
+  beginCount(useMine?mySeed:opp.presence.seed,useMine?gravity:!!opp.presence.gv);
+}
+function beginCount(seed,gv){
+  state='count';var n=3;
+  overlay('Match starting',String(n),'',false);ovui(false);
+  var t=setInterval(function(){
+    n--;
+    if(n>0){$('os').textContent=String(n);return}
+    clearInterval(t);
+    gs=seed;gravity=!!gv;myRdy=false;sentG='';
+    push({gs:gs,atk:0,dead:false,rdy:false,g:'',sc:0});
+    start();
+  },1000);
+}
 function joinRoom(code){
   leaveRoom();
   $('join').disabled=true;
