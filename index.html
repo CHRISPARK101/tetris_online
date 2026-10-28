@@ -141,7 +141,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
-<div id="ver" aria-hidden="true"><span id="vf" class="fl"></span> <span id="vl"></span> v0.3.1</div>
+<div id="ver" aria-hidden="true"><span id="vf" class="fl"></span> <span id="vl"></span> v0.3.2</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 10</h2><ol id="rlist"></ol><p id="rnote"></p><button id="rclose">Close</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -716,22 +716,23 @@ function getClient(){
   sbClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
   return sbClient;
 }
-function connLost(){
+function connLost(st){
   fx=null;fall=[];cur=null;
   $('back').click();
-  $('os').textContent='Connection lost. Check your network and try again.';
+  $('os').textContent='Connection lost'+(st?' ('+st+')':'')+'. Check your network and try again.';
 }
 
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&room&&room.poke)room.poke()});
+window.addEventListener('online',function(){if(room&&room.poke)room.poke()});
 /* Supabase Realtime adapter: Presence carries join/ready state, Broadcast carries fast-changing data (board, attacks). */
 function createSupabaseRoom(code){
   var client=getClient();
   var peerId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('p-'+Date.now()+'-'+Math.random().toString(36).slice(2));
-  var channel=client.channel('tt-'+code,{config:{presence:{key:peerId},broadcast:{self:false,ack:false}}});
   var localPresence={kind:'viewer',t:Date.now(),cc:myCC,rdy:false,dead:false,gs:0,atk:0};
-  var remoteData={},peerHandler=null,lostHandler=null,lostTimer=null,subscribed=false,left=false,verCounter=0;
+  var remoteData={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   var ALLOWED={rdy:1,dead:1,gs:1,atk:1,g:1,sc:1,seed:1,gv:1,cc:1,t:1,ver:1,kind:1};
   function getPeers(){
-    var ps=channel.presenceState(),out=[];
+    var ps=channel?channel.presenceState():{},out=[];
     Object.keys(ps||{}).forEach(function(key){
       var arr=ps[key]||[];if(!arr.length)return;
       var meta=arr.reduce(function(a,b){return (b.ver||0)>=(a.ver||0)?b:a},arr[0]),pres={},rd=remoteData[key]||{};
@@ -742,8 +743,7 @@ function createSupabaseRoom(code){
     return out;
   }
   function notify(){if(peerHandler)peerHandler({peers:getPeers()})}
-  channel.on('presence',{event:'sync'},notify);
-  channel.on('broadcast',{event:'game'},function(message){
+  function onGame(message){
     var packet=message&&message.payload;
     if(!packet||!packet.peerId||packet.peerId===peerId||!packet.data||typeof packet.data!=='object')return;
     var rd=remoteData[packet.peerId]=remoteData[packet.peerId]||{},pv=Number(packet.v)||0;
@@ -753,36 +753,62 @@ function createSupabaseRoom(code){
       if(!c||pv>=c.v)rd[k]={v:pv,val:packet.data[k]};
     });
     notify();
-  });
-  return new Promise(function(resolve,reject){
-    channel.subscribe(function(status){
-      if(left)return;
+  }
+  /* If the connection drops, rebuild the channel with the same identity and re-announce our state.
+     Only after 30 seconds without success do we tell the game that the connection is lost. */
+  function setLost(status){
+    lastStatus=status;subscribed=false;
+    console.warn('[tetris] realtime status:',status);
+    if(!lostTimer)lostTimer=setTimeout(function(){lostTimer=null;if(!left&&lostHandler)lostHandler(lastStatus)},30000);
+    clearTimeout(retryTimer);
+    retryTimer=setTimeout(rebuild,Math.min(1000*(++retries),5000));
+  }
+  function rebuild(){
+    if(left)return;
+    var old=channel;
+    subscribed=false;
+    (old?Promise.resolve(client.removeChannel(old)):Promise.resolve()).catch(function(){}).then(function(){if(!left)connect(null)});
+  }
+  function connect(done){
+    var ch=client.channel('tt-'+code,{config:{presence:{key:peerId},broadcast:{self:false,ack:false}}});
+    channel=ch;
+    ch.on('presence',{event:'sync'},notify);
+    ch.on('broadcast',{event:'game'},onGame);
+    ch.subscribe(function(status){
+      if(left||ch!==channel)return;
       if(status==='SUBSCRIBED'){
-        clearTimeout(lostTimer);
+        clearTimeout(lostTimer);lostTimer=null;clearTimeout(retryTimer);retries=0;
         subscribed=true;
-        channel.track(localPresence).then(function(){notify();resolve({
-          peers:getPeers,
-          onPeers:function(fn){peerHandler=fn;notify()},
-          onLost:function(fn){lostHandler=fn},
-          presence:function(data){
-            var trackChanged=false,packet={},v=++verCounter;
-            Object.keys(data||{}).forEach(function(k){
-              packet[k]=data[k];
-              if(k!=='g'&&k!=='sc'){localPresence[k]=data[k];trackChanged=true}
-            });
-            if(trackChanged)localPresence.ver=v;
-            var trackPromise=(subscribed&&trackChanged)?channel.track(localPresence):Promise.resolve('ok');
-            return Promise.all([trackPromise,channel.send({type:'broadcast',event:'game',payload:{peerId:peerId,v:v,data:packet}})]);
-          },
-          leave:function(){left=true;subscribed=false;clearTimeout(lostTimer);return client.removeChannel(channel)}
-        })}).catch(reject);
+        ch.track(localPresence).then(function(){
+          notify();
+          if(!firstDone){firstDone=true;if(done)done()}
+        }).catch(function(e){if(!firstDone){firstDone=true;if(done)done(e||new Error('track failed'))}});
       }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
-        if(subscribed){
-          clearTimeout(lostTimer);
-          lostTimer=setTimeout(function(){if(!left&&lostHandler)lostHandler(status)},8000);
-        }else reject(new Error('Realtime connection failed: '+status));
+        if(!firstDone){firstDone=true;if(done)done(new Error('Realtime connection failed: '+status));return}
+        setLost(status);
       }
     });
+  }
+  var api={
+    peers:getPeers,
+    onPeers:function(fn){peerHandler=fn;notify()},
+    onLost:function(fn){lostHandler=fn},
+    poke:function(){if(!left&&!subscribed){clearTimeout(retryTimer);rebuild()}},
+    presence:function(data){
+      var trackChanged=false,packet={},v=++verCounter;
+      Object.keys(data||{}).forEach(function(k){
+        packet[k]=data[k];
+        if(k!=='g'&&k!=='sc'){localPresence[k]=data[k];trackChanged=true}
+      });
+      if(trackChanged)localPresence.ver=v;
+      if(!subscribed||!channel)return Promise.resolve('queued');
+      var trackPromise=trackChanged?channel.track(localPresence):Promise.resolve('ok');
+      return Promise.all([trackPromise,channel.send({type:'broadcast',event:'game',payload:{peerId:peerId,v:v,data:packet}})]);
+    },
+    leave:function(){left=true;subscribed=false;clearTimeout(lostTimer);clearTimeout(retryTimer);return channel?client.removeChannel(channel):Promise.resolve()}
+  };
+  return new Promise(function(resolve,reject){
+    connect(function(err){if(err)reject(err);else resolve(api)});
   });
 }
 
@@ -878,6 +904,7 @@ $('nskip').addEventListener('click',function(){
   $('os').textContent='Score '+score+', lines '+lines;
 });
 
+var leftTimer=null;
 function onPeers(ch){
   var ps=ch.peers.filter(function(p){return p.kind==='viewer'});
   ps.sort(function(a,b){return ((a.presence.t||0)-(b.presence.t||0))||(a.peer<b.peer?-1:1)});
@@ -892,7 +919,11 @@ function onPeers(ch){
     return;
   }
   if(state==='playing'||state==='anim'||state==='clear'){
-    if(!opp){win('Opponent left');return}
+    if(!opp){
+      if(!leftTimer)leftTimer=setTimeout(function(){leftTimer=null;if(!opp&&(state==='playing'||state==='anim'||state==='clear'))win('Opponent left')},8000);
+      return;
+    }
+    clearTimeout(leftTimer);leftTimer=null;
     var P=opp.presence;
     if(P.gs===gs){
       var a=Math.floor(+P.atk)||0;
@@ -901,7 +932,7 @@ function onPeers(ch){
     }
     return;
   }
-  if(!opp&&myRdy){myRdy=false;push({rdy:false})}
+  if(!opp&&myRdy&&(state==='net'||state==='over'))$('os').textContent='Waiting for your opponent to reconnect...';
   if(state==='over'&&mode==='vs'&&!myRdy&&opp&&opp.presence.rdy===true)$('os').textContent='Your opponent wants a rematch!';
   if(state==='net'&&!myRdy){
     $('os').textContent=opp?'Opponent joined'+(okc(opp.presence.cc)?' from '+cname(opp.presence.cc):'')+'. Press Ready.':'Waiting for an opponent, room '+roomCode;
