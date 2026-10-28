@@ -38,6 +38,8 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #side .top{display:flex;gap:6px;align-items:center}
 #side .meta{display:flex;flex-wrap:wrap;gap:0 6px;justify-content:space-between;font-size:calc(var(--cs,20px)*.5);color:var(--mute)}
 #ol{font-size:calc(var(--cs,20px)*.55);font-weight:700;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mf{font-size:1.15em;vertical-align:middle}
+#mywho{white-space:nowrap}
 #ol[hidden]{display:none}
 .fl{font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;font-weight:400}
 .ccr{display:flex;gap:8px;align-items:center;justify-content:center;width:100%}
@@ -126,7 +128,7 @@ input,select{-webkit-user-select:text;user-select:text}
       </div>
     </div>
     <div id="side">
-      <div class="top"><button id="pause" aria-label="Pause">II</button><div class="stat"><small>Score <span id="mf" class="fl"></span></small><b id="sc">0</b></div></div>
+      <div class="top"><button id="pause" aria-label="Pause">II</button><div class="stat"><small><span id="mywho">You</span> <span id="mf" class="fl" aria-label="Your country"></span></small><b id="sc">0</b></div></div>
       <div class="meta"><span>Lv <span id="lv">1</span></span><span>Lines <span id="ln">0</span></span><span id="tm">00:00</span></div>
       <canvas id="next" aria-label="Next piece"></canvas>
       <div id="ol" hidden>CPU</div>
@@ -141,7 +143,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
-<div id="ver" aria-hidden="true"><span id="vf" class="fl"></span> <span id="vl"></span> v0.3.3</div>
+<div id="ver" aria-hidden="true">v0.3.3</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 10</h2><ol id="rlist"></ol><p id="rnote"></p><button id="rclose">Close</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -579,7 +581,7 @@ if(CC.indexOf(myCC)<0)myCC='';
     try{localStorage.setItem('tetris-cc',myCC)}catch(e){}
   });
 })();
-function verLabel(){$('vf').textContent=flagOf(myCC)||'\uD83C\uDF10';$('vl').textContent=navigator.language||''}
+function verLabel(){}
 function olabel(){
   if(mode==='cpu')$('ol').textContent='CPU '+CPU_NM[cpuLvl]+(cpu?' '+cpu.score:'');
   else{
@@ -587,7 +589,9 @@ function olabel(){
     if(!okc(c2))c2='';
     $('ol').innerHTML=(c2?'<span class="fl">'+flagOf(c2)+'</span> '+cname(c2):'Opponent');
   }
-  $('mf').textContent=mode==='vs'?flagOf(myCC):'';
+  $('mf').textContent=mode==='vs'?(flagOf(myCC)||'🌐'):'';
+  $('mf').title=mode==='vs'?(myCC?cname(myCC):'Country not set'):'';
+  $('mywho').textContent=mode==='vs'?'You':'Score';
 }
 function cpuStart(l){
   cpuLvl=l;cpuT=0;
