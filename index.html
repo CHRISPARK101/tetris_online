@@ -25,7 +25,7 @@ body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
   overscroll-behavior:none;overflow:hidden}
-#app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:10px;padding:10px 12px 12px;box-sizing:border-box}
+#app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:10px;padding:10px 12px 18px;box-sizing:border-box}
 .hud{display:grid;grid-template-columns:1.5fr 1fr 1fr auto auto;gap:8px;align-items:center}
 .stat small{display:block;font-size:calc(var(--cs,20px)*.5);color:var(--mute)}
 .stat b{display:block;font-size:calc(var(--cs,20px)*.85);font-variant-numeric:tabular-nums;line-height:1.2}
@@ -87,7 +87,7 @@ input,select{-webkit-user-select:text;user-select:text}
 #nick{width:150px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:16px;text-align:center}
 #rank{position:fixed;inset:0;z-index:30;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:16px}
 #rank[hidden]{display:none}
-#ov #ver{margin:4px 0 0;font-size:11px;color:var(--mute);opacity:.7}
+#ver{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);text-align:center;font-size:10px;line-height:1;color:var(--mute);opacity:.65;pointer-events:none}
 .rk-card{width:min(100%,420px);max-height:100%;overflow:auto;background:var(--well);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center}
 .rk-card h2{margin:0 0 10px;font-size:22px}
 #rank button{padding:10px 24px}
@@ -127,7 +127,6 @@ input,select{-webkit-user-select:text;user-select:text}
     </div>
     <div id="side">
       <div class="top"><button id="pause" aria-label="Pause">II</button><div class="stat"><small>Score <span id="mf" class="fl"></span></small><b id="sc">0</b></div></div>
-        <p id="ver">build 3</p>
       <div class="meta"><span>Lv <span id="lv">1</span></span><span>Lines <span id="ln">0</span></span><span id="tm">00:00</span></div>
       <canvas id="next" aria-label="Next piece"></canvas>
       <div id="ol" hidden>CPU</div>
@@ -142,6 +141,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
+<div id="ver" aria-hidden="true"><span id="vf" class="fl"></span> <span id="vl"></span> v0.3</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 10</h2><ol id="rlist"></ol><p id="rnote"></p><button id="rclose">Close</button></div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -244,7 +244,7 @@ function lock(){
   for(var r=0;r<cur.m.length;r++)for(var c=0;c<cur.m[r].length;c++){
     if(cur.m[r][c]){
       var gy=cur.y+r,gx=cur.x+c;
-      if(gy>=0){grid[gy][gx]=cur.t;gid[gy][gx]=cur.id}
+      ifgy>=0[gx]=cur.t;gid[gy][gx]=cur.id}
     }
   }
   var rows=fullRows(),n=rows.length;
@@ -267,7 +267,7 @@ function clearRows(){
   for(var y=ROWS-1;y>=0;y--){
     if(grid[y].every(Boolean)){
       n++;
-      if(gravity){grid[y].fill(0);gid[y].fill(0)}
+      ifgravity.fill(0);gid[y].fill(0)}
       else{grid.splice(y,1);grid.unshift(new Array(COLS).fill(0));gid.splice(y,1);gid.unshift(new Array(COLS).fill(0));y++}
     }
   }
@@ -345,12 +345,12 @@ function startFall(mult){
     u.cells.forEach(function(k){fall.push({c:k.c,y0:k.r,to:k.r+u.d,t:k.t,id:gid[k.r][k.c]})});
   });
   if(!fall.length)return false;
-  fall.forEach(function(f){grid[f.y0][f.c]=0;gid[f.y0][f.c]=0});
+  fall.forEachfunction(f[f.c]=0;gid[f.y0][f.c]=0});
   cur=null;state='anim';
   return true;
 }
 function landFall(){
-  fall.forEach(function(f){grid[f.to][f.c]=f.t;gid[f.to][f.c]=f.id});
+  fall.forEachfunction(f[f.c]=f.t;gid[f.to][f.c]=f.id});
   fall=[];
   var rows=fullRows();
   if(rows.length){
@@ -386,7 +386,13 @@ function start(){
 }
 function over(){
   state='over';
-  if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});overlay('You lose','Score '+score+', lines '+lines,'Rematch',false);return}
+  myRdy = false; // 준비 상태 초기화
+  if(mode!=='solo'){
+    push({dead:true, rdy:false});
+    overlay('You lose','Score '+score+', lines '+lines,'Rematch',false);
+    $('go').style.display = ''; // Rematch 버튼 강제 표시
+    return;
+  }
   if(score>best){best=score;try{localStorage.setItem('tetris-best',String(best))}catch(e){}}
   overlay('Game over','Score '+score+', lines '+lines,'Play again',true);
   rankCheck(score,lines,level);
@@ -565,12 +571,13 @@ if(CC.indexOf(myCC)<0)myCC='';
   CC.map(function(c){return{c:c,n:cname(c)}}).sort(function(a,b){return a.n.localeCompare(b.n)}).forEach(function(x){
     var e=document.createElement('option');e.value=x.c;e.textContent=x.n;s.appendChild(e);
   });
-  s.value=myCC;$('ccf').textContent=flagOf(myCC);
+  s.value=myCC;$('ccf').textContent=flagOf(myCC);verLabel();
   s.addEventListener('change',function(){
-    myCC=s.value;$('ccf').textContent=flagOf(myCC);
+    myCC=s.value;$('ccf').textContent=flagOf(myCC);verLabel();
     try{localStorage.setItem('tetris-cc',myCC)}catch(e){}
   });
 })();
+function verLabel(){$('vf').textContent=flagOf(myCC)||'\uD83C\uDF10';$('vl').textContent=navigator.language||''}
 function olabel(){
   if(mode==='cpu')$('ol').textContent='CPU '+CPU_NM[cpuLvl]+(cpu?' '+cpu.score:'');
   else{
@@ -676,8 +683,11 @@ function addGarbage(){
   }
 }
 function win(msg){
-  state='over';fx=null;fall=[];cur=null;myRdy=false;push({rdy:false});
+  state='over';fx=null;fall=[];cur=null;
+  myRdy=false; // 준비 상태 초기화
+  push({rdy:false, dead:false});
   overlay('Victory!',msg,'Rematch',false);
+  $('go').style.display = ''; // Rematch 버튼 표시
 }
 function drawOpp(){
   if(mode==='solo')return;
