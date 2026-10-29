@@ -81,7 +81,7 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 .ctl button{height:54px;font-size:20px;font-weight:600}
 .ctl button:active,.ctl button.on{transform:scale(.96);background:var(--line)}
 .ctl [data-act="rot"],.ctl [data-act="drop"]{font-size:16px}
-.ctl [data-act="rot"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
+.ctl [data-act="drop"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 input,select{-webkit-user-select:text;user-select:text}
 #ov{overflow:auto}
@@ -162,10 +162,10 @@ input,select{-webkit-user-select:text;user-select:text}
           </div>
           <button id="settingsback">Back</button>
         </div>
+        <button id="cpub">Vs CPU</button>
         <button id="vs">2P Battle</button>
         <button id="rk">👑 Ranking</button>
-        <button id="cpub">Vs CPU</button>
-        <div id="netbox" hidden><div class="ccr"><span id="ccf" class="fl"></span><select id="cc" aria-label="Your country"></select></div><input id="code" inputmode="numeric" maxlength="6" placeholder="4-digit code" aria-label="Room code"><button id="join">Join</button><button id="back">Back</button></div>
+        <div id="netbox" hidden><div class="ccr"><span id="ccf" class="fl"></span><select id="cc" aria-label="Your country"></select></div><input id="code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="off" placeholder="5-digit room number" aria-label="Room number"><button id="join">Join</button><button id="back">Back</button></div>
         <div id="lvbox" hidden><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
       </div>
     </div>
@@ -914,7 +914,7 @@ document.addEventListener('keydown',function(e){
   e.preventDefault();
 });
 
-var ROOM_LEN=6,visAt=Date.now(),room=null,opp=null,meP=null,myRdy=false,mySeed=0,gs=0,pend=0,seen=0,atk=0,mode='solo',roomCode='',sentG='',lastSend=0,rnd=Math.random;
+var ROOM_LEN=5,visAt=Date.now(),room=null,opp=null,meP=null,myRdy=false,mySeed=0,gs=0,pend=0,seen=0,atk=0,mode='solo',roomCode='',sentG='',lastSend=0,rnd=Math.random,lastMatchSettings=null;
 function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function push(p){
   if(!room)return Promise.resolve(false);
@@ -1398,6 +1398,8 @@ function onPeers(ch){
 }
 function ready(){
   if(!room||!opp){setOS('oppnotconn');$('qt').style.display='';return}
+  /* A rematch reuses the exact rules from the previous match. A fresh room requires both players to agree. */
+  if(state==='over'&&lastMatchSettings){gravity=lastMatchSettings.gv;itemPref=lastMatchSettings.it;gvLabel()}
   myRdy=true;mySeed=Math.floor(Math.random()*1e9)+1;
   push({rdy:true,seed:mySeed,gv:gravity?1:0,it:itemPref?1:0,iq:0,ik:'',dead:false,atk:0});
   $('go').style.display='none';setOS('waitready');$('qt').style.display='';
@@ -1405,12 +1407,15 @@ function ready(){
 }
 function check(){
   if((state!=='net'&&state!=='over')||mode!=='vs'||!myRdy||!opp||!meP||!opp.presence.rdy||typeof opp.presence.seed!=='number')return;
+  var myG=gravity?1:0,myI=itemPref?1:0,oppG=Number(opp.presence.gv),oppI=Number(opp.presence.it);
+  if(myG!==oppG||myI!==oppI){setOS('settingsmismatch');return}
   var useMine=mySeed<=opp.presence.seed;
-  beginCount(useMine?mySeed:opp.presence.seed,useMine?gravity:!!opp.presence.gv,useMine?itemPref:!!opp.presence.it);
+  beginCount(useMine?mySeed:opp.presence.seed,!!myG,!!myI);
 }
 var countTimer=null;
 function beginCount(seed,gv,it){
   if(countTimer)clearInterval(countTimer);
+  lastMatchSettings={gv:!!gv,it:!!it};
   state='count';var n=3;
   overlay('matchstart',String(n),'',false);ovui(false);
   countTimer=setInterval(function(){
@@ -1425,6 +1430,7 @@ function beginCount(seed,gv,it){
 }
 var joinToken=0;
 function joinRoom(code){
+  lastMatchSettings=null;
   var token=++joinToken;
   leaveRoom();
   $('join').disabled=true;
@@ -1458,6 +1464,7 @@ $('vs').addEventListener('click',function(){
   overlay('battleTitle','battlesub','',false);
   ovui(false);$('netbox').hidden=false;
 });
+$('code').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,ROOM_LEN)});
 $('join').addEventListener('click',function(){
   var code=$('code').value.trim();
   if(!new RegExp('^\\d{'+ROOM_LEN+'}$').test(code)){setOS(fm('entercode',{n:ROOM_LEN}));return}
@@ -1465,7 +1472,7 @@ $('join').addEventListener('click',function(){
   joinRoom(code);
 });
 $('back').addEventListener('click',function(){
-  joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';pendingScore=null;clearBoard();resize();
+  joinToken++;$('join').disabled=false;leaveRoom();lastMatchSettings=null;mode='solo';state='ready';pendingScore=null;clearBoard();resize();
   overlay('tetris','drag','start',best>0);
 });
 function gvLabel(){$('gvc').checked=gravity;$('itmc').checked=itemPref;$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
@@ -1477,16 +1484,18 @@ $('settings').addEventListener('click',function(){
 $('settingsback').addEventListener('click',function(){
   $('settingsbox').hidden=true;
   ['settings','cpub','vs','rk'].forEach(function(i){$(i).style.display=''});
-  $('go').style.display=(state==='over'||state==='paused')?'':'none';
+  $('go').style.display=(state==='over'||state==='paused'||(state==='net'&&!myRdy))?'':'none';
 });
 $('gvc').addEventListener('change',function(){
   gravity=this.checked;
   try{localStorage.setItem('tetris-gravity',gravity?'1':'0')}catch(e){}
+  if(mode==='vs'&&room&&(state==='net'||state==='over')){push({gv:gravity?1:0});check()}
 });
 $('itmc').addEventListener('change',function(){
   itemPref=this.checked;
   try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(e){}
   if(mode!=='vs')itemMode=itemPref;
+  else if(room&&(state==='net'||state==='over')){push({it:itemPref?1:0});check()}
 });
 $('ghvc').addEventListener('change',function(){
   ghostPreview=this.checked;
@@ -1559,7 +1568,7 @@ var I18N={
   "noscores": "No scores yet. Be the first!",
   "saving": "Saving...",
   "connecting": "Connecting...",
-  "roomcode": "{n}-digit code",
+  "roomcode": "{n}-digit room number",
   "level": "Lv",
   "score": "Score",
   "opponent": "Opponent",
@@ -1583,14 +1592,15 @@ var I18N={
   "opptopped": "Opponent topped out",
   "connlost": "Connection lost",
   "connlostmsg": "Check your network, then reconnect to the same room.",
-  "battlesub": "Two players who enter the same room code get connected",
+  "battlesub": "Enter the same room number to connect two players",
   "roomfull": "This room already has two players. Enter a different code.",
   "matchstart": "Match starting",
   "roomwait": "Room {c}, waiting for an opponent",
   "unstable": "Connection is unstable. Your latest update may not have reached the opponent.",
-  "entercode": "Enter a {n}-digit room code",
+  "entercode": "Enter a {n}-digit room number",
   "oppnotconn": "Opponent is not connected. Choose Main menu and join again.",
   "waitready": "Waiting for your opponent to get ready",
+  "settingsmismatch": "Your rules differ from your opponent. Change Gravity and Item mode in Settings until both match.",
   "waitreconn": "Waiting for your opponent to reconnect...",
   "wantsrematch": "Your opponent wants a rematch!",
   "oppjoined": "Opponent joined. Press Ready.",
@@ -1769,7 +1779,7 @@ var I18N={
   "noscores": "아직 점수가 없습니다. 첫 기록을 남겨보세요!",
   "saving": "저장 중...",
   "connecting": "연결 중...",
-  "roomcode": "{n}자리 코드",
+  "roomcode": "{n}자리 방번호",
   "cpuTitle": "CPU 대전",
   "battleTitle": "2인 대전",
   "level": "레벨",
@@ -1795,14 +1805,15 @@ var I18N={
   "opptopped": "상대의 블록이 가득 찼습니다",
   "connlost": "연결이 끊겼습니다",
   "connlostmsg": "네트워크를 확인한 뒤 같은 방에 다시 접속하세요.",
-  "battlesub": "같은 방 코드를 입력한 두 사람이 연결됩니다",
-  "roomfull": "이 방은 이미 두 명이 있습니다. 다른 코드를 입력하세요.",
+  "battlesub": "같은 방번호를 입력한 두 사람이 연결됩니다",
+  "roomfull": "이 방에는 이미 두 명이 있습니다. 다른 방번호를 입력하세요.",
   "matchstart": "대전 시작",
   "roomwait": "방 {c}, 상대를 기다리는 중",
   "unstable": "연결이 불안정합니다. 최근 정보가 상대에게 전달되지 않았을 수 있습니다.",
-  "entercode": "{n}자리 방 코드를 입력하세요",
+  "entercode": "{n}자리 방번호를 입력하세요",
   "oppnotconn": "상대가 연결되어 있지 않습니다. 메인 메뉴로 나가 다시 접속하세요.",
   "waitready": "상대가 준비하기를 기다리는 중",
+  "settingsmismatch": "상대와 규칙 설정이 다릅니다. 설정에서 중력 모드와 아이템 모드를 똑같이 맞춰 주세요.",
   "waitreconn": "상대가 다시 연결되기를 기다리는 중...",
   "wantsrematch": "상대가 재대결을 원합니다!",
   "oppjoined": "상대가 들어왔습니다. 준비를 누르세요.",
