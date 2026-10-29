@@ -117,17 +117,17 @@ input,select{-webkit-user-select:text;user-select:text}
 #rnote{margin:10px 0;font-size:13px;color:var(--mute)}
 #ov.att{background:var(--veil2)}
 #ov.att h1{background:linear-gradient(90deg,#2fc4e6,#4b6ff0,#a65bd8,#ee5a5a,#f28b3a,#f5c73b,#4cc46a);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;font-size:40px}
-.ctl [data-act="item"]{grid-area:2/2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.1;font-size:12px;padding:0 4px;opacity:.55}
-.ctl [data-act="item"][hidden]{display:none}
-.ctl [data-act="item"].has{opacity:1;background:var(--accent);border-color:var(--accent);color:var(--onaccent);animation:itpulse 1.2s ease-in-out infinite}
-.ctl.items [data-act="down"]{grid-area:2/1}
-#iti{font-size:22px;line-height:1.1;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;font-weight:400}
-#itn{font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-@keyframes itpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
 #tt{position:absolute;top:38px;left:50%;transform:translateX(-50%);padding:5px 12px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:13px;font-weight:700;line-height:1.4;pointer-events:none;white-space:nowrap;max-width:96%;overflow:hidden;text-overflow:ellipsis}
 #tt[hidden]{display:none}
 #bf{position:absolute;left:8px;top:8px;font-size:18px;line-height:1.1;letter-spacing:2px;pointer-events:none;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif}
 #bf[hidden]{display:none}
+.fly{position:fixed;left:0;top:0;z-index:80;pointer-events:none;line-height:1;white-space:nowrap;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;will-change:transform,opacity;filter:drop-shadow(0 0 8px rgba(255,255,255,.9))}
+@keyframes shk{0%,100%{transform:translate(0,0)}15%{transform:translate(-7px,2px)}30%{transform:translate(6px,-3px)}45%{transform:translate(-5px,3px)}60%{transform:translate(4px,-2px)}80%{transform:translate(-2px,1px)}}
+.well.shake{animation:shk .45s}
+@keyframes ohit{0%{box-shadow:0 0 0 0 rgba(229,72,77,.95);filter:brightness(1.5)}100%{box-shadow:0 0 18px 9px rgba(229,72,77,0);filter:none}}
+#opp.hit{animation:ohit .6s}
+@keyframes bhit{0%{box-shadow:inset 0 0 46px 12px rgba(229,72,77,.7)}100%{box-shadow:inset 0 0 0 0 rgba(229,72,77,0)}}
+#board.hit{animation:bhit .65s}
 #ov #itmhelp{font-size:12px;max-width:260px;text-align:left;margin:0 0 4px}
 </style>
 </head>
@@ -152,6 +152,8 @@ input,select{-webkit-user-select:text;user-select:text}
           <h2 class="setting-title" id="settingstitle">Settings</h2>
           <label class="language-row" for="languageSelect"><span id="languageLabel">Language</span><select id="languageSelect"><option value="auto">Automatic</option><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option><option value="es">Español</option><option value="pt">Português</option><option value="fr">Français</option><option value="nl">Nederlands</option></select></label>
           <label id="gv" class="sw"><span>Gravity mode</span><input type="checkbox" id="gvc" role="switch"><i></i></label>
+          <label id="itm" class="sw"><span>Item mode</span><input type="checkbox" id="itmc" role="switch"><i></i></label>
+          <p id="itmhelp"></p>
           <label id="ghv" class="sw"><span>Landing preview</span><input type="checkbox" id="ghvc" role="switch"><i></i></label>
           <label id="snd" class="sw"><span>Sound effects</span><input type="checkbox" id="sndc" role="switch"><i></i></label>
           <div id="musicvol" class="music-volume">
@@ -163,8 +165,8 @@ input,select{-webkit-user-select:text;user-select:text}
         <button id="vs">2P Battle</button>
         <button id="rk">👑 Ranking</button>
         <button id="cpub">Vs CPU</button>
-        <div id="netbox" hidden><label id="itm-vs" class="sw"><span>Item mode</span><input type="checkbox" id="itmc-vs" role="switch"><i></i></label><div class="ccr"><span id="ccf" class="fl"></span><select id="cc" aria-label="Your country"></select></div><input id="code" inputmode="numeric" maxlength="6" placeholder="4-digit code" aria-label="Room code"><button id="join">Join</button><button id="back">Back</button></div>
-        <div id="lvbox" hidden><label id="itm-cpu" class="sw"><span>Item mode</span><input type="checkbox" id="itmc-cpu" role="switch"><i></i></label><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
+        <div id="netbox" hidden><div class="ccr"><span id="ccf" class="fl"></span><select id="cc" aria-label="Your country"></select></div><input id="code" inputmode="numeric" maxlength="6" placeholder="4-digit code" aria-label="Room code"><button id="join">Join</button><button id="back">Back</button></div>
+        <div id="lvbox" hidden><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
       </div>
     </div>
     <div id="side">
@@ -175,16 +177,15 @@ input,select{-webkit-user-select:text;user-select:text}
       <canvas id="opp" hidden></canvas>
     </div>
   </div>
-  <div class="ctl" id="ctl">
+  <div class="ctl">
     <button data-act="left" aria-label="Left">◀</button>
     <button data-act="right" aria-label="Right">▶</button>
     <button data-act="down" aria-label="Down">▼</button>
     <button data-act="rot">Rotate</button>
     <button data-act="drop">Drop</button>
-    <button data-act="item" id="itb" hidden aria-label="Use item"><span id="iti">—</span><small id="itn"></small></button>
   </div>
 </div>
-<div id="ver" aria-hidden="true">v0.6.0</div>
+<div id="ver" aria-hidden="true">v0.6.2</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 5</h2><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
 <script src="supabase.js"></script>
@@ -323,16 +324,15 @@ var gid=[],itm=[],pidc=0;
 function emptyGrid(){var g=[];gid=[];itm=[];for(var r=0;r<ROWS;r++){g.push(new Array(COLS).fill(0));gid.push(new Array(COLS).fill(0));itm.push(new Array(COLS).fill(0))}return g}
 
 /* ===== Item mode =====
-   Some pieces carry one item block (value 2 in the piece matrix). Clearing a line that contains an item block
-   automatically activates its item after the line-clear animation. Self items help you,
-   attack items hit your opponent (online player or CPU). The item stream uses its own seeded random generator,
-   so both online players see the very same item pieces. */
+   Some pieces carry one item cell (value 2 in the piece matrix). When the line holding that cell is cleared,
+   the item fires automatically. Self items help you, attack items hit your opponent (online player or CPU).
+   The item stream uses its own seeded random generator, so both online players see the very same item pieces. */
 var ITEMS={bomb:{e:'💣'},laser:{e:'⚡'},nuke:{e:'💥'},slow:{e:'🐢'},shield:{e:'🛡️'},junk:{e:'🧱'},speed:{e:'🚀'},fog:{e:'🌫️'},rev:{e:'🌀'}};
 var ATTACKS=['junk','speed','fog','rev'];
 var POOL_SOLO=[['bomb',40],['laser',32],['nuke',8],['slow',20]];
 var POOL_FULL=[['bomb',16],['laser',13],['nuke',4],['slow',9],['shield',11],['junk',17],['speed',11],['fog',9],['rev',10]];
 var ITEM_P=.10,ITEM_GAP=5,sinceItem=0,irnd=Math.random;
-var slot=null,shield=false,fastUntil=0,slowUntil=0,fogUntil=0,revUntil=0,iseq=0,seenIq=0,boom=null,ttTimer=null,bfLast='',bombOrigin=null,itemOrigin=null;
+var shield=false,fastUntil=0,slowUntil=0,fogUntil=0,revUntil=0,iseq=0,seenIq=0,boom=null,ttTimer=null,bfLast='';
 var EMOJI_FONT='"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif';
 function pickKind(){
   var pool=mode==='solo'?POOL_SOLO:POOL_FULL,tot=0,i;
@@ -361,14 +361,6 @@ function toast(key,vars){
   var e=$('tt');e.textContent=fmt(key,vars);e.hidden=false;
   clearTimeout(ttTimer);ttTimer=setTimeout(function(){e.hidden=true},1800);
 }
-function updateSlot(){
-  var b=$('itb');if(!b)return;
-  b.hidden=true;
-  $('ctl').classList.toggle('items',!!itemMode);
-  $('iti').textContent=slot?ITEMS[slot].e:'—';
-  $('itn').textContent=slot?tr('i_'+slot):tr('noitem');
-  b.classList.toggle('has',!!slot);
-}
 function renderBuffs(){
   var t='';
   if(shield)t+=ITEMS.shield.e;
@@ -382,97 +374,127 @@ function sfxItem(){tone(700,.09,'square',.035);tone(1050,.12,'square',.035,.07)}
 function sfxBoom(){tone(120,.25,'sawtooth',.07);tone(80,.3,'triangle',.07,.05)}
 function sfxHit(){tone(200,.18,'sawtooth',.05);tone(150,.2,'sawtooth',.05,.1)}
 function resetItemState(){
-  slot=null;shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;boom=null;sinceItem=0;bombOrigin=null;itemOrigin=null;
-  clearTimeout(ttTimer);$('tt').hidden=true;updateSlot();renderBuffs();
+  shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;boom=null;sinceItem=0;itemTok++;clearFlyers();
+  clearTimeout(ttTimer);$('tt').hidden=true;renderBuffs();
 }
-function endItems(){shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;renderBuffs();$('tt').hidden=true}
+function endItems(){itemTok++;clearFlyers();shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;renderBuffs();$('tt').hidden=true}
 function topRow(){for(var r=0;r<ROWS;r++)if(grid[r].some(Boolean))return r;return ROWS}
 function wipe(r){grid[r].fill(0);gid[r].fill(0);itm[r].fill(0)}
-/* instant gravity after an item removed blocks: floating pieces drop at once, the falling piece is untouched */
-function instantSettle(){
-  var c=cur,st=state;
-  if(startFall()){
-    fall.forEach(function(f){grid[f.to][f.c]=f.t;gid[f.to][f.c]=f.id;if(f.it)itm[f.to][f.c]=f.it});
-    fall=[];
-  }
-  cur=c;state=st;
-}
+/* The item cell was part of a cleared line: collect it before the rows disappear ... */
 function collectItems(rows){
-  if(!itemMode)return null;
-  var got=null,origin=null;
-  rows.forEach(function(y){
-    for(var c=0;c<COLS;c++)if(itm[y][c]){
-      got=itm[y][c];
-      origin={r:y,c:c};
-    }
-  });
-  if(got&&origin){itemOrigin={r:origin.r,c:origin.c};}
-  return got;
+  var list=[];
+  if(!itemMode)return list;
+  rows.forEach(function(y){for(var c=0;c<COLS;c++)if(itm[y][c])list.push({k:itm[y][c],y:y,c:c})});
+  return list;
 }
-/* Items activate automatically after the item-bearing line has actually cleared. */
-function activateItem(k){
-  if(!itemMode||!k)return;
+/* ... and fire it right after the rows were removed (positional items aim at where the cell was). */
+function applyItems(list,rows){
+  if(!list||!list.length)return;
+  list.forEach(function(o){
+    var cy=o.y;
+    if(!gravity)cy+=rows.filter(function(r){return r>o.y}).length;   /* classic mode: the stack above slides down */
+    fireItem(o.k,cy,o.c);
+  });
+}
+function fireItem(k,cy,cx){
   var r,c;
   toast('used',{n:itemName(k)});
   if(ATTACKS.indexOf(k)>=0){
-    sfxItem();
-    if(mode==='cpu')cpuReceive(k);
-    else if(mode==='vs'){iseq++;push({iq:iseq,ik:k})}
+    sfxItem();sfxWhoosh();
+    var tok=itemTok,to=ctr('opp');
+    if(mode==='vs'){iseq++;push({iq:iseq,ik:k})}
+    fly(k,cellPt(cx,cy),to,680,function(){
+      if(tok!==itemTok)return;
+      stamp(k,to,false);pulse($('opp'),'hit');sfxHit();
+      if(mode==='cpu')cpuReceive(k);
+    });
     return;
   }
   if(k==='shield'){shield=true;sfxItem();renderBuffs();return}
   if(k==='slow'){slowUntil=pt+8000;sfxItem();renderBuffs();return}
   sfxBoom();
-  if(k==='bomb'){
-    /* Blast is centered on the exact cell where the item block was cleared.
-       Clear a square 5x5 area (center plus two cells in every direction). */
-    var br=itemOrigin?itemOrigin.r:Math.floor(ROWS/2);
-    var bc=itemOrigin?itemOrigin.c:Math.floor(COLS/2);
-    br=Math.max(0,Math.min(ROWS-1,br));
-    bc=Math.max(0,Math.min(COLS-1,bc));
-    var by0=Math.max(0,br-2),by1=Math.min(ROWS-1,br+2);
-    var bx0=Math.max(0,bc-2),bx1=Math.min(COLS-1,bc+2);
-    for(r=by0;r<=by1;r++){
-      for(c=bx0;c<=bx1;c++){
-        grid[r][c]=0;gid[r][c]=0;itm[r][c]=0;
-      }
-    }
-    boom={t:0,d:380,x:bx0,y:by0,w:bx1-bx0+1,h:by1-by0+1,col:'#ff9f1c'};
-    /* After the blast leaves a hole, gravity compacts each column downward.
-       Keep block color, piece ID and item metadata together as each cell falls. */
-    for(c=0;c<COLS;c++){
-      var write=ROWS-1;
-      for(r=ROWS-1;r>=0;r--){
-        if(grid[r][c]){
-          if(write!==r){
-            grid[write][c]=grid[r][c];gid[write][c]=gid[r][c];itm[write][c]=itm[r][c];
-            grid[r][c]=0;gid[r][c]=0;itm[r][c]=0;
-          }
-          write--;
-        }
-      }
-    }
-  }else if(k==='laser'){
-    /* Lightning destroys the full column of the collected item cell, not a neighboring column. */
-    var lc=itemOrigin?itemOrigin.c:Math.floor(COLS/2);
-    lc=Math.max(0,Math.min(COLS-1,lc));
-    for(r=0;r<ROWS;r++){grid[r][lc]=0;gid[r][lc]=0;itm[r][lc]=0}
-    boom={t:0,d:380,x:lc,y:0,w:1,h:ROWS,col:'#ffe14d'};
+  if(k==='bomb'){            /* 5x5 blast around the item cell */
+    var r0=Math.max(0,cy-2),r1=Math.min(ROWS-1,cy+2),c0=Math.max(0,cx-2),c1=Math.min(COLS-1,cx+2);
+    for(r=r0;r<=r1;r++)for(c=c0;c<=c1;c++){grid[r][c]=0;gid[r][c]=0;itm[r][c]=0}
+    boom={t:0,d:380,x:c0,y:r0,w:c1-c0+1,h:r1-r0+1,col:'#ff9f1c'};
+  }else if(k==='laser'){     /* the whole column of the item cell */
+    for(r=0;r<ROWS;r++){grid[r][cx]=0;gid[r][cx]=0;itm[r][cx]=0}
+    boom={t:0,d:380,x:cx-.35,y:0,w:1.7,h:ROWS,col:'#ffe14d'};
   }else if(k==='nuke'){
     grid=emptyGrid();boom={t:0,d:450,x:0,y:0,w:COLS,h:ROWS,col:'#ffffff'};
   }
-  itemOrigin=null;
-  /* Bomb/laser removals always collapse the unsupported blocks immediately. */
-  if(k==='laser'||gravity)instantSettle();
+  /* gravity mode: the caller runs startFall() right after this, so floating blocks drop with the normal animation */
+}
+/* ===== Item flight animations: attacks fly from my item cell to the opponent's board, incoming ones fly to mine.
+   Effects are applied when the icon lands. Browsers without the Web Animations API skip the animation (instant effect). */
+var flyers=[],itemTok=0;
+function clearFlyers(){while(flyers.length){var e=flyers.pop();if(e.parentNode)e.parentNode.removeChild(e)}}
+function ctr(id,fx,fy){
+  var e=$(id);if(!e||e.hidden)return null;
+  var r=e.getBoundingClientRect();if(!r||!r.width)return null;
+  return{x:r.left+r.width*(fx==null?.5:fx),y:r.top+r.height*(fy==null?.5:fy)};
+}
+function cellPt(cx,cy){return ctr('board',(cx+.5)/COLS,(cy+.5)/ROWS)}
+function canAnimate(){return !!document.body&&typeof document.body.animate==='function'}
+function pulse(el,cls){if(!el)return;el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);setTimeout(function(){el.classList.remove(cls)},750)}
+function sfxWhoosh(){tone(260,.18,'sine',.04);tone(520,.2,'sine',.03,.08)}
+function fly(kind,a,b,dur,done){
+  var fin=false;
+  function end(){if(fin)return;fin=true;if(done)done()}
+  var d=ITEMS[kind];
+  if(!d||!a||!b||!canAnimate()){end();return}
+  var size=Math.max(28,Math.round(cs*1.5)),N=16,i,n,els=[];
+  var mx=(a.x+b.x)/2,my=Math.min(a.y,b.y)-Math.max(90,Math.hypot(a.x-b.x,a.y-b.y)*.55);
+  var pts=[];
+  for(i=0;i<=N;i++){var t=i/N,u=1-t;pts.push([u*u*a.x+2*u*t*mx+t*t*b.x,u*u*a.y+2*u*t*my+t*t*b.y])}
+  function layer(n){
+    var el=document.createElement('div'),sz=Math.round(size*(1-n*.14));
+    el.className='fly';el.textContent=d.e;el.style.fontSize=sz+'px';
+    document.body.appendChild(el);flyers.push(el);els.push(el);
+    var frames=pts.map(function(p,j){
+      var t=j/N,grow=1+.5*Math.sin(Math.PI*t);
+      return{offset:t,opacity:n?Math.max(.1,.6-n*.14):1,
+        transform:'translate('+Math.round(p[0]-sz/2)+'px,'+Math.round(p[1]-sz/2)+'px) rotate('+Math.round(t*(n%2?-540:540))+'deg) scale('+grow.toFixed(2)+')'};
+    });
+    return el.animate(frames,{duration:dur,delay:n*55,easing:'cubic-bezier(.35,.05,.55,1)',fill:'both'});
+  }
+  var main=layer(0);
+  for(n=1;n<4;n++)layer(n);
+  var timer=setTimeout(finish,dur+500);
+  function finish(){
+    clearTimeout(timer);
+    setTimeout(function(){els.forEach(function(e){if(e.parentNode)e.parentNode.removeChild(e)})},300);
+    end();
+  }
+  main.onfinish=finish;
+}
+function stamp(kind,p,big){
+  var d=ITEMS[kind];if(!d||!p||!canAnimate())return;
+  var sz=Math.round(cs*(big?3.2:2.2)),el=document.createElement('div');
+  el.className='fly';el.textContent=d.e;el.style.fontSize=sz+'px';
+  document.body.appendChild(el);flyers.push(el);
+  var tx='translate('+Math.round(p.x-sz/2)+'px,'+Math.round(p.y-sz/2)+'px)';
+  var an=el.animate([{transform:tx+' scale(.3)',opacity:0},{transform:tx+' scale(1.15)',opacity:1,offset:.35},{transform:tx+' scale(1.5)',opacity:0}],{duration:650,easing:'ease-out',fill:'both'});
+  an.onfinish=function(){if(el.parentNode)el.parentNode.removeChild(el)};
 }
 function receiveItem(k){
   if(!itemMode||ATTACKS.indexOf(k)<0)return;
-  if(shield){shield=false;renderBuffs();toast('blocked');sfxItem();return}
+  var tok=itemTok;
+  sfxWhoosh();
+  fly(k,ctr('opp'),ctr('board'),720,function(){
+    if(tok!==itemTok||(state!=='playing'&&state!=='anim'&&state!=='clear'))return;
+    landItem(k);
+  });
+}
+function landItem(k){
+  var c=ctr('board');
+  if(shield){shield=false;renderBuffs();toast('blocked');sfxItem();stamp('shield',c,true);return}
   if(k==='junk')pend=Math.min(pend+3,ROWS);
   else if(k==='speed')fastUntil=pt+8000;
   else if(k==='fog')fogUntil=pt+7000;
   else if(k==='rev')revUntil=pt+8000;
   toast('hit_'+k);sfxHit();renderBuffs();
+  stamp(k,c,true);pulse($('board'),'hit');pulse(document.querySelector('.well'),'shake');
 }
 function cpuReceive(k){
   if(!cpu)return;
@@ -538,15 +560,14 @@ function lock(){
       if(gy>=0){grid[gy][gx]=cur.t;gid[gy][gx]=cur.id;if(cur.m[r][c]===2&&cur.ik)itm[gy][gx]=cur.ik}
     }
   }
-  var rows=fullRows(),n=rows.length,clearedItem=null;
+  var rows=fullRows(),n=rows.length;
   streak=0;
   if(n){
-    clearedItem=collectItems(rows);
+    var its=collectItems(rows);
     sfxClear(n);
     award(n,1);hud();attack(n,false);
     beginClear(rows,function(){
-      clearRows();
-      if(clearedItem)activateItem(clearedItem);
+      clearRows();applyItems(its,rows);
       if(gravity&&startFall()){streak=1;return}
       state='playing';acc=0;spawn();
     });
@@ -641,11 +662,10 @@ function landFall(){
   fall=[];
   var rows=fullRows();
   if(rows.length){
-    var clearedItem=collectItems(rows);
+    var its=collectItems(rows);
     streak++;sfxClear(rows.length);sfxCombo(streak);showCombo();award(rows.length,1);hud();attack(rows.length,true);
     beginClear(rows,function(){
-      clearRows();
-      if(clearedItem)activateItem(clearedItem);
+      clearRows();applyItems(its,rows);
       if(startFall())return;
       finishFall();
     });
@@ -889,7 +909,7 @@ document.addEventListener('keydown',function(e){
   var k=e.key;
   if(k==='ArrowLeft'){move(-1)}else if(k==='ArrowRight'){move(1)}
   else if(k==='ArrowDown'){soft()}else if(k==='ArrowUp'||k==='x'){rotate()}
-  else if(k===' '){hard()}else if(k==='c'||k==='C'){useItem()}else if(k==='p'||k==='P'){state==='playing'?pause():state==='paused'&&resume()}
+  else if(k===' '){hard()}else if(k==='p'||k==='P'){state==='playing'?pause():state==='paused'&&resume()}
   else return;
   e.preventDefault();
 });
@@ -1448,7 +1468,7 @@ $('back').addEventListener('click',function(){
   joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';pendingScore=null;clearBoard();resize();
   overlay('tetris','drag','start',best>0);
 });
-function gvLabel(){$('gvc').checked=gravity;$('itmc-vs').checked=itemPref;$('itmc-cpu').checked=itemPref;$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
+function gvLabel(){$('gvc').checked=gravity;$('itmc').checked=itemPref;$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
 $('settings').addEventListener('click',function(){
   $('settingsbox').hidden=false;
   ['settings','cpub','vs','rk','go'].forEach(function(i){$(i).style.display='none'});
@@ -1463,14 +1483,11 @@ $('gvc').addEventListener('change',function(){
   gravity=this.checked;
   try{localStorage.setItem('tetris-gravity',gravity?'1':'0')}catch(e){}
 });
-function setItemPreference(enabled){
-  itemPref=!!enabled;
-  $('itmc-vs').checked=itemPref;$('itmc-cpu').checked=itemPref;
+$('itmc').addEventListener('change',function(){
+  itemPref=this.checked;
   try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(e){}
-  if(mode!=='vs'){itemMode=itemPref;updateSlot()}
-}
-$('itmc-vs').addEventListener('change',function(){setItemPreference(this.checked)});
-$('itmc-cpu').addEventListener('change',function(){setItemPreference(this.checked)});
+  if(mode!=='vs')itemMode=itemPref;
+});
 $('ghvc').addEventListener('change',function(){
   ghostPreview=this.checked;
   try{localStorage.setItem('tetris-ghost',ghostPreview?'1':'0')}catch(e){}
@@ -1591,10 +1608,7 @@ var I18N={
   "localrank": "Showing scores saved on this device",
   "rlines": "{n} lines",
   "items": "Item mode",
-  "itemhelp": "Clear a line that contains an item block to pick the item up, then tap the item button to use it. Items are rare, so use them wisely.",
-  "noitem": "No item",
-  "useitem": "Use item",
-  "got": "Got {n}",
+  "itemhelp": "Some blocks carry one item cell. Clear the line containing it and the item fires automatically. Items are rare: attacks hit your opponent, the rest help you.",
   "used": "{n} used!",
   "blocked": "Your shield blocked the attack!",
   "hit_junk": "Junk lines incoming!",
@@ -1700,10 +1714,7 @@ var I18N={
   "localrank": "Op dit apparaat opgeslagen scores",
   "rlines": "{n} rijen",
   "items": "Itemmodus",
-  "itemhelp": "Wis een rij met een itemblok om het item te pakken en tik op de itemknop om het te gebruiken. Items zijn zeldzaam, dus gebruik ze slim.",
-  "noitem": "Geen item",
-  "useitem": "Item gebruiken",
-  "got": "{n} gekregen",
+  "itemhelp": "Soms valt er een blok met één itemvakje. Wis de rij waar het in zit en het item wordt automatisch geactiveerd. Aanvalsitems raken je tegenstander, de rest helpt jezelf.",
   "used": "{n} ingezet!",
   "blocked": "Je schild blokkeerde de aanval!",
   "hit_junk": "Rommelrijen komen eraan!",
@@ -1809,10 +1820,7 @@ var I18N={
   "localrank": "이 기기에 저장된 점수를 표시 중",
   "rlines": "{n}줄",
   "items": "아이템전",
-  "itemhelp": "아이템 블록이 들어 있는 줄을 지우면 아이템을 얻고, 아이템 버튼을 눌러 사용합니다. 아주 드물게 나오니 신중하게 쓰세요.",
-  "noitem": "아이템 없음",
-  "useitem": "아이템 사용",
-  "got": "{n} 획득",
+  "itemhelp": "가끔 아이템이 박힌 블록 칸이 내려옵니다. 그 칸이 있는 줄을 지우면 아이템이 자동으로 발동합니다. 공격 아이템은 상대에게, 나머지는 나에게 적용됩니다.",
   "used": "{n} 발동!",
   "blocked": "방어막이 공격을 막았습니다!",
   "hit_junk": "쓰레기 줄이 날아옵니다!",
@@ -1918,10 +1926,7 @@ var I18N={
   "localrank": "この端末に保存されたスコアを表示中",
   "rlines": "{n}ライン",
   "items": "アイテム戦",
-  "itemhelp": "アイテムブロックを含む行を消すとアイテムを獲得でき、アイテムボタンで使えます。出現はまれなので、使いどころを考えましょう。",
-  "noitem": "アイテムなし",
-  "useitem": "アイテムを使う",
-  "got": "{n}を獲得",
+  "itemhelp": "ときどきアイテム付きのマスを持つブロックが降ってきます。そのマスを含む行を消すとアイテムが自動で発動します。攻撃アイテムは相手に、それ以外は自分に効果があります。",
   "used": "{n}を発動！",
   "blocked": "シールドが攻撃を防ぎました！",
   "hit_junk": "お邪魔ラインが来ます！",
@@ -2027,10 +2032,7 @@ var I18N={
   "localrank": "正在显示保存在本设备的成绩",
   "rlines": "{n} 行",
   "items": "道具战",
-  "itemhelp": "消除含有道具方块的一行即可获得道具，点击道具按钮使用。道具很少出现，请谨慎使用。",
-  "noitem": "没有道具",
-  "useitem": "使用道具",
-  "got": "获得{n}",
+  "itemhelp": "偶尔会出现带有道具的方块格。消除包含它的那一行，道具会自动发动。攻击道具作用于对手，其余作用于自己。",
   "used": "发动{n}！",
   "blocked": "护盾挡住了攻击！",
   "hit_junk": "垃圾行来袭！",
@@ -2136,10 +2138,7 @@ var I18N={
   "localrank": "正在顯示儲存在本裝置的成績",
   "rlines": "{n} 行",
   "items": "道具戰",
-  "itemhelp": "消除含有道具方塊的一行即可獲得道具，按下道具按鈕使用。道具很少出現，請謹慎使用。",
-  "noitem": "沒有道具",
-  "useitem": "使用道具",
-  "got": "獲得{n}",
+  "itemhelp": "偶爾會出現帶有道具的方塊格。消除包含它的那一行，道具會自動發動。攻擊道具作用於對手，其餘作用於自己。",
   "used": "發動{n}！",
   "blocked": "護盾擋住了攻擊！",
   "hit_junk": "垃圾行來襲！",
@@ -2245,10 +2244,7 @@ var I18N={
   "localrank": "Mostrando puntuaciones guardadas en este dispositivo",
   "rlines": "{n} líneas",
   "items": "Modo objetos",
-  "itemhelp": "Completa una línea con un bloque de objeto para conseguirlo y pulsa el botón de objeto para usarlo. Son poco frecuentes: úsalos con cabeza.",
-  "noitem": "Sin objeto",
-  "useitem": "Usar objeto",
-  "got": "Conseguido: {n}",
+  "itemhelp": "A veces cae un bloque con una casilla de objeto. Al completar la línea que la contiene, el objeto se activa solo. Los de ataque afectan al rival; el resto te ayudan a ti.",
   "used": "¡{n} activado!",
   "blocked": "¡Tu escudo bloqueó el ataque!",
   "hit_junk": "¡Llegan líneas basura!",
@@ -2354,10 +2350,7 @@ var I18N={
   "localrank": "Mostrando pontuações salvas neste dispositivo",
   "rlines": "{n} linhas",
   "items": "Modo itens",
-  "itemhelp": "Limpe uma linha com um bloco de item para pegá-lo e toque no botão de item para usar. Eles são raros, então use com sabedoria.",
-  "noitem": "Sem item",
-  "useitem": "Usar item",
-  "got": "Item obtido: {n}",
+  "itemhelp": "Às vezes cai um bloco com uma célula de item. Ao limpar a linha que a contém, o item é ativado sozinho. Os de ataque atingem o oponente; os outros ajudam você.",
   "used": "{n} ativado!",
   "blocked": "Seu escudo bloqueou o ataque!",
   "hit_junk": "Linhas de lixo a caminho!",
@@ -2463,10 +2456,7 @@ var I18N={
   "localrank": "Scores enregistrés sur cet appareil",
   "rlines": "{n} lignes",
   "items": "Mode objets",
-  "itemhelp": "Complétez une ligne contenant un bloc objet pour le récupérer, puis touchez le bouton objet pour l’utiliser. Ils sont rares : utilisez-les à bon escient.",
-  "noitem": "Aucun objet",
-  "useitem": "Utiliser l’objet",
-  "got": "Objet obtenu : {n}",
+  "itemhelp": "Certains blocs portent une case objet. Complétez la ligne qui la contient et l’objet se déclenche automatiquement. Les objets d’attaque touchent l’adversaire, les autres vous aident.",
   "used": "{n} activé !",
   "blocked": "Votre bouclier a bloqué l’attaque !",
   "hit_junk": "Des lignes déchets arrivent !",
@@ -2493,10 +2483,9 @@ function applyLanguage(){
  function txt(id,key){var el=$(id);if(el)el.textContent=tr(key)}
  function aria(el,key){if(el)el.setAttribute('aria-label',tr(key))}
  txt('settingstitle','settings');txt('languageLabel','language');
- [['gv','gravity'],['itm-vs','items'],['itm-cpu','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
+ [['gv','gravity'],['itm','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
  txt('settingsback','back');txt('rs','restart');txt('qt','main');txt('vs','battle');txt('rk','ranking');txt('cpub','cpu');txt('join','join');txt('back','back');txt('lback','back');txt('nsave','save');txt('nskip','skip');txt('rstart','startgame');txt('rclose','close');
  txt('lvl','level');txt('lnl','lines');txt('itmhelp','itemhelp');
- var itb=$('itb');if(itb)itb.setAttribute('aria-label',tr('useitem'));
  var vol=$('musicvol');if(vol&&vol.querySelector('label span'))vol.querySelector('label span').textContent=tr('music');
  var opts=document.querySelectorAll('#lvbox button[data-l]');if(opts.length>=3){opts[0].textContent=tr('easy');opts[1].textContent=tr('normal');opts[2].textContent=tr('hard')}
  var ctl=document.querySelector('[data-act="rot"]');if(ctl)ctl.textContent=tr('rotate');ctl=document.querySelector('[data-act="drop"]');if(ctl)ctl.textContent=tr('drop');
@@ -2507,7 +2496,7 @@ function applyLanguage(){
  $('nick').placeholder=tr('nickname');aria($('nick'),'nickname');
  var codeTxt=fmt('roomcode',{n:ROOM_LEN});$('code').placeholder=codeTxt;$('code').setAttribute('aria-label',codeTxt);
  var rank=$('rank');if(rank){rank.setAttribute('aria-label',tr('ranking').replace('👑 ',''));var h=rank.querySelector('h2');if(h)h.textContent=tr('top')}
- initDN(LANG);fillCountries();updateSlot();
+ initDN(LANG);fillCountries();
  olabel();
  renderOverlay();
 }
