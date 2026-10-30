@@ -403,11 +403,12 @@ function collectItems(rows){
 }
 /* ... and fire it right after the rows were removed (positional items aim at where the cell was). */
 function applyItems(list,rows,cb){
-  var heavy=[];
+  var heavy=[],cleared=Array.isArray(rows)?rows:[];
   (list||[]).forEach(function(o){
+    if(!o||!ITEMS[o.k]||!Number.isInteger(o.y)||!Number.isInteger(o.c))return;
     var cy=o.y;
-    if(!gravity)cy+=rows.filter(function(r){return r>o.y}).length;   /* classic mode: the stack above slides down */
-    if(o.k==='bomb'||o.k==='laser'||o.k==='nuke')heavy.push({k:o.k,cy:cy,cx:o.c});
+    if(!gravity){var below=0;for(var ri=0;ri<cleared.length;ri++)if(cleared[ri]>o.y)below++;cy+=below;}   /* classic mode: the stack above slides down */
+    if(o.k==='bomb'||o.k==='laser'||o.k==='nuke')heavy.push({k:o.k,cy:Math.max(0,Math.min(ROWS-1,cy)),cx:Math.max(0,Math.min(COLS-1,o.c))});
     else fireItem(o.k,cy,o.c);
   });
   if(!heavy.length){cb();return}
@@ -601,11 +602,17 @@ function hard(){
   score+=2*n;lock();
 }
 function lock(){
+  if(!cur||state!=='playing')return;
+  /* A piece may be kicked above the ceiling. If it locks there, the game is over;
+     silently dropping its upper cells creates impossible board states. */
+  for(var tr=0;tr<cur.m.length;tr++)for(var tc=0;tc<cur.m[tr].length;tc++){
+    if(cur.m[tr][tc]&&cur.y+tr<0){over();return;}
+  }
   sfxPlace();
   for(var r=0;r<cur.m.length;r++)for(var c=0;c<cur.m[r].length;c++){
     if(cur.m[r][c]){
       var gy=cur.y+r,gx=cur.x+c;
-      if(gy>=0){grid[gy][gx]=cur.t;gid[gy][gx]=cur.id;if(cur.m[r][c]===2&&cur.ik)itm[gy][gx]=cur.ik}
+      grid[gy][gx]=cur.t;gid[gy][gx]=cur.id;if(cur.m[r][c]===2&&cur.ik)itm[gy][gx]=cur.ik;
     }
   }
   var rows=fullRows(),n=rows.length;
@@ -708,7 +715,15 @@ function startFall(){
   return true;
 }
 function landFall(){
-  fall.forEach(function(f){grid[f.to][f.c]=f.t;gid[f.to][f.c]=f.id;if(f.it)itm[f.to][f.c]=f.it});
+  /* Commit the animation atomically. Every destination must be in-bounds and empty;
+     if an unexpected overlap is detected, preserve the existing cell rather than overwrite it. */
+  fall.forEach(function(f){
+    if(f.to>=0&&f.to<ROWS&&f.c>=0&&f.c<COLS&&!grid[f.to][f.c]){
+      grid[f.to][f.c]=f.t;gid[f.to][f.c]=f.id;if(f.it)itm[f.to][f.c]=f.it;
+    }else if(f.y0>=0&&f.y0<ROWS&&f.c>=0&&f.c<COLS&&!grid[f.y0][f.c]){
+      grid[f.y0][f.c]=f.t;gid[f.y0][f.c]=f.id;if(f.it)itm[f.y0][f.c]=f.it;
+    }
+  });
   fall=[];
   var rows=fullRows();
   if(rows.length){
@@ -727,7 +742,7 @@ function landFall(){
 }
 function finishFall(){
   state='playing';acc=0;spawn();
-  setTimeout(function(){if(state==='playing'&&!fall.length){streak=0;showCombo()}},1200);
+  var comboRun=rankTok;setTimeout(function(){if(comboRun===rankTok&&state==='playing'&&!fall.length){streak=0;showCombo()}},1200);
 }
 function interval(){var v=Math.max(90,820-(level-1)*70);if(pt<fastUntil)v=Math.max(55,v*.3);if(pt<slowUntil)v*=2.5;return v}
 
@@ -1186,8 +1201,8 @@ function createSupabaseRoom(code){
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
-  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','cc','g','sc'];
-  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',cc:myCC||'',t:Date.now(),g:'',sc:0};
+  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','cc','g','sc'];
+  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],cc:myCC||'',t:Date.now(),g:'',sc:0};
   var remote={},seenKeys={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,hbTimer=null,flushTimer=null,lastFlush=0;
   var retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   function validValue(k,v){
@@ -1200,6 +1215,7 @@ function createSupabaseRoom(code){
     if(k==='sv')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=1000000;
     if(k==='iq')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
     if(k==='ik')return v===''||(typeof v==='string'&&ATTACKS.indexOf(v)>=0);
+    if(k==='ie')return Array.isArray(v)&&v.length<=32&&v.every(function(e){return e&&Number.isInteger(e.id)&&e.id>0&&typeof e.k==='string'&&ATTACKS.indexOf(e.k)>=0});
     if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
     if(k==='kind')return v==='viewer';
     if(k==='g')return typeof v==='string'&&v.length===COLS*ROWS&&/^[.IOTSZJLG]+$/.test(v);
@@ -1296,7 +1312,16 @@ function createSupabaseRoom(code){
     onLost:function(fn){lostHandler=fn},
     poke:function(){if(!left&&!subscribed){clearTimeout(retryTimer);rebuild()}},
     presence:function(data){
-      Object.keys(data||{}).forEach(function(k){if(FIELDS.indexOf(k)>=0)localState[k]=data[k]});
+      data=data||{};
+      /* A new match resets the event stream; otherwise append each attack to a bounded
+         replay window. The 150ms broadcast coalescer can no longer overwrite attacks. */
+      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];}
+      if(Number.isInteger(data.iq)&&data.iq>localState.iq&&typeof data.ik==='string'&&ATTACKS.indexOf(data.ik)>=0){
+        localState.iq=data.iq;localState.ik=data.ik;
+        localState.ie.push({id:data.iq,k:data.ik});
+        if(localState.ie.length>32)localState.ie.splice(0,localState.ie.length-32);
+      }
+      Object.keys(data).forEach(function(k){if(k!=='iq'&&k!=='ik'&&FIELDS.indexOf(k)>=0)localState[k]=data[k]});
       scheduleFlush();
       return Promise.resolve('queued');
     },
@@ -1488,7 +1513,13 @@ function onPeersCore(ch){
       var a=Math.min(1000000,Math.max(0,Math.floor(Number(P.atk)||0)));
       if(a>seen){var take=Math.min(a-seen,6);pend=Math.min(pend+take,ROWS);seen+=take}
       var iqv=Math.min(1000000,Math.max(0,Math.floor(Number(P.iq)||0)));
-      if(iqv>seenIq){seenIq=iqv;receiveItem(P.ik)}
+      if(iqv>seenIq){
+        var hasQueue=Array.isArray(P.ie),events=hasQueue?P.ie:[];
+        if(hasQueue){events.forEach(function(ev){if(ev.id>seenIq&&ev.id<=iqv)receiveItem(ev.k)});}
+        else if(ATTACKS.indexOf(P.ik)>=0){receiveItem(P.ik);} /* compatibility with older clients */
+        /* Advance to the sequence watermark even if an old client sent no queue. */
+        seenIq=iqv;
+      }
       if(P.dead===true)win('opptopped');
     }
     return;
