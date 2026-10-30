@@ -81,7 +81,9 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 .ctl button{height:54px;font-size:20px;font-weight:600}
 .ctl button:active,.ctl button.on{transform:scale(.96);background:var(--line)}
 .ctl [data-act="rot"],.ctl [data-act="drop"]{font-size:16px}
-.ctl [data-act="rot"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
+.ctl [data-act="drop"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
+.sw.locked{cursor:default}
+.sw input:disabled+i{opacity:.55}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 input,select{-webkit-user-select:text;user-select:text}
 #ov{overflow:auto}
@@ -131,7 +133,7 @@ input,select{-webkit-user-select:text;user-select:text}
 #ov #rcfg{display:flex;flex-direction:column;align-items:center;margin:4px 0}
 #ov #rcfg[hidden]{display:none}
 #ov #rcfgtitle{font-weight:700;color:var(--ink);font-size:14px}
-#ov #rcfgnote,#ov #cfgline{font-size:12px;max-width:260px}
+#ov #rcfgnote{font-size:12px;max-width:260px}
 #ov #itmhelp{font-size:12px;max-width:260px;text-align:left;margin:0 0 4px}
 </style>
 </head>
@@ -147,7 +149,6 @@ input,select{-webkit-user-select:text;user-select:text}
         <h1 id="ot">TETRIS</h1>
         <p id="os">Drag to move, tap to rotate, flick down to drop</p>
         <p id="ob"></p>
-        <p id="cfgline" hidden></p>
         <div id="rcfg" hidden>
           <p id="rcfgtitle">Match settings</p>
           <label id="rgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="rgvc" role="switch"><i></i></label>
@@ -174,8 +175,8 @@ input,select{-webkit-user-select:text;user-select:text}
           <button id="settingsback">Back</button>
         </div>
         <button id="vs">2P Battle</button>
-        <button id="rk">👑 Ranking</button>
         <button id="cpub">Vs CPU</button>
+        <button id="rk">👑 Ranking</button>
         <div id="netbox" hidden><div class="ccr"><span id="ccf" class="fl"></span><select id="cc" aria-label="Your country"></select></div><input id="code" inputmode="numeric" maxlength="6" placeholder="4-digit code" aria-label="Room code"><button id="join">Join</button><button id="back">Back</button></div>
         <div id="lvbox" hidden><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
       </div>
@@ -196,7 +197,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
-<div id="ver" aria-hidden="true">v0.6.3</div>
+<div id="ver" aria-hidden="true">v0.6.4</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 5</h2><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
 <script src="supabase.js"></script>
@@ -1374,7 +1375,6 @@ $('nskip').addEventListener('click',function(){
 });
 
 /* ===== shared online match settings (shown in the room before the first game, read-only afterwards) ===== */
-function onoff(v){return tr(v?'cfgon':'cfgoff')}
 function noteFlash(){
   var n=$('rcfgnote');if(!n)return;
   n.textContent=tr('cfgchanged');n.style.color='var(--accent)';
@@ -1383,16 +1383,15 @@ function noteFlash(){
 }
 function renderCfg(){
   var rc=$('rcfg');if(!rc)return;
-  var inRoom=mode==='vs'&&(state==='net'||state==='over');
-  var edit=inRoom&&state==='net'&&!cfgLocked;
-  rc.hidden=!edit;
-  $('cfgline').hidden=!(inRoom&&cfgLocked);
-  if(edit){
-    $('rgvc').checked=!!cfg.gv;$('ritc').checked=!!cfg.it;
-    $('rcfgtitle').textContent=tr('roomcfg');
-    if(!cfgNoteTimer)$('rcfgnote').textContent=tr('cfgnote');
-  }
-  if(inRoom&&cfgLocked)$('cfgline').textContent=fmt('cfgline',{g:onoff(cfg.gv),i:onoff(cfg.it)});
+  var inRoom=mode==='vs'&&(state==='net'||state==='over'||state==='count');
+  rc.hidden=!inRoom;
+  if(!inRoom)return;
+  var edit=state==='net'&&!cfgLocked;      /* editable only in the lobby before the first game */
+  $('rgvc').checked=!!cfg.gv;$('ritc').checked=!!cfg.it;
+  $('rgvc').disabled=$('ritc').disabled=!edit;
+  $('rgv').classList.toggle('locked',!edit);$('rit').classList.toggle('locked',!edit);
+  $('rcfgtitle').textContent=tr('roomcfg');
+  if(!cfgNoteTimer)$('rcfgnote').textContent=tr(edit?'cfgnote':'cfglocked');
 }
 function cfgEdited(){
   if(cfgLocked||mode!=='vs'||state!=='net'){renderCfg();return}
@@ -1698,9 +1697,7 @@ var I18N={
   "roomcfg": "Match settings",
   "cfgnote": "Both players share these settings. They lock when the first game starts and stay the same for rematches.",
   "cfgchanged": "Settings changed. Press Ready again.",
-  "cfgline": "Gravity {g} · Items {i}",
-  "cfgon": "ON",
-  "cfgoff": "OFF"
+  "cfglocked": "Locked from the first game. Rematches use these settings."
  },
  "nl": {
   "settings": "Instellingen",
@@ -1810,9 +1807,7 @@ var I18N={
   "roomcfg": "Wedstrijdinstellingen",
   "cfgnote": "Deze instellingen delen jullie samen. Ze worden vergrendeld zodra het eerste spel begint en blijven bij een rematch gelden.",
   "cfgchanged": "Instellingen gewijzigd. Druk opnieuw op Klaar.",
-  "cfgline": "Zwaartekracht {g} · Items {i}",
-  "cfgon": "AAN",
-  "cfgoff": "UIT"
+  "cfglocked": "Vergrendeld sinds het eerste spel. Rematches gebruiken deze instellingen."
  },
  "ko": {
   "settings": "설정",
@@ -1922,9 +1917,7 @@ var I18N={
   "roomcfg": "대전 설정",
   "cfgnote": "두 사람이 함께 정하는 설정입니다. 첫 게임이 시작되면 고정되고 재대결에도 그대로 유지됩니다.",
   "cfgchanged": "설정이 바뀌었습니다. 다시 준비를 누르세요.",
-  "cfgline": "중력 {g} · 아이템 {i}",
-  "cfgon": "켜짐",
-  "cfgoff": "꺼짐"
+  "cfglocked": "첫 게임 설정으로 고정되었습니다. 재대결도 이 설정으로 진행합니다."
  },
  "ja": {
   "settings": "設定",
@@ -2034,9 +2027,7 @@ var I18N={
   "roomcfg": "対戦設定",
   "cfgnote": "2人で共有する設定です。最初の対戦が始まると固定され、再戦でも維持されます。",
   "cfgchanged": "設定が変更されました。もう一度準備完了を押してください。",
-  "cfgline": "重力 {g} ・ アイテム {i}",
-  "cfgon": "オン",
-  "cfgoff": "オフ"
+  "cfglocked": "最初の対戦の設定で固定されています。再戦もこの設定で行います。"
  },
  "zh-CN": {
   "settings": "设置",
@@ -2146,9 +2137,7 @@ var I18N={
   "roomcfg": "对战设置",
   "cfgnote": "这是两位玩家共用的设置。第一局开始后将被锁定，再战时保持不变。",
   "cfgchanged": "设置已更改，请重新点击准备。",
-  "cfgline": "重力 {g} · 道具 {i}",
-  "cfgon": "开",
-  "cfgoff": "关"
+  "cfglocked": "已按第一局的设置锁定，再战将使用相同设置。"
  },
  "zh-TW": {
   "settings": "設定",
@@ -2258,9 +2247,7 @@ var I18N={
   "roomcfg": "對戰設定",
   "cfgnote": "這是兩位玩家共用的設定。第一局開始後將被鎖定，再戰時保持不變。",
   "cfgchanged": "設定已變更，請重新按準備。",
-  "cfgline": "重力 {g} · 道具 {i}",
-  "cfgon": "開",
-  "cfgoff": "關"
+  "cfglocked": "已按第一局的設定鎖定，再戰將使用相同設定。"
  },
  "es": {
   "settings": "Ajustes",
@@ -2370,9 +2357,7 @@ var I18N={
   "roomcfg": "Ajustes de la partida",
   "cfgnote": "Ajustes compartidos por ambos jugadores. Se bloquean al empezar la primera partida y se mantienen en las revanchas.",
   "cfgchanged": "Ajustes cambiados. Pulsa Listo de nuevo.",
-  "cfgline": "Gravedad {g} · Objetos {i}",
-  "cfgon": "ON",
-  "cfgoff": "OFF"
+  "cfglocked": "Bloqueados desde la primera partida. Las revanchas usan estos ajustes."
  },
  "pt": {
   "settings": "Configurações",
@@ -2482,9 +2467,7 @@ var I18N={
   "roomcfg": "Configurações da partida",
   "cfgnote": "Configurações compartilhadas pelos dois jogadores. Ficam bloqueadas quando a primeira partida começa e valem nas revanches.",
   "cfgchanged": "Configurações alteradas. Toque em Pronto novamente.",
-  "cfgline": "Gravidade {g} · Itens {i}",
-  "cfgon": "ON",
-  "cfgoff": "OFF"
+  "cfglocked": "Bloqueadas desde a primeira partida. As revanches usam estas configurações."
  },
  "fr": {
   "settings": "Paramètres",
@@ -2594,9 +2577,7 @@ var I18N={
   "roomcfg": "Réglages de la partie",
   "cfgnote": "Réglages communs aux deux joueurs. Ils sont verrouillés au début de la première partie et conservés pour les revanches.",
   "cfgchanged": "Réglages modifiés. Appuyez à nouveau sur Prêt.",
-  "cfgline": "Gravité {g} · Objets {i}",
-  "cfgon": "ON",
-  "cfgoff": "OFF"
+  "cfglocked": "Verrouillés depuis la première partie. Les revanches utilisent ces réglages."
  }
 };
 function detectLang(){var pref='';try{pref=localStorage.getItem('tetris-language')||'auto'}catch(e){}LANG_PREF=pref;var raw=pref==='auto'?((navigator.languages&&navigator.languages[0])||navigator.language||'en'):pref;raw=String(raw).replace('_','-');if(raw.toLowerCase().indexOf('zh-tw')===0||raw.toLowerCase().indexOf('zh-hk')===0)return 'zh-TW';if(raw.toLowerCase().indexOf('zh')===0)return 'zh-CN';var key=raw.split('-')[0].toLowerCase();return I18N[key]?key:'en'}
