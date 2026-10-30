@@ -197,7 +197,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
-<div id="ver" aria-hidden="true">v0.6.4</div>
+<div id="ver" aria-hidden="true">v0.6.5</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 5</h2><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
 <script src="supabase.js"></script>
@@ -345,7 +345,7 @@ var ATTACKS=['junk','speed','fog','rev'];
 var POOL_SOLO=[['bomb',40],['laser',32],['nuke',8],['slow',20]];
 var POOL_FULL=[['bomb',16],['laser',13],['nuke',4],['slow',9],['shield',11],['junk',17],['speed',11],['fog',9],['rev',10]];
 var ITEM_P=.10,ITEM_GAP=5,sinceItem=0,irnd=Math.random;
-var shield=false,fastUntil=0,slowUntil=0,fogUntil=0,revUntil=0,iseq=0,seenIq=0,boom=null,ttTimer=null,bfLast='';
+var iblast=null,shield=false,fastUntil=0,slowUntil=0,fogUntil=0,revUntil=0,iseq=0,seenIq=0,boom=null,ttTimer=null,bfLast='';
 var EMOJI_FONT='"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif';
 function pickKind(){
   var pool=mode==='solo'?POOL_SOLO:POOL_FULL,tot=0,i;
@@ -383,14 +383,15 @@ function renderBuffs(){
   if(pt<revUntil)t+=ITEMS.rev.e;
   if(t!==bfLast){bfLast=t;var e=$('bf');e.textContent=t;e.hidden=!t}
 }
+function sfxCharge(){tone(220,.5,'sawtooth',.03);tone(440,.4,'triangle',.03,.1)}
 function sfxItem(){tone(700,.09,'square',.035);tone(1050,.12,'square',.035,.07)}
 function sfxBoom(){tone(120,.25,'sawtooth',.07);tone(80,.3,'triangle',.07,.05)}
 function sfxHit(){tone(200,.18,'sawtooth',.05);tone(150,.2,'sawtooth',.05,.1)}
 function resetItemState(){
-  shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;boom=null;sinceItem=0;itemTok++;clearFlyers();
+  shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;boom=null;iblast=null;sinceItem=0;itemTok++;clearFlyers();
   clearTimeout(ttTimer);$('tt').hidden=true;renderBuffs();
 }
-function endItems(){itemTok++;clearFlyers();shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;renderBuffs();$('tt').hidden=true}
+function endItems(){iblast=null;itemTok++;clearFlyers();shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;renderBuffs();$('tt').hidden=true}
 function topRow(){for(var r=0;r<ROWS;r++)if(grid[r].some(Boolean))return r;return ROWS}
 function wipe(r){grid[r].fill(0);gid[r].fill(0);itm[r].fill(0)}
 /* The item cell was part of a cleared line: collect it before the rows disappear ... */
@@ -401,16 +402,26 @@ function collectItems(rows){
   return list;
 }
 /* ... and fire it right after the rows were removed (positional items aim at where the cell was). */
-function applyItems(list,rows){
-  if(!list||!list.length)return;
-  list.forEach(function(o){
+function applyItems(list,rows,cb){
+  var heavy=[];
+  (list||[]).forEach(function(o){
     var cy=o.y;
     if(!gravity)cy+=rows.filter(function(r){return r>o.y}).length;   /* classic mode: the stack above slides down */
-    fireItem(o.k,cy,o.c);
+    if(o.k==='bomb'||o.k==='laser'||o.k==='nuke')heavy.push({k:o.k,cy:cy,cx:o.c});
+    else fireItem(o.k,cy,o.c);
   });
+  if(!heavy.length){cb();return}
+  /* destroyers get a short explosion animation first; the blocks disappear (and gravity starts) only when it ends */
+  heavy.forEach(function(h){toast('used',{n:itemName(h.k)})});
+  sfxCharge();
+  iblast={t:0,d:520,list:heavy,cb:cb};
+}
+function finishBlast(){
+  var ib=iblast;iblast=null;
+  ib.list.forEach(blastItem);
+  ib.cb();
 }
 function fireItem(k,cy,cx){
-  var r,c;
   toast('used',{n:itemName(k)});
   if(ATTACKS.indexOf(k)>=0){
     sfxItem();sfxWhoosh();
@@ -425,18 +436,42 @@ function fireItem(k,cy,cx){
   }
   if(k==='shield'){shield=true;sfxItem();renderBuffs();return}
   if(k==='slow'){slowUntil=pt+8000;sfxItem();renderBuffs();return}
+}
+function blastItem(h){
+  var k=h.k,cy=h.cy,cx=h.cx,r,c;
   sfxBoom();
   if(k==='bomb'){            /* 5x5 blast around the item cell */
     var r0=Math.max(0,cy-2),r1=Math.min(ROWS-1,cy+2),c0=Math.max(0,cx-2),c1=Math.min(COLS-1,cx+2);
     for(r=r0;r<=r1;r++)for(c=c0;c<=c1;c++){grid[r][c]=0;gid[r][c]=0;itm[r][c]=0}
-    boom={t:0,d:380,x:c0,y:r0,w:c1-c0+1,h:r1-r0+1,col:'#ff9f1c'};
+    boom={t:0,d:320,x:c0,y:r0,w:c1-c0+1,h:r1-r0+1,col:'#ff9f1c'};
   }else if(k==='laser'){     /* the whole column of the item cell */
     for(r=0;r<ROWS;r++){grid[r][cx]=0;gid[r][cx]=0;itm[r][cx]=0}
-    boom={t:0,d:380,x:cx-.35,y:0,w:1.7,h:ROWS,col:'#ffe14d'};
+    boom={t:0,d:320,x:cx-.35,y:0,w:1.7,h:ROWS,col:'#ffe14d'};
   }else if(k==='nuke'){
-    grid=emptyGrid();boom={t:0,d:450,x:0,y:0,w:COLS,h:ROWS,col:'#ffffff'};
+    grid=emptyGrid();boom={t:0,d:380,x:0,y:0,w:COLS,h:ROWS,col:'#ffffff'};
   }
   /* gravity mode: the caller runs startFall() right after this, so floating blocks drop with the normal animation */
+}
+function circle(x,y,r,col,a){bx.globalAlpha=a;bx.fillStyle=col;bx.beginPath();bx.arc(x,y,r,0,6.2832);bx.fill();bx.globalAlpha=1}
+/* the explosion animation itself (blocks are still on the board while it plays) */
+function drawBlast(){
+  var W=cs*COLS,H=cs*ROWS,p=Math.min(1,iblast.t/iblast.d);
+  iblast.list.forEach(function(h){
+    var px=(h.cx+.5)*cs,py=(h.cy+.5)*cs;
+    if(h.k==='bomb'){
+      var c0=Math.max(0,h.cx-2),c1=Math.min(COLS-1,h.cx+2),r0=Math.max(0,h.cy-2),r1=Math.min(ROWS-1,h.cy+2);
+      var R=cs*2.9*Math.min(1,p*1.3);
+      bx.globalAlpha=.18+.18*Math.sin(p*34);bx.fillStyle='#ffffff';bx.fillRect(c0*cs,r0*cs,(c1-c0+1)*cs,(r1-r0+1)*cs);bx.globalAlpha=1;   /* doomed blocks flicker */
+      circle(px,py,R,'#ff5a00',.35);circle(px,py,R*.66,'#ffb703',.55);circle(px,py,R*.3,'#ffffff',.5+.5*p);
+    }else if(h.k==='laser'){
+      var len=Math.min(1,p*1.7),top=py*(1-len),bot=py+(H-py)*len;
+      bx.globalAlpha=.3;bx.fillStyle='#ffe14d';bx.fillRect((h.cx-.25)*cs,top,1.5*cs,bot-top);
+      bx.globalAlpha=.85;bx.fillStyle='#ffffff';bx.fillRect((h.cx+.3)*cs,top,.4*cs,bot-top);bx.globalAlpha=1;
+      circle(px,py,cs*(.6+.6*p),'#ffffff',.7);
+    }else{
+      bx.globalAlpha=.9*p*p;bx.fillStyle='#ffffff';bx.fillRect(0,0,W,H);bx.globalAlpha=1;
+    }
+  });
 }
 /* ===== Item flight animations: attacks fly from my item cell to the opponent's board, incoming ones fly to mine.
    Effects are applied when the icon lands. Browsers without the Web Animations API skip the animation (instant effect). */
@@ -580,9 +615,11 @@ function lock(){
     sfxClear(n);
     award(n,1);hud();attack(n,false);
     beginClear(rows,function(){
-      clearRows();applyItems(its,rows);
-      if(gravity&&startFall()){streak=1;return}
-      state='playing';acc=0;spawn();
+      clearRows();
+      applyItems(its,rows,function(){
+        if(gravity&&startFall()){streak=1;return}
+        state='playing';acc=0;spawn();
+      });
     });
     return;
   }
@@ -678,9 +715,11 @@ function landFall(){
     var its=collectItems(rows);
     streak++;sfxClear(rows.length);sfxCombo(streak);showCombo();award(rows.length,1);hud();attack(rows.length,true);
     beginClear(rows,function(){
-      clearRows();applyItems(its,rows);
-      if(startFall())return;
-      finishFall();
+      clearRows();
+      applyItems(its,rows,function(){
+        if(startFall())return;
+        finishFall();
+      });
     });
     return;
   }
@@ -738,7 +777,7 @@ function endMenu(){
 }
 function over(){
   state='over';endItems();
-  if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});overlay('youlose',fm('scorelines',{s:score,l:lines}),'rematch',false);endMenu();return}
+  if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});unlockCfg();endSub=fm('scorelines',{s:score,l:lines});overlay('youlose',endSub,'rematch',false);endMenu();return}
   if(score>best){best=score;try{localStorage.setItem('tetris-best',String(best))}catch(e){}}
   overlay('gameover',fm('scorelines',{s:score,l:lines}),'playagain',true);endMenu();
   rankCheck(score,lines,level);
@@ -813,6 +852,7 @@ function draw(){
     }
   }
   for(var q=0;q<fall.length;q++){var f=fall[q],fy=Math.min(f.y0+fs,f.to)*cs;cell(bx,f.c*cs,fy,cs,COL[f.t]);if(f.it)icon(bx,f.c*cs,fy,cs,f.it)}
+  if(iblast)drawBlast();
   var fogOn=itemMode&&pt<fogUntil;
   if(fogOn){bx.globalAlpha=.9;bx.fillStyle=TH.well;bx.fillRect(0,0,W,H);bx.globalAlpha=1}
   if(boom){bx.globalAlpha=Math.max(0,.75*(1-boom.t/boom.d));bx.fillStyle=boom.col;bx.fillRect(boom.x*cs,boom.y*cs,boom.w*cs,boom.h*cs);bx.globalAlpha=1}
@@ -861,6 +901,7 @@ function loop(t){
     fx.t+=dt;
     if(fx.t>=FXD){var dn=fx.done;fx=null;dn()}
   }
+  if(iblast){iblast.t+=dt;if(iblast.t>=iblast.d)finishBlast()}
   if(state==='anim'){
     fv+=0.00003*dt;fs+=fv*dt;
     var fin=true;
@@ -928,7 +969,7 @@ document.addEventListener('keydown',function(e){
   e.preventDefault();
 });
 
-var ROOM_LEN=6,cfg={gv:1,it:0,sv:0},cfgLocked=false,lastPeers=null,cfgNoteTimer=null,visAt=Date.now(),room=null,opp=null,meP=null,myRdy=false,mySeed=0,gs=0,pend=0,seen=0,atk=0,mode='solo',roomCode='',sentG='',lastSend=0,rnd=Math.random;
+var endSub='',ROOM_LEN=6,cfg={gv:1,it:0,sv:0},cfgLocked=false,lastPeers=null,cfgNoteTimer=null,visAt=Date.now(),room=null,opp=null,meP=null,myRdy=false,mySeed=0,gs=0,pend=0,seen=0,atk=0,mode='solo',roomCode='',sentG='',lastSend=0,rnd=Math.random;
 function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function push(p){
   if(!room)return Promise.resolve(false);
@@ -1090,7 +1131,7 @@ function addGarbage(){
 }
 function win(msg){
   state='over';endItems();fx=null;fall=[];cur=null;myRdy=false;push({rdy:false});
-  overlay('victory',msg,'rematch',false);endMenu();
+  unlockCfg();endSub=msg;overlay('victory',msg,'rematch',false);endMenu();
 }
 function drawOpp(){
   if(mode==='solo')return;
@@ -1375,6 +1416,12 @@ $('nskip').addEventListener('click',function(){
 });
 
 /* ===== shared online match settings (shown in the room before the first game, read-only afterwards) ===== */
+function unlockCfg(){if(mode==='vs'&&cfgLocked){cfgLocked=false;push({lk:0})}}
+/* back from "waiting for the opponent" to the choose-again screen */
+function unready(){
+  myRdy=false;push({rdy:false});
+  if(state==='over'){setOS(endSub);$('go').style.display=''}
+}
 function noteFlash(){
   var n=$('rcfgnote');if(!n)return;
   n.textContent=tr('cfgchanged');n.style.color='var(--accent)';
@@ -1386,7 +1433,7 @@ function renderCfg(){
   var inRoom=mode==='vs'&&(state==='net'||state==='over'||state==='count');
   rc.hidden=!inRoom;
   if(!inRoom)return;
-  var edit=state==='net'&&!cfgLocked;      /* editable only in the lobby before the first game */
+  var edit=(state==='net'||state==='over')&&!cfgLocked;      /* editable in the lobby and on the rematch screen, locked while a match runs */
   $('rgvc').checked=!!cfg.gv;$('ritc').checked=!!cfg.it;
   $('rgvc').disabled=$('ritc').disabled=!edit;
   $('rgv').classList.toggle('locked',!edit);$('rit').classList.toggle('locked',!edit);
@@ -1394,10 +1441,10 @@ function renderCfg(){
   if(!cfgNoteTimer)$('rcfgnote').textContent=tr(edit?'cfgnote':'cfglocked');
 }
 function cfgEdited(){
-  if(cfgLocked||mode!=='vs'||state!=='net'){renderCfg();return}
+  if(cfgLocked||mode!=='vs'||(state!=='net'&&state!=='over')){renderCfg();return}
   cfg={gv:$('rgvc').checked?1:0,it:$('ritc').checked?1:0,sv:cfg.sv+1};
   push({gv:cfg.gv,it:cfg.it,sv:cfg.sv});
-  if(myRdy){myRdy=false;push({rdy:false});noteFlash()}
+  if(myRdy){unready();noteFlash()}
   if(lastPeers)onPeers(lastPeers);else renderCfg();
 }
 $('rgvc').addEventListener('change',cfgEdited);
@@ -1416,10 +1463,11 @@ function onPeersCore(ch){
     var pp=opp.presence,psv=Number(pp.sv)||0,plk=pp.lk===1||pp.lk===true,ng=pp.gv?1:0,ni=pp.it?1:0;
     var diff=ng!==cfg.gv||ni!==cfg.it;
     var theirsWin=psv>cfg.sv||(psv===cfg.sv&&diff&&meP&&(Number(pp.t)||0)<(Number(meP.presence.t)||0));
-    if(plk||theirsWin){
+    var lockedLobby=plk&&state==='net';          /* a locked peer only matters while both of us are still in the lobby */
+    if(lockedLobby||theirsWin){
       cfg={gv:ng,it:ni,sv:Math.max(psv,cfg.sv)};
-      if(plk)cfgLocked=true;
-      if(diff&&myRdy){myRdy=false;push({rdy:false})}
+      if(lockedLobby)cfgLocked=true;
+      if(diff&&myRdy)unready();
       if(diff)noteFlash();
     }
   }
@@ -1468,9 +1516,8 @@ function check(){
   beginCount(useMine?mySeed:th.seed,c);
 }
 /* Both clients run this with the same two inputs, so both end up with the same settings:
-   locked settings win, then the newer change, then (very unlikely) the smaller seed. */
+   the newer change wins, then (very unlikely) the smaller seed. */
 function pickCfg(a,b){
-  if(a.lk!==b.lk)return a.lk?a:b;
   if(a.sv!==b.sv)return a.sv>b.sv?a:b;
   if(a.gv===b.gv&&a.it===b.it)return a;
   return a.seed<=b.seed?a:b;
@@ -1695,9 +1742,9 @@ var I18N={
   "i_fog": "Fog",
   "i_rev": "Reverse",
   "roomcfg": "Match settings",
-  "cfgnote": "Both players share these settings. They lock when the first game starts and stay the same for rematches.",
+  "cfgnote": "Both players share these settings. Change them together before each match; they lock when the match starts.",
   "cfgchanged": "Settings changed. Press Ready again.",
-  "cfglocked": "Locked from the first game. Rematches use these settings."
+  "cfglocked": "Settings are locked for this match."
  },
  "nl": {
   "settings": "Instellingen",
@@ -1805,9 +1852,9 @@ var I18N={
   "i_fog": "Mist",
   "i_rev": "Omkeren",
   "roomcfg": "Wedstrijdinstellingen",
-  "cfgnote": "Deze instellingen delen jullie samen. Ze worden vergrendeld zodra het eerste spel begint en blijven bij een rematch gelden.",
+  "cfgnote": "Deze instellingen delen jullie samen. Pas ze samen aan voor elk spel; ze worden vergrendeld zodra het spel begint.",
   "cfgchanged": "Instellingen gewijzigd. Druk opnieuw op Klaar.",
-  "cfglocked": "Vergrendeld sinds het eerste spel. Rematches gebruiken deze instellingen."
+  "cfglocked": "De instellingen voor dit spel zijn vergrendeld."
  },
  "ko": {
   "settings": "설정",
@@ -1915,9 +1962,9 @@ var I18N={
   "i_fog": "안개",
   "i_rev": "조작 반전",
   "roomcfg": "대전 설정",
-  "cfgnote": "두 사람이 함께 정하는 설정입니다. 첫 게임이 시작되면 고정되고 재대결에도 그대로 유지됩니다.",
+  "cfgnote": "두 사람이 함께 정하는 설정입니다. 매 대전 시작 전에 같이 바꿀 수 있고, 대전이 시작되면 잠깁니다.",
   "cfgchanged": "설정이 바뀌었습니다. 다시 준비를 누르세요.",
-  "cfglocked": "첫 게임 설정으로 고정되었습니다. 재대결도 이 설정으로 진행합니다."
+  "cfglocked": "이번 대전의 설정이 확정되었습니다."
  },
  "ja": {
   "settings": "設定",
@@ -2025,9 +2072,9 @@ var I18N={
   "i_fog": "霧",
   "i_rev": "操作反転",
   "roomcfg": "対戦設定",
-  "cfgnote": "2人で共有する設定です。最初の対戦が始まると固定され、再戦でも維持されます。",
+  "cfgnote": "2人で共有する設定です。対戦ごとに開始前に一緒に変更でき、対戦が始まるとロックされます。",
   "cfgchanged": "設定が変更されました。もう一度準備完了を押してください。",
-  "cfglocked": "最初の対戦の設定で固定されています。再戦もこの設定で行います。"
+  "cfglocked": "今回の対戦の設定が確定しました。"
  },
  "zh-CN": {
   "settings": "设置",
@@ -2135,9 +2182,9 @@ var I18N={
   "i_fog": "迷雾",
   "i_rev": "操作反转",
   "roomcfg": "对战设置",
-  "cfgnote": "这是两位玩家共用的设置。第一局开始后将被锁定，再战时保持不变。",
+  "cfgnote": "这是两位玩家共用的设置。每局开始前都可以一起修改，对战开始后将被锁定。",
   "cfgchanged": "设置已更改，请重新点击准备。",
-  "cfglocked": "已按第一局的设置锁定，再战将使用相同设置。"
+  "cfglocked": "本局设置已确定。"
  },
  "zh-TW": {
   "settings": "設定",
@@ -2245,9 +2292,9 @@ var I18N={
   "i_fog": "迷霧",
   "i_rev": "操作反轉",
   "roomcfg": "對戰設定",
-  "cfgnote": "這是兩位玩家共用的設定。第一局開始後將被鎖定，再戰時保持不變。",
+  "cfgnote": "這是兩位玩家共用的設定。每局開始前都可以一起修改，對戰開始後將被鎖定。",
   "cfgchanged": "設定已變更，請重新按準備。",
-  "cfglocked": "已按第一局的設定鎖定，再戰將使用相同設定。"
+  "cfglocked": "本局設定已確定。"
  },
  "es": {
   "settings": "Ajustes",
@@ -2355,9 +2402,9 @@ var I18N={
   "i_fog": "Niebla",
   "i_rev": "Invertir",
   "roomcfg": "Ajustes de la partida",
-  "cfgnote": "Ajustes compartidos por ambos jugadores. Se bloquean al empezar la primera partida y se mantienen en las revanchas.",
+  "cfgnote": "Ajustes compartidos por ambos jugadores. Cámbialos juntos antes de cada partida; se bloquean cuando empieza.",
   "cfgchanged": "Ajustes cambiados. Pulsa Listo de nuevo.",
-  "cfglocked": "Bloqueados desde la primera partida. Las revanchas usan estos ajustes."
+  "cfglocked": "Los ajustes de esta partida están bloqueados."
  },
  "pt": {
   "settings": "Configurações",
@@ -2465,9 +2512,9 @@ var I18N={
   "i_fog": "Névoa",
   "i_rev": "Inverter",
   "roomcfg": "Configurações da partida",
-  "cfgnote": "Configurações compartilhadas pelos dois jogadores. Ficam bloqueadas quando a primeira partida começa e valem nas revanches.",
+  "cfgnote": "Configurações compartilhadas pelos dois jogadores. Mudem juntos antes de cada partida; elas travam quando a partida começa.",
   "cfgchanged": "Configurações alteradas. Toque em Pronto novamente.",
-  "cfglocked": "Bloqueadas desde a primeira partida. As revanches usam estas configurações."
+  "cfglocked": "As configurações desta partida estão bloqueadas."
  },
  "fr": {
   "settings": "Paramètres",
@@ -2575,9 +2622,9 @@ var I18N={
   "i_fog": "Brouillard",
   "i_rev": "Inversion",
   "roomcfg": "Réglages de la partie",
-  "cfgnote": "Réglages communs aux deux joueurs. Ils sont verrouillés au début de la première partie et conservés pour les revanches.",
+  "cfgnote": "Réglages communs aux deux joueurs. Modifiez-les ensemble avant chaque partie ; ils se verrouillent au début de la partie.",
   "cfgchanged": "Réglages modifiés. Appuyez à nouveau sur Prêt.",
-  "cfglocked": "Verrouillés depuis la première partie. Les revanches utilisent ces réglages."
+  "cfglocked": "Les réglages de cette partie sont verrouillés."
  }
 };
 function detectLang(){var pref='';try{pref=localStorage.getItem('tetris-language')||'auto'}catch(e){}LANG_PREF=pref;var raw=pref==='auto'?((navigator.languages&&navigator.languages[0])||navigator.language||'en'):pref;raw=String(raw).replace('_','-');if(raw.toLowerCase().indexOf('zh-tw')===0||raw.toLowerCase().indexOf('zh-hk')===0)return 'zh-TW';if(raw.toLowerCase().indexOf('zh')===0)return 'zh-CN';var key=raw.split('-')[0].toLowerCase();return I18N[key]?key:'en'}
