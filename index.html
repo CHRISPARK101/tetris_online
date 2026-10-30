@@ -102,12 +102,12 @@ input,select{-webkit-user-select:text;user-select:text}
 #rank{position:fixed;inset:0;z-index:30;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:16px}
 #rank[hidden]{display:none}
 #ver{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);text-align:center;font-size:10px;line-height:1;color:var(--mute);opacity:.65;pointer-events:none}
-.rk-card{width:min(100%,420px);max-height:100%;overflow:auto;background:var(--well);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center}
-.rk-card h2{margin:0 0 10px;font-size:22px}
+.rk-card{width:min(100%,420px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;overflow:hidden;background:var(--well);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center}
+.rk-card h2{flex:0 0 auto;margin:0 0 10px;font-size:22px}
 #rank button{padding:10px 24px}
 #rank .rk-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:12px}
 #rstart{background:var(--accent);color:var(--onaccent);border-color:var(--accent);font-weight:700}
-#rlist{list-style:none;margin:0;padding:0;text-align:left}
+#rlist{flex:0 1 260px;max-height:min(260px,38vh);min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-gutter:stable;list-style:none;margin:0;padding:0;text-align:left}
 #rlist li{display:grid;grid-template-columns:28px 1fr auto;column-gap:10px;padding:8px 10px;border-radius:10px;line-height:1.3}
 #rlist li:nth-child(odd){background:var(--btn)}
 #rlist li.me{outline:2px solid var(--accent)}
@@ -116,7 +116,12 @@ input,select{-webkit-user-select:text;user-select:text}
 #rlist .nm{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #rlist b{font-variant-numeric:tabular-nums;text-align:right}
 #rlist small{grid-column:2/4;color:var(--mute)}
-#rnote{margin:10px 0;font-size:13px;color:var(--mute)}
+#rnote{flex:0 0 auto;margin:10px 0;font-size:13px;color:var(--mute)}
+#rank .rk-actions{flex:0 0 auto}
+#rlist{position:relative}
+.rk-tabs{flex:0 0 auto;display:flex;justify-content:center;gap:8px;margin:0 0 10px}
+#rank .rk-tabs button{padding:6px 16px;font-size:13px;border-radius:999px}
+#rank .rk-tabs button.on{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
 #ov.att{background:var(--veil2)}
 #ov.att h1{background:linear-gradient(90deg,#2fc4e6,#4b6ff0,#a65bd8,#ee5a5a,#f28b3a,#f5c73b,#4cc46a);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;font-size:40px}
 #tt{position:absolute;top:38px;left:50%;transform:translateX(-50%);padding:5px 12px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:13px;font-weight:700;line-height:1.4;pointer-events:none;white-space:nowrap;max-width:96%;overflow:hidden;text-overflow:ellipsis}
@@ -197,8 +202,8 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
-<div id="ver" aria-hidden="true">v0.6.5</div>
-<div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 5</h2><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
+<div id="ver" aria-hidden="true">v0.7.0</div>
+<div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 20</h2><div class="rk-tabs"><button id="rktn" class="on">Classic</button><button id="rkti">Item mode</button></div><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
 <script src="supabase.js"></script>
 <script>
@@ -216,10 +221,11 @@ var SH={
   J:[[1,0,0],[1,1,1],[0,0,0]],
   L:[[0,0,1],[1,1,1],[0,0,0]]
 };
-var COL={I:'#2fc4e6',O:'#f5c73b',T:'#a65bd8',S:'#4cc46a',Z:'#ee5a5a',J:'#4b6ff0',L:'#f28b3a',G:'#8a90a8'};
+var COL={I:'#3ad4ff',O:'#ffd84a',T:'#b07cff',S:'#3ee0a0',Z:'#ff6f91',J:'#4f8cff',L:'#ffa05a',G:'#9bb0c8'};   /* fresh aqua palette */
 var KEYS=Object.keys(SH);
 var grid,cur,next,bag=[],score=0,lines=0,level=1,state='ready',acc=0,last=0,best=0;
 try{best=+localStorage.getItem('tetris-best')||0}catch(e){}
+var bestItems=0;try{bestItems=+localStorage.getItem('tetris-best-items')||0}catch(e){}
 var gravityPref=true;try{gravityPref=localStorage.getItem('tetris-gravity')!=='0'}catch(e){}
 var gravity=gravityPref;   /* gravity = what the running game uses; online games use the shared room settings instead */
 var ghostPreview=true;try{ghostPreview=localStorage.getItem('tetris-ghost')!=='0'}catch(e){}
@@ -439,18 +445,26 @@ function fireItem(k,cy,cx){
   if(k==='slow'){slowUntil=pt+8000;sfxItem();renderBuffs();return}
 }
 function blastItem(h){
-  var k=h.k,cy=h.cy,cx=h.cx,r,c;
+  var k=h.k,cy=h.cy,cx=h.cx,r,c,removed=0;
   sfxBoom();
+  /* Award points only for occupied cells actually removed. Overlapping blasts cannot
+     score the same block twice because a cleared cell is empty for subsequent blasts. */
+  function eraseCell(y,x){
+    if(grid[y][x])removed++;
+    grid[y][x]=0;gid[y][x]=0;itm[y][x]=0;
+  }
   if(k==='bomb'){            /* 5x5 blast around the item cell */
     var r0=Math.max(0,cy-2),r1=Math.min(ROWS-1,cy+2),c0=Math.max(0,cx-2),c1=Math.min(COLS-1,cx+2);
-    for(r=r0;r<=r1;r++)for(c=c0;c<=c1;c++){grid[r][c]=0;gid[r][c]=0;itm[r][c]=0}
+    for(r=r0;r<=r1;r++)for(c=c0;c<=c1;c++)eraseCell(r,c);
     boom={t:0,d:320,x:c0,y:r0,w:c1-c0+1,h:r1-r0+1,col:'#ff9f1c'};
   }else if(k==='laser'){     /* the whole column of the item cell */
-    for(r=0;r<ROWS;r++){grid[r][cx]=0;gid[r][cx]=0;itm[r][cx]=0}
+    for(r=0;r<ROWS;r++)eraseCell(r,cx);
     boom={t:0,d:320,x:cx-.35,y:0,w:1.7,h:ROWS,col:'#ffe14d'};
   }else if(k==='nuke'){
-    grid=emptyGrid();boom={t:0,d:380,x:0,y:0,w:COLS,h:ROWS,col:'#ffffff'};
+    for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++)eraseCell(r,c);
+    boom={t:0,d:380,x:0,y:0,w:COLS,h:ROWS,col:'#ffffff'};
   }
+  if(removed){score+=removed*10;hud()}
   /* gravity mode: the caller runs startFall() right after this, so floating blocks drop with the normal animation */
 }
 function circle(x,y,r,col,a){bx.globalAlpha=a;bx.fillStyle=col;bx.beginPath();bx.arc(x,y,r,0,6.2832);bx.fill();bx.globalAlpha=1}
@@ -586,8 +600,10 @@ function move(d){
 function rotate(){
   if(state!=='playing')return;
   /* wall kicks (sideways) first, then floor kicks (upwards) so pieces can turn on the stack or on garbage */
-  var r=rot(cur.m),k=[[0,0],[-1,0],[1,0],[-2,0],[2,0],[0,-1],[-1,-1],[1,-1],[0,-2]];
+  var r=rot(cur.m),k=[[0,0],[-1,0],[1,0],[-2,0],[2,0],[0,-1],[-1,-1],[1,-1],[0,-2]],top=0;
+  while(top<r.length&&!r[top].some(Boolean))top++;      /* first row of the rotated shape that holds blocks */
   for(var i=0;i<k.length;i++){
+    if(cur.y+k[i][1]+top<0)continue;                    /* locking above the ceiling ends the game, so never kick up there */
     if(!hit(r,cur.x+k[i][0],cur.y+k[i][1])){cur.m=r;cur.x+=k[i][0];cur.y+=k[i][1];sfxRotate();return}
   }
 }
@@ -759,7 +775,8 @@ function renderOverlay(){
   $('ot').textContent=ovT==='tetris'?'TETRIS':txtOf(ovT);   /* main title is never translated */
   $('os').textContent=txtOf(ovS);
   $('go').textContent=txtOf(ovB);
-  $('ob').textContent=ovBest?(tr('best')+' '+best):'';
+  var bv=itemMode?bestItems:best;      /* item mode keeps its own best score */
+  $('ob').textContent=ovBest&&bv>0?(tr('best')+' '+bv):'';
   renderCfg();
 }
 function overlay(title,sub,btn,showBest){
@@ -793,7 +810,8 @@ function endMenu(){
 function over(){
   state='over';endItems();
   if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});unlockCfg();endSub=fm('scorelines',{s:score,l:lines});overlay('youlose',endSub,'rematch',false);endMenu();return}
-  if(score>best){best=score;try{localStorage.setItem('tetris-best',String(best))}catch(e){}}
+  if(itemMode){if(score>bestItems){bestItems=score;try{localStorage.setItem('tetris-best-items',String(bestItems))}catch(e){}}}
+  else if(score>best){best=score;try{localStorage.setItem('tetris-best',String(best))}catch(e){}}
   overlay('gameover',fm('scorelines',{s:score,l:lines}),'playagain',true);endMenu();
   rankCheck(score,lines,level);
 }
@@ -802,11 +820,51 @@ function pause(){
 }
 function resume(){state='playing';$('ov').hidden=true;last=performance.now()}
 
+/* ===== Aqua jelly blocks: translucent glossy gel tiles, pre-rendered once per colour/size and blitted ===== */
+function hexRGB(h){var n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
+function mixRGB(a,b,t){return[Math.round(a[0]+(b[0]-a[0])*t),Math.round(a[1]+(b[1]-a[1])*t),Math.round(a[2]+(b[2]-a[2])*t)]}
+function rgbaOf(c,a){return'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')'}
+function roundPath(g,x,y,w,h,r){
+  g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();
+}
+function aquaSprite(color,S){
+  var cv=document.createElement('canvas');cv.width=cv.height=S;
+  var g=cv.getContext('2d');
+  var base=hexRGB(color),hi=mixRGB(base,[255,255,255],.5),lo=mixRGB(base,[0,50,110],.32),deep=mixRGB(base,[0,30,80],.6);
+  var p=Math.max(1,S*.05),x=p,y=p,w=S-2*p,h=S-2*p,r=Math.max(2,S*.22);
+  /* gel body: light on top, richer at the bottom, slightly see-through */
+  var body=g.createLinearGradient(0,y,0,y+h);
+  body.addColorStop(0,rgbaOf(hi,.93));body.addColorStop(.5,rgbaOf(base,.88));body.addColorStop(1,rgbaOf(lo,.95));
+  roundPath(g,x,y,w,h,r);g.fillStyle=body;g.fill();
+  /* glass rim: bright edge on top, deeper tint at the bottom */
+  var rim=g.createLinearGradient(0,y,0,y+h);
+  rim.addColorStop(0,'rgba(240,253,255,.95)');rim.addColorStop(.45,rgbaOf(hi,.15));rim.addColorStop(1,rgbaOf(deep,.55));
+  roundPath(g,x+.5,y+.5,w-1,h-1,r);g.lineWidth=Math.max(1,S*.06);g.strokeStyle=rim;g.stroke();
+  g.save();roundPath(g,x,y,w,h,r);g.clip();
+  /* light refracted through the bottom */
+  var glow=g.createRadialGradient(S*.5,y+h,0,S*.5,y+h,S*.62);
+  glow.addColorStop(0,'rgba(200,248,255,.55)');glow.addColorStop(1,'rgba(200,248,255,0)');
+  g.fillStyle=glow;g.fillRect(0,0,S,S);
+  /* the classic Aqua gloss on the upper half */
+  var gl=g.createLinearGradient(0,y,0,y+h*.55);
+  gl.addColorStop(0,'rgba(245,254,255,.88)');gl.addColorStop(1,'rgba(245,254,255,.06)');
+  roundPath(g,x+S*.08,y+S*.06,w-S*.16,h*.46,r*.7);g.fillStyle=gl;g.fill();
+  g.restore();
+  /* sparkle */
+  g.fillStyle='rgba(255,255,255,.95)';g.beginPath();g.arc(x+w*.25,y+h*.21,Math.max(.8,S*.045),0,6.2832);g.fill();
+  return cv;
+}
+var spriteCache={},spriteCount=0;
 function cell(ctx,x,y,s,color,a){
+  if(a!=null&&a<.2){                         /* landing preview: glassy outline instead of a faint solid */
+    ctx.globalAlpha=.16;ctx.fillStyle=color;ctx.fillRect(x+1,y+1,s-2,s-2);
+    ctx.globalAlpha=.65;ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.strokeRect(x+1.5,y+1.5,s-3,s-3);
+    ctx.globalAlpha=1;return;
+  }
+  var S=Math.max(4,Math.round(s*dpr)),key=color+S,sp=spriteCache[key];
+  if(!sp){if(spriteCount>160){spriteCache={};spriteCount=0}sp=spriteCache[key]=aquaSprite(color,S);spriteCount++}
   ctx.globalAlpha=a==null?1:a;
-  ctx.fillStyle=color;ctx.fillRect(x+1,y+1,s-2,s-2);
-  ctx.fillStyle='rgba(255,255,255,.3)';ctx.fillRect(x+1,y+1,s-2,Math.max(2,s*.14));
-  ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(x+1,y+s-1-Math.max(2,s*.1),s-2,Math.max(2,s*.1));
+  ctx.drawImage(sp,x,y,s,s);
   ctx.globalAlpha=1;
 }
 /* Start-screen decoration: tetrominoes drifting down behind the menu.
@@ -1332,41 +1390,56 @@ function createSupabaseRoom(code){
   });
 }
 
-/* ===== Ranking (top 5): global via Supabase table "scores", local fallback =====
+/* ===== Ranking (top 20): global via Supabase table "scores", local fallback =====
    Client-side validation improves reliability but is NOT a security boundary.
    Enable RLS and restrictive INSERT/SELECT policies in Supabase; for cheat-resistant
    rankings, validate scores on a trusted server/Edge Function rather than direct INSERT. */
-var RANK_N=5,rankTok=0,pendingScore=null;
-function localBoard(){try{var a=JSON.parse(localStorage.getItem('tetris-top5')||localStorage.getItem('tetris-top10')||'[]');return Array.isArray(a)?a.slice(0,RANK_N):[]}catch(e){return[]}}
+var RANK_N=20,rankTok=0,pendingScore=null,rankItems=false;
+function boardKey(items){return items?'tetris-top20-items':'tetris-top20'}
+function localBoard(items){try{var a=JSON.parse(localStorage.getItem(boardKey(items))||(items?'[]':(localStorage.getItem('tetris-top5')||localStorage.getItem('tetris-top10')||'[]')));return Array.isArray(a)?a.slice(0,RANK_N):[]}catch(e){return[]}}
 function saveLocalEntry(e){
   e=normalizeScoreEntry(e);if(!e)return false;
-  var a=localBoard().filter(function(x){return x&&Number.isFinite(+x.score)&&+x.score>=0&&+x.score<=100000000;});
+  var a=localBoard(e.items).filter(function(x){return x&&Number.isFinite(+x.score)&&+x.score>=0&&+x.score<=100000000;});
   a.push({nick:e.nick,score:e.score,lines:e.lines,cc:e.cc||''});
   a.sort(function(x,y){return y.score-x.score});
-  try{localStorage.setItem('tetris-top5',JSON.stringify(a.slice(0,RANK_N)))}catch(err){}
+  try{localStorage.setItem(boardKey(e.items),JSON.stringify(a.slice(0,RANK_N)))}catch(err){}
   return false;
 }
 function normalizeScoreEntry(e){
   if(!e||!Number.isSafeInteger(Number(e.score))||Number(e.score)<0||Number(e.score)>100000000||!Number.isSafeInteger(Number(e.lines))||Number(e.lines)<0||Number(e.lines)>100000||!Number.isSafeInteger(Number(e.level))||Number(e.level)<1||Number(e.level)>10000)return null;
-  return {nick:cleanNick(e.nick),score:Number(e.score),lines:Number(e.lines),level:Number(e.level),cc:okc(e.cc)?e.cc:''};
+  return {nick:cleanNick(e.nick),score:Number(e.score),lines:Number(e.lines),level:Number(e.level),cc:okc(e.cc)?e.cc:'',items:!!e.items};
 }
-function loadBoard(){
+function loadBoard(items){
+  items=!!items;
   if(supabaseReady()){
     try{
-      return getClient().from('scores').select('nick,score,lines,cc').order('score',{ascending:false}).order('created_at',{ascending:true}).limit(RANK_N)
-        .then(function(r){if(r.error)throw r.error;return{rows:r.data||[],remote:true}})
-        .catch(function(err){console.warn('Ranking load failed:',err);return{rows:localBoard(),remote:false}});
+      var q=function(filtered){
+        var t=getClient().from('scores').select('nick,score,lines,cc');
+        if(filtered)t=t.eq('items',items);
+        return t.order('score',{ascending:false}).order('created_at',{ascending:true}).limit(RANK_N)
+          .then(function(r){if(r.error)throw r.error;return{rows:r.data||[],remote:true}});
+      };
+      return q(true).catch(function(err){
+        console.warn('Ranking load failed:',err);
+        /* database without the "items" column yet: classic mode still shows the old single global board */
+        if(!items)return q(false);
+        throw err;
+      }).catch(function(err){console.warn('Ranking load failed:',err);return{rows:localBoard(items),remote:false}});
     }catch(e){}
   }
-  return Promise.resolve({rows:localBoard(),remote:false});
+  return Promise.resolve({rows:localBoard(items),remote:false});
 }
 function submitScore(e){
   e=normalizeScoreEntry(e);if(!e)return Promise.resolve(false);
   if(supabaseReady()){
     try{
-      return getClient().from('scores').insert({nick:e.nick,score:e.score,lines:e.lines,level:e.level,cc:e.cc||null})
-        .then(function(r){if(r.error)throw r.error;return true})
-        .catch(function(err){console.warn('Ranking save failed:',err);return saveLocalEntry(e)});
+      var ins=function(row){return getClient().from('scores').insert(row).then(function(r){if(r.error)throw r.error;return true})};
+      var row={nick:e.nick,score:e.score,lines:e.lines,level:e.level,cc:e.cc||null,items:!!e.items};
+      return ins(row).catch(function(err){
+        console.warn('Ranking save failed:',err);
+        if(!e.items){delete row.items;return ins(row)}      /* database without the "items" column: classic score still goes global */
+        throw err;
+      }).catch(function(err){console.warn('Ranking save failed:',err);return saveLocalEntry(e)});
     }catch(err){}
   }
   return Promise.resolve(saveLocalEntry(e));
@@ -1378,11 +1451,11 @@ function cleanNick(v){
 function menuBtns(on){['settings','cpub','vs','rk'].forEach(function(i){$(i).style.display=on?'':'none'});$('settingsbox').hidden=true}
 function rankCheck(sc,ln,lv){
   /* Show the nickname prompt immediately. Do not wait for a network ranking query;
-     the ranking screen itself always displays only the top five scores. */
+     the ranking screen itself displays up to the top twenty scores. */
   rankTok++;
   pendingScore=null;
   if(!(sc>0))return;
-  pendingScore={score:sc,lines:ln,level:lv};
+  pendingScore={score:sc,lines:ln,level:lv,items:!!itemMode};
   setOS(fm('savescore',{s:sc}));
   var inp=$('nick');
   try{inp.value=localStorage.getItem('tetris-nick')||''}catch(e){inp.value=''}
@@ -1391,19 +1464,22 @@ function rankCheck(sc,ln,lv){
   try{inp.focus({preventScroll:true})}catch(e){try{inp.focus()}catch(err){}}
 }
 var rankViewTok=0;
-function showRank(hl){
+function showRank(hl,items){
+  if(items==null)items=hl?!!hl.items:!!itemPref;       /* default: the board of the mode you play */
+  rankItems=!!items;
   var viewTok=++rankViewTok;
   $('rank').hidden=false;
+  $('rktn').classList.toggle('on',!rankItems);$('rkti').classList.toggle('on',rankItems);
   $('rlist').textContent='';
   $('rnote').textContent=tr('loading');
-  loadBoard().then(function(b){
+  loadBoard(rankItems).then(function(b){
     if(viewTok!==rankViewTok||$('rank').hidden)return;
-    var ol=$('rlist'),marked=false;
+    var ol=$('rlist'),marked=false,mine=hl&&!!hl.items===rankItems;
     ol.textContent='';
     if(!b.rows.length){$('rnote').textContent=tr('noscores');return}
     b.rows.forEach(function(x,i){
       var li=document.createElement('li');
-      if(hl&&!marked&&x.score===hl.score&&x.nick===hl.nick){li.className='me';marked=true}
+      if(mine&&!marked&&x.score===hl.score&&x.nick===hl.nick){li.className='me';marked=true}
       var n=document.createElement('span');n.className='rn';n.textContent=String(i+1);
       var nm=document.createElement('span');nm.className='nm';
       if(okc(x.cc)){var f=document.createElement('span');f.className='fl';f.textContent=flagOf(x.cc)+' ';nm.appendChild(f)}
@@ -1413,18 +1489,23 @@ function showRank(hl){
       li.appendChild(n);li.appendChild(nm);li.appendChild(sc);li.appendChild(d);
       ol.appendChild(li);
     });
+    var me=ol.querySelector('li.me');            /* the list scrolls: bring the new entry into view */
+    if(me)ol.scrollTop=Math.max(0,me.offsetTop-(ol.clientHeight-me.offsetHeight)/2);
     $('rnote').textContent=b.remote?tr('globalrank'):tr('localrank');
   });
 }
+$('rktn').addEventListener('click',function(){showRank(null,false)});
+$('rkti').addEventListener('click',function(){showRank(null,true)});
 $('rk').addEventListener('click',function(){showRank(null)});
 $('rstart').addEventListener('click',function(){
   rankViewTok++;$('rank').hidden=true;
+  if(itemPref!==rankItems){itemPref=rankItems;try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(err){}$('itmc').checked=itemPref}   /* play the mode of the board you are looking at */
   joinToken++;$('join').disabled=false;leaveRoom();mode='solo';resize();start();
 });
 $('rclose').addEventListener('click',function(){rankViewTok++;$('rank').hidden=true});
 $('nsave').addEventListener('click',function(){
   if(!pendingScore)return;
-  var e=normalizeScoreEntry({nick:cleanNick($('nick').value),score:pendingScore.score,lines:pendingScore.lines,level:pendingScore.level,cc:myCC});
+  var e=normalizeScoreEntry({nick:cleanNick($('nick').value),score:pendingScore.score,lines:pendingScore.lines,level:pendingScore.level,cc:myCC,items:pendingScore.items});
   pendingScore=null;
   if(!e){setOS('invalidscore');return;}
   try{localStorage.setItem('tetris-nick',e.nick)}catch(err){}
@@ -1613,7 +1694,7 @@ $('join').addEventListener('click',function(){
 });
 $('back').addEventListener('click',function(){
   joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';pendingScore=null;clearBoard();resize();
-  overlay('tetris','drag','start',best>0);
+  overlay('tetris','drag','start',true);
 });
 function gvLabel(){$('gvc').checked=gravityPref;$('itmc').checked=itemPref;$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
 $('settings').addEventListener('click',function(){
@@ -1634,7 +1715,7 @@ $('gvc').addEventListener('change',function(){
 $('itmc').addEventListener('change',function(){
   itemPref=this.checked;
   try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(e){}
-  if(mode!=='vs')itemMode=itemPref;
+  if(mode!=='vs'){itemMode=itemPref;renderOverlay()}
 });
 $('ghvc').addEventListener('change',function(){
   ghostPreview=this.checked;
@@ -1692,7 +1773,7 @@ var I18N={
   "drop": "Drop",
   "you": "You",
   "lines": "Lines",
-  "top": "Top 5",
+  "top": "Top 20",
   "startgame": "Start Game",
   "close": "Close",
   "nickname": "Nickname",
@@ -1775,7 +1856,8 @@ var I18N={
   "roomcfg": "Match settings",
   "cfgnote": "Both players share these settings. Change them together before each match; they lock when the match starts.",
   "cfgchanged": "Settings changed. Press Ready again.",
-  "cfglocked": "Settings are locked for this match."
+  "cfglocked": "Settings are locked for this match.",
+  "rkclassic": "Classic"
  },
  "nl": {
   "settings": "Instellingen",
@@ -1800,7 +1882,7 @@ var I18N={
   "drop": "Direct laten vallen",
   "you": "Jij",
   "lines": "Rijen",
-  "top": "Top 5",
+  "top": "Top 20",
   "startgame": "Spel starten",
   "close": "Sluiten",
   "nickname": "Bijnaam",
@@ -1885,7 +1967,8 @@ var I18N={
   "roomcfg": "Wedstrijdinstellingen",
   "cfgnote": "Deze instellingen delen jullie samen. Pas ze samen aan voor elk spel; ze worden vergrendeld zodra het spel begint.",
   "cfgchanged": "Instellingen gewijzigd. Druk opnieuw op Klaar.",
-  "cfglocked": "De instellingen voor dit spel zijn vergrendeld."
+  "cfglocked": "De instellingen voor dit spel zijn vergrendeld.",
+  "rkclassic": "Klassiek"
  },
  "ko": {
   "settings": "설정",
@@ -1910,7 +1993,7 @@ var I18N={
   "drop": "즉시 내리기",
   "you": "나",
   "lines": "줄",
-  "top": "상위 5위",
+  "top": "상위 20위",
   "startgame": "게임 시작",
   "close": "닫기",
   "nickname": "닉네임",
@@ -1995,7 +2078,8 @@ var I18N={
   "roomcfg": "대전 설정",
   "cfgnote": "두 사람이 함께 정하는 설정입니다. 매 대전 시작 전에 같이 바꿀 수 있고, 대전이 시작되면 잠깁니다.",
   "cfgchanged": "설정이 바뀌었습니다. 다시 준비를 누르세요.",
-  "cfglocked": "이번 대전의 설정이 확정되었습니다."
+  "cfglocked": "이번 대전의 설정이 확정되었습니다.",
+  "rkclassic": "무템전"
  },
  "ja": {
   "settings": "設定",
@@ -2020,7 +2104,7 @@ var I18N={
   "drop": "一気に落とす",
   "you": "あなた",
   "lines": "ライン",
-  "top": "トップ5",
+  "top": "トップ20",
   "startgame": "ゲーム開始",
   "close": "閉じる",
   "nickname": "ニックネーム",
@@ -2105,7 +2189,8 @@ var I18N={
   "roomcfg": "対戦設定",
   "cfgnote": "2人で共有する設定です。対戦ごとに開始前に一緒に変更でき、対戦が始まるとロックされます。",
   "cfgchanged": "設定が変更されました。もう一度準備完了を押してください。",
-  "cfglocked": "今回の対戦の設定が確定しました。"
+  "cfglocked": "今回の対戦の設定が確定しました。",
+  "rkclassic": "ノーマル"
  },
  "zh-CN": {
   "settings": "设置",
@@ -2130,7 +2215,7 @@ var I18N={
   "drop": "快速下落",
   "you": "你",
   "lines": "消除行数",
-  "top": "前5名",
+  "top": "前20名",
   "startgame": "开始游戏",
   "close": "关闭",
   "nickname": "昵称",
@@ -2215,7 +2300,8 @@ var I18N={
   "roomcfg": "对战设置",
   "cfgnote": "这是两位玩家共用的设置。每局开始前都可以一起修改，对战开始后将被锁定。",
   "cfgchanged": "设置已更改，请重新点击准备。",
-  "cfglocked": "本局设置已确定。"
+  "cfglocked": "本局设置已确定。",
+  "rkclassic": "普通"
  },
  "zh-TW": {
   "settings": "設定",
@@ -2240,7 +2326,7 @@ var I18N={
   "drop": "快速下落",
   "you": "你",
   "lines": "消除行數",
-  "top": "前5名",
+  "top": "前20名",
   "startgame": "開始遊戲",
   "close": "關閉",
   "nickname": "暱稱",
@@ -2325,7 +2411,8 @@ var I18N={
   "roomcfg": "對戰設定",
   "cfgnote": "這是兩位玩家共用的設定。每局開始前都可以一起修改，對戰開始後將被鎖定。",
   "cfgchanged": "設定已變更，請重新按準備。",
-  "cfglocked": "本局設定已確定。"
+  "cfglocked": "本局設定已確定。",
+  "rkclassic": "普通"
  },
  "es": {
   "settings": "Ajustes",
@@ -2350,7 +2437,7 @@ var I18N={
   "drop": "Caída rápida",
   "you": "Tú",
   "lines": "Líneas",
-  "top": "Top 5",
+  "top": "Top 20",
   "startgame": "Empezar juego",
   "close": "Cerrar",
   "nickname": "Apodo",
@@ -2435,7 +2522,8 @@ var I18N={
   "roomcfg": "Ajustes de la partida",
   "cfgnote": "Ajustes compartidos por ambos jugadores. Cámbialos juntos antes de cada partida; se bloquean cuando empieza.",
   "cfgchanged": "Ajustes cambiados. Pulsa Listo de nuevo.",
-  "cfglocked": "Los ajustes de esta partida están bloqueados."
+  "cfglocked": "Los ajustes de esta partida están bloqueados.",
+  "rkclassic": "Clásico"
  },
  "pt": {
   "settings": "Configurações",
@@ -2460,7 +2548,7 @@ var I18N={
   "drop": "Queda rápida",
   "you": "Você",
   "lines": "Linhas",
-  "top": "Top 5",
+  "top": "Top 20",
   "startgame": "Iniciar jogo",
   "close": "Fechar",
   "nickname": "Apelido",
@@ -2545,7 +2633,8 @@ var I18N={
   "roomcfg": "Configurações da partida",
   "cfgnote": "Configurações compartilhadas pelos dois jogadores. Mudem juntos antes de cada partida; elas travam quando a partida começa.",
   "cfgchanged": "Configurações alteradas. Toque em Pronto novamente.",
-  "cfglocked": "As configurações desta partida estão bloqueadas."
+  "cfglocked": "As configurações desta partida estão bloqueadas.",
+  "rkclassic": "Clássico"
  },
  "fr": {
   "settings": "Paramètres",
@@ -2570,7 +2659,7 @@ var I18N={
   "drop": "Chute rapide",
   "you": "Vous",
   "lines": "Lignes",
-  "top": "Top 5",
+  "top": "Top 20",
   "startgame": "Lancer le jeu",
   "close": "Fermer",
   "nickname": "Pseudo",
@@ -2655,7 +2744,8 @@ var I18N={
   "roomcfg": "Réglages de la partie",
   "cfgnote": "Réglages communs aux deux joueurs. Modifiez-les ensemble avant chaque partie ; ils se verrouillent au début de la partie.",
   "cfgchanged": "Réglages modifiés. Appuyez à nouveau sur Prêt.",
-  "cfglocked": "Les réglages de cette partie sont verrouillés."
+  "cfglocked": "Les réglages de cette partie sont verrouillés.",
+  "rkclassic": "Classique"
  }
 };
 function detectLang(){var pref='';try{pref=localStorage.getItem('tetris-language')||'auto'}catch(e){}LANG_PREF=pref;var raw=pref==='auto'?((navigator.languages&&navigator.languages[0])||navigator.language||'en'):pref;raw=String(raw).replace('_','-');if(raw.toLowerCase().indexOf('zh-tw')===0||raw.toLowerCase().indexOf('zh-hk')===0)return 'zh-TW';if(raw.toLowerCase().indexOf('zh')===0)return 'zh-CN';var key=raw.split('-')[0].toLowerCase();return I18N[key]?key:'en'}
@@ -2667,7 +2757,7 @@ function applyLanguage(){
  function txt(id,key){var el=$(id);if(el)el.textContent=tr(key)}
  function aria(el,key){if(el)el.setAttribute('aria-label',tr(key))}
  txt('settingstitle','settings');txt('languageLabel','language');
- [['gv','gravity'],['itm','items'],['rgv','gravity'],['rit','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
+ [['rktn','rkclassic'],['rkti','items'],['gv','gravity'],['itm','items'],['rgv','gravity'],['rit','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
  txt('settingsback','back');txt('rs','restart');txt('qt','main');txt('vs','battle');txt('rk','ranking');txt('cpub','cpu');txt('join','join');txt('back','back');txt('lback','back');txt('nsave','save');txt('nskip','skip');txt('rstart','startgame');txt('rclose','close');
  txt('lvl','level');txt('lnl','lines');txt('itmhelp','itemhelp');
  var vol=$('musicvol');if(vol&&vol.querySelector('label span'))vol.querySelector('label span').textContent=tr('music');
@@ -2688,7 +2778,7 @@ $('languageSelect').addEventListener('change',function(){LANG_PREF=this.value;tr
 applyLanguage();
 
 grid=emptyGrid();
-overlay('tetris','drag','start',best>0);
+overlay('tetris','drag','start',true);
 resize();hud();if(musicVolume>0)playMusic();
 requestAnimationFrame(function(t){last=t;loop(t)});
 })();
