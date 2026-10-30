@@ -81,7 +81,7 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 .ctl button{height:54px;font-size:20px;font-weight:600}
 .ctl button:active,.ctl button.on{transform:scale(.96);background:var(--line)}
 .ctl [data-act="rot"],.ctl [data-act="drop"]{font-size:16px}
-.ctl [data-act="drop"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
+.ctl [data-act="rot"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 input,select{-webkit-user-select:text;user-select:text}
 #ov{overflow:auto}
@@ -128,6 +128,10 @@ input,select{-webkit-user-select:text;user-select:text}
 #opp.hit{animation:ohit .6s}
 @keyframes bhit{0%{box-shadow:inset 0 0 46px 12px rgba(229,72,77,.7)}100%{box-shadow:inset 0 0 0 0 rgba(229,72,77,0)}}
 #board.hit{animation:bhit .65s}
+#ov #rcfg{display:flex;flex-direction:column;align-items:center;margin:4px 0}
+#ov #rcfg[hidden]{display:none}
+#ov #rcfgtitle{font-weight:700;color:var(--ink);font-size:14px}
+#ov #rcfgnote,#ov #cfgline{font-size:12px;max-width:260px}
 #ov #itmhelp{font-size:12px;max-width:260px;text-align:left;margin:0 0 4px}
 </style>
 </head>
@@ -143,6 +147,13 @@ input,select{-webkit-user-select:text;user-select:text}
         <h1 id="ot">TETRIS</h1>
         <p id="os">Drag to move, tap to rotate, flick down to drop</p>
         <p id="ob"></p>
+        <p id="cfgline" hidden></p>
+        <div id="rcfg" hidden>
+          <p id="rcfgtitle">Match settings</p>
+          <label id="rgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="rgvc" role="switch"><i></i></label>
+          <label id="rit" class="sw"><span>Item mode</span><input type="checkbox" id="ritc" role="switch"><i></i></label>
+          <p id="rcfgnote"></p>
+        </div>
         <div id="nbox" hidden><input id="nick" maxlength="12" placeholder="Nickname" autocomplete="off" aria-label="Nickname"><button id="nsave">Save</button><button id="nskip">Skip</button></div>
         <button id="go">Start</button>
         <button id="rs">Restart</button>
@@ -162,10 +173,10 @@ input,select{-webkit-user-select:text;user-select:text}
           </div>
           <button id="settingsback">Back</button>
         </div>
-        <button id="cpub">Vs CPU</button>
         <button id="vs">2P Battle</button>
         <button id="rk">👑 Ranking</button>
-        <div id="netbox" hidden><div class="ccr"><span id="ccf" class="fl"></span><select id="cc" aria-label="Your country"></select></div><input id="code" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="off" placeholder="5-digit room number" aria-label="Room number"><button id="join">Join</button><button id="back">Back</button></div>
+        <button id="cpub">Vs CPU</button>
+        <div id="netbox" hidden><div class="ccr"><span id="ccf" class="fl"></span><select id="cc" aria-label="Your country"></select></div><input id="code" inputmode="numeric" maxlength="6" placeholder="4-digit code" aria-label="Room code"><button id="join">Join</button><button id="back">Back</button></div>
         <div id="lvbox" hidden><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
       </div>
     </div>
@@ -185,7 +196,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <button data-act="drop">Drop</button>
   </div>
 </div>
-<div id="ver" aria-hidden="true">v0.6.2</div>
+<div id="ver" aria-hidden="true">v0.6.3</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 5</h2><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
 <script src="supabase.js"></script>
@@ -208,7 +219,8 @@ var COL={I:'#2fc4e6',O:'#f5c73b',T:'#a65bd8',S:'#4cc46a',Z:'#ee5a5a',J:'#4b6ff0'
 var KEYS=Object.keys(SH);
 var grid,cur,next,bag=[],score=0,lines=0,level=1,state='ready',acc=0,last=0,best=0;
 try{best=+localStorage.getItem('tetris-best')||0}catch(e){}
-var gravity=true;try{gravity=localStorage.getItem('tetris-gravity')!=='0'}catch(e){}
+var gravityPref=true;try{gravityPref=localStorage.getItem('tetris-gravity')!=='0'}catch(e){}
+var gravity=gravityPref;   /* gravity = what the running game uses; online games use the shared room settings instead */
 var ghostPreview=true;try{ghostPreview=localStorage.getItem('tetris-ghost')!=='0'}catch(e){}
 var soundOn=true;try{soundOn=localStorage.getItem('tetris-sound')!=='0'}catch(e){}
 /* Item mode: itemPref is the player's setting, itemMode is what the current game really uses (online games follow the match host). */
@@ -693,6 +705,7 @@ function renderOverlay(){
   $('os').textContent=txtOf(ovS);
   $('go').textContent=txtOf(ovB);
   $('ob').textContent=ovBest?(tr('best')+' '+best):'';
+  renderCfg();
 }
 function overlay(title,sub,btn,showBest){
   ovui(true);
@@ -704,7 +717,7 @@ function overlay(title,sub,btn,showBest){
   $('ov').hidden=false;
 }
 function start(){
-  grid=emptyGrid();score=0;lines=0;level=1;bag=[];next=null;acc=0;fall=[];fx=null;streak=0;showCombo();rnd=mode==='vs'?rng(gs):Math.random;irnd=mode==='vs'?rng((gs^0x5bd1e995)>>>0):Math.random;if(mode!=='vs')itemMode=itemPref;pend=0;seen=0;atk=0;pt=0;cpuT=0;lsec=-1;lastSend=0;sentG='';pidc=0;$('tm').textContent='00:00';rankTok++;
+  grid=emptyGrid();score=0;lines=0;level=1;bag=[];next=null;acc=0;fall=[];fx=null;streak=0;showCombo();rnd=mode==='vs'?rng(gs):Math.random;irnd=mode==='vs'?rng((gs^0x5bd1e995)>>>0):Math.random;if(mode!=='vs'){itemMode=itemPref;gravity=gravityPref}pend=0;seen=0;atk=0;pt=0;cpuT=0;lsec=-1;lastSend=0;sentG='';pidc=0;$('tm').textContent='00:00';rankTok++;
   state='playing';$('settingsbox').hidden=true;resetItemState();hud();spawn();playMusic();
   if(state==='playing')$('ov').hidden=true;
   last=performance.now();
@@ -713,7 +726,7 @@ function start(){
 function clearBoard(){
   grid=emptyGrid();cur=null;next=null;fall=[];fx=null;pend=0;acc=0;
   score=0;lines=0;level=1;streak=0;
-  itemMode=itemPref;resetItemState();
+  itemMode=itemPref;gravity=gravityPref;resetItemState();
   $('tm').textContent='00:00';showCombo();hud();drawNext();
 }
 /* End-of-game menu: only the rematch/play-again button and "main menu". */
@@ -730,7 +743,7 @@ function over(){
   rankCheck(score,lines,level);
 }
 function pause(){
-  if(state==='playing'&&mode!=='vs'){state='paused';overlay('paused','','resume',false);$('gv').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display='';$('qt').style.display=''}
+  if(state==='playing'&&mode!=='vs'){state='paused';overlay('paused','','resume',false);$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display='';$('qt').style.display=''}
 }
 function resume(){state='playing';$('ov').hidden=true;last=performance.now()}
 
@@ -914,7 +927,7 @@ document.addEventListener('keydown',function(e){
   e.preventDefault();
 });
 
-var ROOM_LEN=5,visAt=Date.now(),room=null,opp=null,meP=null,myRdy=false,mySeed=0,gs=0,pend=0,seen=0,atk=0,mode='solo',roomCode='',sentG='',lastSend=0,rnd=Math.random,lastMatchSettings=null;
+var ROOM_LEN=6,cfg={gv:1,it:0,sv:0},cfgLocked=false,lastPeers=null,cfgNoteTimer=null,visAt=Date.now(),room=null,opp=null,meP=null,myRdy=false,mySeed=0,gs=0,pend=0,seen=0,atk=0,mode='solo',roomCode='',sentG='',lastSend=0,rnd=Math.random;
 function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function push(p){
   if(!room)return Promise.resolve(false);
@@ -1056,7 +1069,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#lvbox [data-l]'),functi
   b.addEventListener('click',function(){startCpu(+b.getAttribute('data-l'))});
 });
 $('lback').addEventListener('click',function(){$('back').click()});
-function ovui(a){['go','settings','cpub','vs','rk'].forEach(function(i){$(i).style.display=a?'':'none'});$('settingsbox').hidden=true;$('nbox').hidden=true;$('rs').style.display='none';$('qt').style.display='none';$('netbox').hidden=true;$('lvbox').hidden=true}
+function ovui(a){$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='';['go','settings','cpub','vs','rk'].forEach(function(i){$(i).style.display=a?'':'none'});$('settingsbox').hidden=true;$('nbox').hidden=true;$('rs').style.display='none';$('qt').style.display='none';$('netbox').hidden=true;$('lvbox').hidden=true}
 function attack(n,casc){
   if(mode==='solo')return;
   var a=(n>=4?4:Math.max(0,n-1))+(casc?1:0);
@@ -1100,7 +1113,7 @@ function sendBoard(t){
   var g=a.join('');
   if(g!==sentG){sentG=g;push({g:g,sc:score})}
 }
-function leaveRoom(){if(countTimer){clearInterval(countTimer);countTimer=null;}if(leftTimer){clearTimeout(leftTimer);leftTimer=null;}if(room){var oldRoom=room;room=null;oldRoom.leave().catch(function(){})}opp=null;meP=null;myRdy=false}
+function leaveRoom(){cfg={gv:1,it:0,sv:0};cfgLocked=false;clearTimeout(cfgNoteTimer);cfgNoteTimer=null;if(countTimer){clearInterval(countTimer);countTimer=null;}if(leftTimer){clearTimeout(leftTimer);leftTimer=null;}if(room){var oldRoom=room;room=null;oldRoom.leave().catch(function(){})}opp=null;meP=null;myRdy=false}
 
 /* Supabase client: created once and shared by rooms and the ranking. */
 var sbClient=null;
@@ -1131,8 +1144,8 @@ function createSupabaseRoom(code){
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
-  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','iq','ik','cc','g','sc'];
-  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,iq:0,ik:'',cc:myCC||'',t:Date.now(),g:'',sc:0};
+  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','cc','g','sc'];
+  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',cc:myCC||'',t:Date.now(),g:'',sc:0};
   var remote={},seenKeys={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,hbTimer=null,flushTimer=null,lastFlush=0;
   var retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   function validValue(k,v){
@@ -1141,6 +1154,8 @@ function createSupabaseRoom(code){
     if(k==='atk')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
     if(k==='sc')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=100000000;
     if(k==='gv'||k==='it')return v===0||v===1||v===false||v===true;
+    if(k==='lk')return v===0||v===1||v===false||v===true;
+    if(k==='sv')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=1000000;
     if(k==='iq')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
     if(k==='ik')return v===''||(typeof v==='string'&&ATTACKS.indexOf(v)>=0);
     if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
@@ -1358,14 +1373,57 @@ $('nskip').addEventListener('click',function(){
   setOS(fm('scorelines',{s:score,l:lines}));
 });
 
+/* ===== shared online match settings (shown in the room before the first game, read-only afterwards) ===== */
+function onoff(v){return tr(v?'cfgon':'cfgoff')}
+function noteFlash(){
+  var n=$('rcfgnote');if(!n)return;
+  n.textContent=tr('cfgchanged');n.style.color='var(--accent)';
+  clearTimeout(cfgNoteTimer);
+  cfgNoteTimer=setTimeout(function(){cfgNoteTimer=null;n.style.color='';renderCfg()},3500);
+}
+function renderCfg(){
+  var rc=$('rcfg');if(!rc)return;
+  var inRoom=mode==='vs'&&(state==='net'||state==='over');
+  var edit=inRoom&&state==='net'&&!cfgLocked;
+  rc.hidden=!edit;
+  $('cfgline').hidden=!(inRoom&&cfgLocked);
+  if(edit){
+    $('rgvc').checked=!!cfg.gv;$('ritc').checked=!!cfg.it;
+    $('rcfgtitle').textContent=tr('roomcfg');
+    if(!cfgNoteTimer)$('rcfgnote').textContent=tr('cfgnote');
+  }
+  if(inRoom&&cfgLocked)$('cfgline').textContent=fmt('cfgline',{g:onoff(cfg.gv),i:onoff(cfg.it)});
+}
+function cfgEdited(){
+  if(cfgLocked||mode!=='vs'||state!=='net'){renderCfg();return}
+  cfg={gv:$('rgvc').checked?1:0,it:$('ritc').checked?1:0,sv:cfg.sv+1};
+  push({gv:cfg.gv,it:cfg.it,sv:cfg.sv});
+  if(myRdy){myRdy=false;push({rdy:false});noteFlash()}
+  if(lastPeers)onPeers(lastPeers);else renderCfg();
+}
+$('rgvc').addEventListener('change',cfgEdited);
+$('ritc').addEventListener('change',cfgEdited);
 var leftTimer=null;
-function onPeers(ch){
+function onPeers(ch){lastPeers=ch;onPeersCore(ch);renderCfg()}
+function onPeersCore(ch){
   var ps=ch.peers.filter(function(p){return p.kind==='viewer'});
   ps.sort(function(a,b){return ((a.presence.t||0)-(b.presence.t||0))||(a.peer<b.peer?-1:1)});
   var two=ps.slice(0,2);
   opp=null;meP=null;
   for(var i=0;i<two.length;i++){var p=two[i];if(p.sameTab)meP=p;else opp=p}
   olabel();
+  /* shared match settings: adopt the other player's change (or their locked settings) before the first game */
+  if(mode==='vs'&&opp&&!cfgLocked&&(state==='net'||state==='over')){
+    var pp=opp.presence,psv=Number(pp.sv)||0,plk=pp.lk===1||pp.lk===true,ng=pp.gv?1:0,ni=pp.it?1:0;
+    var diff=ng!==cfg.gv||ni!==cfg.it;
+    var theirsWin=psv>cfg.sv||(psv===cfg.sv&&diff&&meP&&(Number(pp.t)||0)<(Number(meP.presence.t)||0));
+    if(plk||theirsWin){
+      cfg={gv:ng,it:ni,sv:Math.max(psv,cfg.sv)};
+      if(plk)cfgLocked=true;
+      if(diff&&myRdy){myRdy=false;push({rdy:false})}
+      if(diff)noteFlash();
+    }
+  }
   if(!meP&&state==='net'&&ps.some(function(q){return q.sameTab})){
     leaveRoom();state='ready';mode='solo';resize();
     overlay('battleTitle','roomfull','',false);
@@ -1398,24 +1456,31 @@ function onPeers(ch){
 }
 function ready(){
   if(!room||!opp){setOS('oppnotconn');$('qt').style.display='';return}
-  /* A rematch reuses the exact rules from the previous match. A fresh room requires both players to agree. */
-  if(state==='over'&&lastMatchSettings){gravity=lastMatchSettings.gv;itemPref=lastMatchSettings.it;gvLabel()}
   myRdy=true;mySeed=Math.floor(Math.random()*1e9)+1;
-  push({rdy:true,seed:mySeed,gv:gravity?1:0,it:itemPref?1:0,iq:0,ik:'',dead:false,atk:0});
+  push({rdy:true,seed:mySeed,gv:cfg.gv,it:cfg.it,sv:cfg.sv,lk:cfgLocked?1:0,iq:0,ik:'',dead:false,atk:0});
   $('go').style.display='none';setOS('waitready');$('qt').style.display='';
   check();
 }
 function check(){
   if((state!=='net'&&state!=='over')||mode!=='vs'||!myRdy||!opp||!meP||!opp.presence.rdy||typeof opp.presence.seed!=='number')return;
-  var myG=gravity?1:0,myI=itemPref?1:0,oppG=Number(opp.presence.gv),oppI=Number(opp.presence.it);
-  if(myG!==oppG||myI!==oppI){setOS('settingsmismatch');return}
-  var useMine=mySeed<=opp.presence.seed;
-  beginCount(useMine?mySeed:opp.presence.seed,!!myG,!!myI);
+  var th=opp.presence,useMine=mySeed<=th.seed;
+  var c=pickCfg({gv:cfg.gv,it:cfg.it,sv:cfg.sv,lk:cfgLocked?1:0,seed:mySeed},
+                {gv:th.gv?1:0,it:th.it?1:0,sv:Number(th.sv)||0,lk:(th.lk===1||th.lk===true)?1:0,seed:th.seed});
+  beginCount(useMine?mySeed:th.seed,c);
+}
+/* Both clients run this with the same two inputs, so both end up with the same settings:
+   locked settings win, then the newer change, then (very unlikely) the smaller seed. */
+function pickCfg(a,b){
+  if(a.lk!==b.lk)return a.lk?a:b;
+  if(a.sv!==b.sv)return a.sv>b.sv?a:b;
+  if(a.gv===b.gv&&a.it===b.it)return a;
+  return a.seed<=b.seed?a:b;
 }
 var countTimer=null;
-function beginCount(seed,gv,it){
+function beginCount(seed,c){
   if(countTimer)clearInterval(countTimer);
-  lastMatchSettings={gv:!!gv,it:!!it};
+  cfg={gv:c.gv,it:c.it,sv:c.sv};cfgLocked=true;   /* locked from the first game on, rematches keep it */
+  push({gv:cfg.gv,it:cfg.it,sv:cfg.sv,lk:1});
   state='count';var n=3;
   overlay('matchstart',String(n),'',false);ovui(false);
   countTimer=setInterval(function(){
@@ -1423,14 +1488,13 @@ function beginCount(seed,gv,it){
     n--;
     if(n>0){setOS(String(n));return}
     clearInterval(countTimer);countTimer=null;
-    gs=seed;gravity=!!gv;itemMode=!!it;myRdy=false;sentG='';
+    gs=seed;gravity=!!cfg.gv;itemMode=!!cfg.it;myRdy=false;sentG='';
     push({gs:gs,atk:0,iq:0,ik:'',dead:false,rdy:false,g:'',sc:0});
     start();
   },1000);
 }
 var joinToken=0;
 function joinRoom(code){
-  lastMatchSettings=null;
   var token=++joinToken;
   leaveRoom();
   $('join').disabled=true;
@@ -1439,10 +1503,10 @@ function joinRoom(code){
     room=rm;mode='vs';state='net';
     if(rm.onLost)rm.onLost(connLost);
     rm.onPeers(onPeers);
-    return rm.presence({rdy:false,dead:false,gs:0,atk:0,g:'',sc:0,t:Date.now(),cc:myCC}).then(function(){
+    return rm.presence({rdy:false,dead:false,gs:0,atk:0,g:'',sc:0,gv:cfg.gv,it:cfg.it,sv:cfg.sv,lk:0,t:Date.now(),cc:myCC}).then(function(){
       resize();
       overlay('battleTitle',fm('roomwait',{c:code}),'ready',false);
-      $('go').style.display='none';$('gv').style.display='none';$('rk').style.display='none';
+      endMenu();$('go').style.display='none';
       onPeers({peers:rm.peers()});
     });
   }).catch(function(err){
@@ -1464,7 +1528,6 @@ $('vs').addEventListener('click',function(){
   overlay('battleTitle','battlesub','',false);
   ovui(false);$('netbox').hidden=false;
 });
-$('code').addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,ROOM_LEN)});
 $('join').addEventListener('click',function(){
   var code=$('code').value.trim();
   if(!new RegExp('^\\d{'+ROOM_LEN+'}$').test(code)){setOS(fm('entercode',{n:ROOM_LEN}));return}
@@ -1472,10 +1535,10 @@ $('join').addEventListener('click',function(){
   joinRoom(code);
 });
 $('back').addEventListener('click',function(){
-  joinToken++;$('join').disabled=false;leaveRoom();lastMatchSettings=null;mode='solo';state='ready';pendingScore=null;clearBoard();resize();
+  joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';pendingScore=null;clearBoard();resize();
   overlay('tetris','drag','start',best>0);
 });
-function gvLabel(){$('gvc').checked=gravity;$('itmc').checked=itemPref;$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
+function gvLabel(){$('gvc').checked=gravityPref;$('itmc').checked=itemPref;$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
 $('settings').addEventListener('click',function(){
   $('settingsbox').hidden=false;
   ['settings','cpub','vs','rk','go'].forEach(function(i){$(i).style.display='none'});
@@ -1484,18 +1547,17 @@ $('settings').addEventListener('click',function(){
 $('settingsback').addEventListener('click',function(){
   $('settingsbox').hidden=true;
   ['settings','cpub','vs','rk'].forEach(function(i){$(i).style.display=''});
-  $('go').style.display=(state==='over'||state==='paused'||(state==='net'&&!myRdy))?'':'none';
+  $('go').style.display=(state==='over'||state==='paused')?'':'none';
 });
 $('gvc').addEventListener('change',function(){
-  gravity=this.checked;
-  try{localStorage.setItem('tetris-gravity',gravity?'1':'0')}catch(e){}
-  if(mode==='vs'&&room&&(state==='net'||state==='over')){push({gv:gravity?1:0});check()}
+  gravityPref=this.checked;
+  try{localStorage.setItem('tetris-gravity',gravityPref?'1':'0')}catch(e){}
+  if(mode!=='vs')gravity=gravityPref;
 });
 $('itmc').addEventListener('change',function(){
   itemPref=this.checked;
   try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(e){}
   if(mode!=='vs')itemMode=itemPref;
-  else if(room&&(state==='net'||state==='over')){push({it:itemPref?1:0});check()}
 });
 $('ghvc').addEventListener('change',function(){
   ghostPreview=this.checked;
@@ -1568,7 +1630,7 @@ var I18N={
   "noscores": "No scores yet. Be the first!",
   "saving": "Saving...",
   "connecting": "Connecting...",
-  "roomcode": "{n}-digit room number",
+  "roomcode": "{n}-digit code",
   "level": "Lv",
   "score": "Score",
   "opponent": "Opponent",
@@ -1592,15 +1654,14 @@ var I18N={
   "opptopped": "Opponent topped out",
   "connlost": "Connection lost",
   "connlostmsg": "Check your network, then reconnect to the same room.",
-  "battlesub": "Enter the same room number to connect two players",
+  "battlesub": "Two players who enter the same room code get connected",
   "roomfull": "This room already has two players. Enter a different code.",
   "matchstart": "Match starting",
   "roomwait": "Room {c}, waiting for an opponent",
   "unstable": "Connection is unstable. Your latest update may not have reached the opponent.",
-  "entercode": "Enter a {n}-digit room number",
+  "entercode": "Enter a {n}-digit room code",
   "oppnotconn": "Opponent is not connected. Choose Main menu and join again.",
   "waitready": "Waiting for your opponent to get ready",
-  "settingsmismatch": "Your rules differ from your opponent. Change Gravity and Item mode in Settings until both match.",
   "waitreconn": "Waiting for your opponent to reconnect...",
   "wantsrematch": "Your opponent wants a rematch!",
   "oppjoined": "Opponent joined. Press Ready.",
@@ -1633,7 +1694,13 @@ var I18N={
   "i_junk": "Junk",
   "i_speed": "Speed up",
   "i_fog": "Fog",
-  "i_rev": "Reverse"
+  "i_rev": "Reverse",
+  "roomcfg": "Match settings",
+  "cfgnote": "Both players share these settings. They lock when the first game starts and stay the same for rematches.",
+  "cfgchanged": "Settings changed. Press Ready again.",
+  "cfgline": "Gravity {g} · Items {i}",
+  "cfgon": "ON",
+  "cfgoff": "OFF"
  },
  "nl": {
   "settings": "Instellingen",
@@ -1739,7 +1806,13 @@ var I18N={
   "i_junk": "Rommel",
   "i_speed": "Versnellen",
   "i_fog": "Mist",
-  "i_rev": "Omkeren"
+  "i_rev": "Omkeren",
+  "roomcfg": "Wedstrijdinstellingen",
+  "cfgnote": "Deze instellingen delen jullie samen. Ze worden vergrendeld zodra het eerste spel begint en blijven bij een rematch gelden.",
+  "cfgchanged": "Instellingen gewijzigd. Druk opnieuw op Klaar.",
+  "cfgline": "Zwaartekracht {g} · Items {i}",
+  "cfgon": "AAN",
+  "cfgoff": "UIT"
  },
  "ko": {
   "settings": "설정",
@@ -1779,7 +1852,7 @@ var I18N={
   "noscores": "아직 점수가 없습니다. 첫 기록을 남겨보세요!",
   "saving": "저장 중...",
   "connecting": "연결 중...",
-  "roomcode": "{n}자리 방번호",
+  "roomcode": "{n}자리 코드",
   "cpuTitle": "CPU 대전",
   "battleTitle": "2인 대전",
   "level": "레벨",
@@ -1805,15 +1878,14 @@ var I18N={
   "opptopped": "상대의 블록이 가득 찼습니다",
   "connlost": "연결이 끊겼습니다",
   "connlostmsg": "네트워크를 확인한 뒤 같은 방에 다시 접속하세요.",
-  "battlesub": "같은 방번호를 입력한 두 사람이 연결됩니다",
-  "roomfull": "이 방에는 이미 두 명이 있습니다. 다른 방번호를 입력하세요.",
+  "battlesub": "같은 방 코드를 입력한 두 사람이 연결됩니다",
+  "roomfull": "이 방은 이미 두 명이 있습니다. 다른 코드를 입력하세요.",
   "matchstart": "대전 시작",
   "roomwait": "방 {c}, 상대를 기다리는 중",
   "unstable": "연결이 불안정합니다. 최근 정보가 상대에게 전달되지 않았을 수 있습니다.",
-  "entercode": "{n}자리 방번호를 입력하세요",
+  "entercode": "{n}자리 방 코드를 입력하세요",
   "oppnotconn": "상대가 연결되어 있지 않습니다. 메인 메뉴로 나가 다시 접속하세요.",
   "waitready": "상대가 준비하기를 기다리는 중",
-  "settingsmismatch": "상대와 규칙 설정이 다릅니다. 설정에서 중력 모드와 아이템 모드를 똑같이 맞춰 주세요.",
   "waitreconn": "상대가 다시 연결되기를 기다리는 중...",
   "wantsrematch": "상대가 재대결을 원합니다!",
   "oppjoined": "상대가 들어왔습니다. 준비를 누르세요.",
@@ -1846,7 +1918,13 @@ var I18N={
   "i_junk": "쓰레기",
   "i_speed": "가속",
   "i_fog": "안개",
-  "i_rev": "조작 반전"
+  "i_rev": "조작 반전",
+  "roomcfg": "대전 설정",
+  "cfgnote": "두 사람이 함께 정하는 설정입니다. 첫 게임이 시작되면 고정되고 재대결에도 그대로 유지됩니다.",
+  "cfgchanged": "설정이 바뀌었습니다. 다시 준비를 누르세요.",
+  "cfgline": "중력 {g} · 아이템 {i}",
+  "cfgon": "켜짐",
+  "cfgoff": "꺼짐"
  },
  "ja": {
   "settings": "設定",
@@ -1952,7 +2030,13 @@ var I18N={
   "i_junk": "お邪魔",
   "i_speed": "加速",
   "i_fog": "霧",
-  "i_rev": "操作反転"
+  "i_rev": "操作反転",
+  "roomcfg": "対戦設定",
+  "cfgnote": "2人で共有する設定です。最初の対戦が始まると固定され、再戦でも維持されます。",
+  "cfgchanged": "設定が変更されました。もう一度準備完了を押してください。",
+  "cfgline": "重力 {g} ・ アイテム {i}",
+  "cfgon": "オン",
+  "cfgoff": "オフ"
  },
  "zh-CN": {
   "settings": "设置",
@@ -2058,7 +2142,13 @@ var I18N={
   "i_junk": "垃圾行",
   "i_speed": "加速",
   "i_fog": "迷雾",
-  "i_rev": "操作反转"
+  "i_rev": "操作反转",
+  "roomcfg": "对战设置",
+  "cfgnote": "这是两位玩家共用的设置。第一局开始后将被锁定，再战时保持不变。",
+  "cfgchanged": "设置已更改，请重新点击准备。",
+  "cfgline": "重力 {g} · 道具 {i}",
+  "cfgon": "开",
+  "cfgoff": "关"
  },
  "zh-TW": {
   "settings": "設定",
@@ -2164,7 +2254,13 @@ var I18N={
   "i_junk": "垃圾行",
   "i_speed": "加速",
   "i_fog": "迷霧",
-  "i_rev": "操作反轉"
+  "i_rev": "操作反轉",
+  "roomcfg": "對戰設定",
+  "cfgnote": "這是兩位玩家共用的設定。第一局開始後將被鎖定，再戰時保持不變。",
+  "cfgchanged": "設定已變更，請重新按準備。",
+  "cfgline": "重力 {g} · 道具 {i}",
+  "cfgon": "開",
+  "cfgoff": "關"
  },
  "es": {
   "settings": "Ajustes",
@@ -2270,7 +2366,13 @@ var I18N={
   "i_junk": "Basura",
   "i_speed": "Acelerar",
   "i_fog": "Niebla",
-  "i_rev": "Invertir"
+  "i_rev": "Invertir",
+  "roomcfg": "Ajustes de la partida",
+  "cfgnote": "Ajustes compartidos por ambos jugadores. Se bloquean al empezar la primera partida y se mantienen en las revanchas.",
+  "cfgchanged": "Ajustes cambiados. Pulsa Listo de nuevo.",
+  "cfgline": "Gravedad {g} · Objetos {i}",
+  "cfgon": "ON",
+  "cfgoff": "OFF"
  },
  "pt": {
   "settings": "Configurações",
@@ -2376,7 +2478,13 @@ var I18N={
   "i_junk": "Lixo",
   "i_speed": "Acelerar",
   "i_fog": "Névoa",
-  "i_rev": "Inverter"
+  "i_rev": "Inverter",
+  "roomcfg": "Configurações da partida",
+  "cfgnote": "Configurações compartilhadas pelos dois jogadores. Ficam bloqueadas quando a primeira partida começa e valem nas revanches.",
+  "cfgchanged": "Configurações alteradas. Toque em Pronto novamente.",
+  "cfgline": "Gravidade {g} · Itens {i}",
+  "cfgon": "ON",
+  "cfgoff": "OFF"
  },
  "fr": {
   "settings": "Paramètres",
@@ -2482,7 +2590,13 @@ var I18N={
   "i_junk": "Déchets",
   "i_speed": "Accélération",
   "i_fog": "Brouillard",
-  "i_rev": "Inversion"
+  "i_rev": "Inversion",
+  "roomcfg": "Réglages de la partie",
+  "cfgnote": "Réglages communs aux deux joueurs. Ils sont verrouillés au début de la première partie et conservés pour les revanches.",
+  "cfgchanged": "Réglages modifiés. Appuyez à nouveau sur Prêt.",
+  "cfgline": "Gravité {g} · Objets {i}",
+  "cfgon": "ON",
+  "cfgoff": "OFF"
  }
 };
 function detectLang(){var pref='';try{pref=localStorage.getItem('tetris-language')||'auto'}catch(e){}LANG_PREF=pref;var raw=pref==='auto'?((navigator.languages&&navigator.languages[0])||navigator.language||'en'):pref;raw=String(raw).replace('_','-');if(raw.toLowerCase().indexOf('zh-tw')===0||raw.toLowerCase().indexOf('zh-hk')===0)return 'zh-TW';if(raw.toLowerCase().indexOf('zh')===0)return 'zh-CN';var key=raw.split('-')[0].toLowerCase();return I18N[key]?key:'en'}
@@ -2494,7 +2608,7 @@ function applyLanguage(){
  function txt(id,key){var el=$(id);if(el)el.textContent=tr(key)}
  function aria(el,key){if(el)el.setAttribute('aria-label',tr(key))}
  txt('settingstitle','settings');txt('languageLabel','language');
- [['gv','gravity'],['itm','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
+ [['gv','gravity'],['itm','items'],['rgv','gravity'],['rit','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
  txt('settingsback','back');txt('rs','restart');txt('qt','main');txt('vs','battle');txt('rk','ranking');txt('cpub','cpu');txt('join','join');txt('back','back');txt('lback','back');txt('nsave','save');txt('nskip','skip');txt('rstart','startgame');txt('rclose','close');
  txt('lvl','level');txt('lnl','lines');txt('itmhelp','itemhelp');
  var vol=$('musicvol');if(vol&&vol.querySelector('label span'))vol.querySelector('label span').textContent=tr('music');
