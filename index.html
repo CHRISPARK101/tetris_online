@@ -83,29 +83,29 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #code{width:120px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:18px;text-align:center}
 #opp{display:block;border-radius:8px;border:1px solid var(--line);background:var(--well)}
 #opp[hidden]{display:none}
-.ctl{--bh:clamp(44px,6.2vh,54px);display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
-.cl{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,var(--bh));gap:10px 14px}
-.cl [data-act="left"],.cl [data-act="right"]{grid-row:1/3}
-.cl [data-act="down"]{grid-column:1/3;grid-row:3}
-.cr{display:grid;grid-template-rows:repeat(3,var(--bh));gap:10px}
+.ctl{--bh:clamp(48px,7vh,60px);display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
+.cl{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,var(--bh));gap:10px 14px}
+.cl [data-act="down"]{grid-column:1/3;grid-row:2}
+.cr{display:grid;grid-template-rows:repeat(2,var(--bh));gap:10px}
 .ctl button{height:auto;font-size:22px;font-weight:600}
 .ctl button:active,.ctl button.on{transform:scale(.96);background:var(--line)}
 .ctl [data-act="rot"],.ctl [data-act="drop"]{font-size:15px;white-space:nowrap}
 .ctl [data-act="rot"]{font-size:17px;background:var(--btn);border-width:2px;border-color:var(--accent)}
 .ctl [data-act="drop"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
-#fire{--fire:#ff9a3c;width:100%;height:calc(var(--bh) - 6px);padding:0 6px;border-radius:18px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;color:#2a1400;line-height:1;border:1px solid #c85f0a;
-  background:linear-gradient(180deg,#ffd49a 0,#ffb15c 35%,#ff8f26 70%,#e56e0c 100%);
-  box-shadow:0 6px 0 #b04a04,0 10px 12px rgba(0,0,0,.26),inset 0 3px 4px rgba(255,255,255,.7),inset 0 -5px 8px rgba(150,55,0,.3);
+#fire{--fire:#ff9a3c;--fs:64px;flex:none;align-self:center;margin-top:auto;margin-bottom:8px;width:var(--fs);height:var(--fs);padding:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#2a1400;line-height:1;border:1px solid #c85f0a;
+  background:radial-gradient(circle at 35% 26%,#ffe2b8 0,#ffbb6b 24%,#ff8f26 60%,#e56e0c 100%);
+  box-shadow:0 6px 0 #b04a04,0 10px 12px rgba(0,0,0,.28),inset 0 3px 5px rgba(255,255,255,.7),inset 0 -6px 9px rgba(150,55,0,.35);
   transition:transform .06s,box-shadow .06s}
-#fire.on,#fire:active{background:linear-gradient(180deg,#ffd49a 0,#ffb15c 35%,#ff8f26 70%,#e56e0c 100%);transform:translateY(5px);box-shadow:0 1px 0 #b04a04,0 3px 6px rgba(0,0,0,.25),inset 0 3px 4px rgba(255,255,255,.55),inset 0 -4px 7px rgba(150,55,0,.35)}
-#fire .fi .ico{width:26px;height:26px}
+#fire.on,#fire:active{background:radial-gradient(circle at 35% 26%,#ffe2b8 0,#ffbb6b 24%,#ff8f26 60%,#e56e0c 100%);transform:translateY(5px);box-shadow:0 1px 0 #b04a04,0 3px 6px rgba(0,0,0,.25),inset 0 3px 5px rgba(255,255,255,.55),inset 0 -4px 7px rgba(150,55,0,.4)}
+#fire.nof{visibility:hidden}
+#fire .fi .ico{width:calc(var(--fs)*.44);height:calc(var(--fs)*.44)}
 #inv .sl .ico{width:24px;height:24px}
 #bf .ico{width:20px;height:20px;display:inline-block;vertical-align:middle;margin-right:2px}
 #bf b{font-size:14px;vertical-align:middle;margin-right:4px}
 .fly .ico{width:1em;height:1em;display:block}
 .ico{flex:none}
 #fire .fi{font-size:24px;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;font-weight:400}
-#fire small{font-size:14px;font-weight:800;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+#fire small{font-size:11px;font-weight:800;text-shadow:0 1px 0 rgba(255,255,255,.5)}
 #fire.empty{opacity:.4;filter:grayscale(.6)}
 .ctl.noitem #fire{visibility:hidden}
 #inv{position:absolute;height:38px;display:flex;justify-content:center;align-items:center;gap:6px}
@@ -227,6 +227,7 @@ input,select{-webkit-user-select:text;user-select:text}
       <canvas id="next" aria-label="Next piece"></canvas>
       <div id="ol" hidden>CPU</div>
       <canvas id="opp" hidden></canvas>
+          <button id="fire" data-act="fire" class="empty" aria-label="Fire item"><span class="fi" id="firei"></span><small id="firel">Fire</small></button>
     </div>
   </div>
   <div class="ctl noitem">
@@ -238,7 +239,6 @@ input,select{-webkit-user-select:text;user-select:text}
     <div class="cr">
       <button data-act="rot">Rotate</button>
       <button data-act="drop">Drop</button>
-      <button id="fire" data-act="fire" class="empty" aria-label="Fire item"><span class="fi" id="firei"></span><small id="firel">Fire</small></button>
     </div>
   </div>
 </div>
@@ -374,9 +374,13 @@ function resize(){
   bc.width=Math.round(W*dpr);bc.height=Math.round(H*dpr);
   nc.style.width=SW+'px';nc.style.height=Math.round(cs*4)+'px';
   nc.width=Math.round(SW*dpr);nc.height=Math.round(cs*4*dpr);
+  /* with items on, the opponent's board is drawn a little smaller so the fire button fits under it */
+  if(vs&&itemMode)oc=cs*.4;
+  var OW=oc*COLS,OH=oc*ROWS;
   op.hidden=!vs;$('ol').hidden=!vs;
-  op.style.width=SW+'px';op.style.height=cs*10+'px';
-  op.width=Math.round(SW*dpr);op.height=Math.round(cs*10*dpr);
+  op.style.width=OW+'px';op.style.height=OH+'px';op.style.alignSelf='center';
+  op.width=Math.round(OW*dpr);op.height=Math.round(OH*dpr);
+  document.documentElement.style.setProperty('--fs',Math.min(Math.round(SW*.9),Math.round(cs*3.1))+'px');
   olabel();
   theme();drawNext();
 }
@@ -502,6 +506,7 @@ function renderInv(pop){
   if(want!==invShown){
     invShown=want;box.hidden=!want;
     if(ctl)ctl.classList.toggle('noitem',!want);
+    var fbn=$('fire');if(fbn)fbn.classList.toggle('nof',!want);
     if(typeof resize==='function')resize();
   }
   if(key===invKey&&!pop)return;
@@ -1257,7 +1262,7 @@ function loop(t){
 /* Button input (hold to repeat) */
 var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,drop:hard,fire:fireStored};
 var repeatable={left:1,right:1,down:1};
-Array.prototype.forEach.call(document.querySelectorAll('.ctl button'),function(b){
+Array.prototype.forEach.call(document.querySelectorAll('.ctl button,#fire'),function(b){
   var act=b.getAttribute('data-act'),t1=null,t2=null;
   function stop(){clearTimeout(t1);clearInterval(t2);b.classList.remove('on')}
   b.addEventListener('pointerdown',function(e){
