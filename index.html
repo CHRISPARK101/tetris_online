@@ -72,16 +72,30 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #code{width:120px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:18px;text-align:center}
 #opp{display:block;border-radius:8px;border:1px solid var(--line);background:var(--well)}
 #opp[hidden]{display:none}
-.ctl{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.ctl [data-act="left"]{grid-area:1/1}
-.ctl [data-act="right"]{grid-area:1/2}
-.ctl [data-act="rot"]{grid-area:1/3}
-.ctl [data-act="down"]{grid-area:2/1/3/3}
-.ctl [data-act="drop"]{grid-area:2/3}
-.ctl button{height:54px;font-size:20px;font-weight:600}
+.ctl{display:grid;grid-template-columns:minmax(0,1.6fr) 84px minmax(0,1fr);gap:14px;align-items:center}
+.cl{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
+.cl [data-act="down"]{grid-column:1/3}
+.cr{display:grid;gap:12px}
+.ctl button{height:58px;font-size:22px;font-weight:600}
 .ctl button:active,.ctl button.on{transform:scale(.96);background:var(--line)}
-.ctl [data-act="rot"],.ctl [data-act="drop"]{font-size:16px}
+.ctl [data-act="rot"],.ctl [data-act="drop"]{font-size:15px;white-space:nowrap}
+.ctl [data-act="rot"]{height:64px;font-size:18px;background:var(--btn);border-width:2px;border-color:var(--accent)}
 .ctl [data-act="drop"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
+#fire{--fire:#ff9a3c;width:72px;height:72px;justify-self:center;padding:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#2a1400;line-height:1;border:1px solid #c85f0a;
+  background:radial-gradient(circle at 35% 26%,#ffe2b8 0,#ffbb6b 24%,#ff8f26 60%,#e56e0c 100%);
+  box-shadow:0 7px 0 #b04a04,0 12px 14px rgba(0,0,0,.28),inset 0 3px 5px rgba(255,255,255,.7),inset 0 -6px 9px rgba(150,55,0,.35);
+  margin-bottom:7px;transition:transform .06s,box-shadow .06s}
+#fire.on,#fire:active{background:radial-gradient(circle at 35% 26%,#ffe2b8 0,#ffbb6b 24%,#ff8f26 60%,#e56e0c 100%);transform:translateY(6px);box-shadow:0 1px 0 #b04a04,0 3px 6px rgba(0,0,0,.25),inset 0 3px 5px rgba(255,255,255,.55),inset 0 -4px 7px rgba(150,55,0,.4)}
+#fire .fi{font-size:28px;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;font-weight:400}
+#fire small{font-size:11px;font-weight:800;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+#fire.empty{opacity:.4;filter:grayscale(.6)}
+.ctl.noitem #fire{visibility:hidden}
+#inv{position:absolute;height:38px;display:flex;justify-content:center;align-items:center;gap:6px}
+#inv[hidden]{display:none}
+#inv .sl{width:34px;height:34px;border-radius:10px;border:1px dashed var(--line);background:var(--well);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;box-sizing:border-box}
+#inv .sl.f{border:2px solid var(--fire,#ff9a3c);background:var(--btn);width:38px;height:38px;cursor:pointer}
+#inv .sl.pop{animation:invpop .35s}
+@keyframes invpop{0%{transform:scale(.4)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
 .sw.locked{cursor:default}
 .sw input:disabled+i{opacity:.55}
 button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
@@ -128,6 +142,7 @@ input,select{-webkit-user-select:text;user-select:text}
 #tt[hidden]{display:none}
 #bf{position:absolute;left:8px;top:8px;font-size:18px;line-height:1.1;letter-spacing:2px;pointer-events:none;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif}
 #bf[hidden]{display:none}
+#bf .bfm{filter:grayscale(1) contrast(1.15);opacity:.8}
 .fly{position:fixed;left:0;top:0;z-index:80;pointer-events:none;line-height:1;white-space:nowrap;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;will-change:transform,opacity;filter:drop-shadow(0 0 8px rgba(255,255,255,.9))}
 @keyframes shk{0%,100%{transform:translate(0,0)}15%{transform:translate(-7px,2px)}30%{transform:translate(6px,-3px)}45%{transform:translate(-5px,3px)}60%{transform:translate(4px,-2px)}80%{transform:translate(-2px,1px)}}
 .well.shake{animation:shk .45s}
@@ -145,6 +160,7 @@ input,select{-webkit-user-select:text;user-select:text}
 <body>
 <div id="app">
   <div id="stage">
+    <div id="inv" hidden aria-label="Item queue"></div>
     <div class="well">
       <canvas id="board"></canvas>
       <div id="cb" hidden></div>
@@ -194,12 +210,17 @@ input,select{-webkit-user-select:text;user-select:text}
       <canvas id="opp" hidden></canvas>
     </div>
   </div>
-  <div class="ctl">
-    <button data-act="left" aria-label="Left">◀</button>
-    <button data-act="right" aria-label="Right">▶</button>
-    <button data-act="down" aria-label="Down">▼</button>
-    <button data-act="rot">Rotate</button>
-    <button data-act="drop">Drop</button>
+  <div class="ctl noitem">
+    <div class="cl">
+      <button data-act="left" aria-label="Left">◀</button>
+      <button data-act="right" aria-label="Right">▶</button>
+      <button data-act="down" aria-label="Down">▼</button>
+    </div>
+    <button id="fire" data-act="fire" class="empty" aria-label="Fire item"><span class="fi" id="firei">🎁</span><small id="firel">Fire</small></button>
+    <div class="cr">
+      <button data-act="rot">Rotate</button>
+      <button data-act="drop">Drop</button>
+    </div>
   </div>
 </div>
 <div id="ver" aria-hidden="true">v0.7.0</div>
@@ -319,14 +340,15 @@ function theme(){
   TH.grid=s.getPropertyValue('--grid').trim()||TH.grid;
 }
 function resize(){
-  var st=$('stage'),w=st.clientWidth,h=st.clientHeight,gap=10;
+  var st=$('stage'),w=st.clientWidth,rs=itemMode?42:0,h=st.clientHeight-rs,gap=10;
   cs=Math.max(8,Math.floor(Math.min(h/ROWS,(w-gap)/(COLS*1.5))));
   oc=cs/2;
   dpr=window.devicePixelRatio||1;
-  var W=cs*COLS,SW=W/2,H=cs*ROWS,x0=Math.max(0,Math.floor((w-W-gap-SW)/2)),y0=Math.max(0,Math.floor((h-H)/2));
+  var W=cs*COLS,SW=W/2,H=cs*ROWS,x0=Math.max(0,Math.floor((w-W-gap-SW)/2)),y0=rs+Math.max(0,Math.floor((h-H)/2));
   var wl=document.querySelector('.well'),sd=$('side'),vs=mode!=='solo';
   document.documentElement.style.setProperty('--cs',cs+'px');
   wl.style.left=x0+'px';wl.style.top=y0+'px';
+  var ivb=$('inv');if(ivb){ivb.style.left=x0+'px';ivb.style.width=W+'px';ivb.style.top=Math.max(0,y0-42)+'px'}
   sd.style.left=(x0+W+gap)+'px';sd.style.top=y0+'px';sd.style.width=SW+'px';sd.style.height=H+'px';
   bc.style.width=W+'px';bc.style.height=H+'px';
   bc.width=Math.round(W*dpr);bc.height=Math.round(H*dpr);
@@ -346,12 +368,15 @@ function emptyGrid(){var g=[];gid=[];itm=[];for(var r=0;r<ROWS;r++){g.push(new A
    Some pieces carry one item cell (value 2 in the piece matrix). When the line holding that cell is cleared,
    the item fires automatically. Self items help you, attack items hit your opponent (online player or CPU).
    The item stream uses its own seeded random generator, so both online players see the very same item pieces. */
-var ITEMS={bomb:{e:'💣'},laser:{e:'⚡'},nuke:{e:'💥'},slow:{e:'🐢'},shield:{e:'🛡️'},junk:{e:'🧱'},speed:{e:'🚀'},fog:{e:'🌫️'},rev:{e:'🌀'}};
+var ITEMS={bomb:{e:'💣'},laser:{e:'⚡'},nuke:{e:'💥'},slow:{e:'🐢'},shield:{e:'🛡️'},junk:{e:'🧱'},speed:{e:'🚀'},fog:{e:'🌫️'},rev:{e:'🌀'},swap:{e:'🔄'}};
 var ATTACKS=['junk','speed','fog','rev'];
 var POOL_SOLO=[['bomb',40],['laser',32],['nuke',8],['slow',20]];
-var POOL_FULL=[['bomb',16],['laser',13],['nuke',4],['slow',9],['shield',11],['junk',17],['speed',11],['fog',9],['rev',10]];
+var POOL_FULL=[['bomb',16],['laser',13],['nuke',4],['slow',9],['shield',11],['junk',17],['speed',11],['fog',9],['rev',10],['swap',7]];
 var ITEM_P=.10,ITEM_GAP=5,sinceItem=0,irnd=Math.random;
-var iblast=null,shield=false,fastUntil=0,slowUntil=0,fogUntil=0,revUntil=0,iseq=0,seenIq=0,boom=null,ttTimer=null,bfLast='';
+var inv=[],INV_MAX=5,fireAt=0,resumeCur=null,invKey='',invShown=null,swapWait=null,swapIn=null,seenSw=0,swapSeq=0;
+/* Only these wait in the queue for the fire button. Bomb, laser, slow and shield depend on where the item cell was, so they fire at once. */
+var STORE=['junk','speed','fog','rev','swap','nuke'];
+var iblast=null,shield=0,fastUntil=0,slowUntil=0,fogUntil=0,revUntil=0,iseq=0,seenIq=0,boom=null,ttTimer=null,bfLast='';
 var EMOJI_FONT='"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif';
 function pickKind(){
   var pool=mode==='solo'?POOL_SOLO:POOL_FULL,tot=0,i;
@@ -381,23 +406,26 @@ function toast(key,vars){
   clearTimeout(ttTimer);ttTimer=setTimeout(function(){e.hidden=true},1800);
 }
 function renderBuffs(){
-  var t='';
-  if(shield)t+=ITEMS.shield.e;
-  if(pt<fastUntil)t+=ITEMS.speed.e;
-  if(pt<slowUntil)t+=ITEMS.slow.e;
-  if(pt<fogUntil)t+=ITEMS.fog.e;
-  if(pt<revUntil)t+=ITEMS.rev.e;
-  if(t!==bfLast){bfLast=t;var e=$('bf');e.textContent=t;e.hidden=!t}
+  /* my own boosts (shield, slow) stay in colour; effects the opponent put on me (speed, fog, reverse) are grey */
+  var mine='',theirs='';
+  if(shield>0)mine+=ITEMS.shield.e+(shield>1?'×'+shield:'');
+  if(pt<slowUntil)mine+=ITEMS.slow.e;
+  if(pt<fastUntil)theirs+=ITEMS.speed.e;
+  if(pt<fogUntil)theirs+=ITEMS.fog.e;
+  if(pt<revUntil)theirs+=ITEMS.rev.e;
+  var t=mine+'|'+theirs;
+  if(t!==bfLast){bfLast=t;var e=$('bf');e.innerHTML=mine+(theirs?'<span class="bfm">'+theirs+'</span>':'');e.hidden=!(mine||theirs)}
 }
 function sfxCharge(){tone(220,.5,'sawtooth',.03);tone(440,.4,'triangle',.03,.1)}
 function sfxItem(){tone(700,.09,'square',.035);tone(1050,.12,'square',.035,.07)}
 function sfxBoom(){tone(120,.25,'sawtooth',.07);tone(80,.3,'triangle',.07,.05)}
 function sfxHit(){tone(200,.18,'sawtooth',.05);tone(150,.2,'sawtooth',.05,.1)}
 function resetItemState(){
-  shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;boom=null;iblast=null;sinceItem=0;itemTok++;clearFlyers();
+  inv=[];fireAt=0;resumeCur=null;swapWait=null;swapIn=null;seenSw=0;swapSeq=0;renderInv();
+  shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;boom=null;iblast=null;sinceItem=0;itemTok++;clearFlyers();
   clearTimeout(ttTimer);$('tt').hidden=true;renderBuffs();
 }
-function endItems(){iblast=null;itemTok++;clearFlyers();shield=false;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;renderBuffs();$('tt').hidden=true}
+function endItems(){inv=[];resumeCur=null;swapWait=null;swapIn=null;renderInv();iblast=null;itemTok++;clearFlyers();shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;renderBuffs();$('tt').hidden=true}
 function topRow(){for(var r=0;r<ROWS;r++)if(grid[r].some(Boolean))return r;return ROWS}
 function wipe(r){grid[r].fill(0);gid[r].fill(0);itm[r].fill(0)}
 /* The item cell was part of a cleared line: collect it before the rows disappear ... */
@@ -414,6 +442,8 @@ function applyItems(list,rows,cb){
     if(!o||!ITEMS[o.k]||!Number.isInteger(o.y)||!Number.isInteger(o.c))return;
     var cy=o.y;
     if(!gravity){var below=0;for(var ri=0;ri<cleared.length;ri++)if(cleared[ri]>o.y)below++;cy+=below;}   /* classic mode: the stack above slides down */
+    /* Items are kept in the queue and fired with the fire button. Position items (bomb, laser), slow and shield fire at once, and a full queue fires the new item immediately. */
+    if(STORE.indexOf(o.k)>=0&&inv.length<INV_MAX){stash(o.k);return}
     if(o.k==='bomb'||o.k==='laser'||o.k==='nuke')heavy.push({k:o.k,cy:Math.max(0,Math.min(ROWS-1,cy)),cx:Math.max(0,Math.min(COLS-1,o.c))});
     else fireItem(o.k,cy,o.c);
   });
@@ -423,9 +453,134 @@ function applyItems(list,rows,cb){
   sfxCharge();
   iblast={t:0,d:520,list:heavy,cb:cb};
 }
+/* ===== Item queue: collected items wait here (oldest first) until the player presses the fire button ===== */
+function stash(k){
+  inv.push(k);sfxItem();toast('got',{n:itemName(k)});renderInv(true);
+}
+function renderInv(pop){
+  var want=!!itemMode,box=$('inv'),ctl=document.querySelector('.ctl'),key=want+'|'+inv.join(',');
+  if(want!==invShown){
+    invShown=want;box.hidden=!want;
+    if(ctl)ctl.classList.toggle('noitem',!want);
+    if(typeof resize==='function')resize();
+  }
+  if(key===invKey&&!pop)return;
+  invKey=key;
+  var h='';
+  for(var i=0;i<INV_MAX;i++){
+    var k=inv[i];
+    h+='<div class="sl'+(i===0&&k?' f':'')+(pop&&i===inv.length-1?' pop':'')+'"'+(i===0&&k?' data-first="1"':'')+'>'+(k?ITEMS[k].e:'')+'</div>';
+  }
+  box.innerHTML=h;
+  var fb=$('fire'),fi=$('firei');
+  if(fb){fb.classList.toggle('empty',!inv.length);fi.textContent=inv.length?ITEMS[inv[0]].e:'🎁'}
+}
+/* Column of the falling piece: where a fired item starts its flight */
+function aimCol(){
+  var sum=0,n=0;
+  if(cur)for(var r=0;r<cur.m.length;r++)for(var c=0;c<cur.m[r].length;c++)if(cur.m[r][c]){sum+=cur.x+c;n++}
+  var cx=n?Math.round(sum/n):Math.floor(COLS/2);
+  return Math.max(0,Math.min(COLS-1,cx));
+}
+function fireStored(){
+  if(!itemMode||state!=='playing'||iblast||swapWait||!cur||!inv.length)return;
+  var now=performance.now();
+  if(now<fireAt)return;
+  var k=inv[0];
+  if(k==='swap'&&(mode==='solo'||(mode==='vs'&&(!room||!opp))))return;   /* nobody to swap with: keep the item */
+  fireAt=now+800;                                   /* short cooldown so several items cannot be dumped at once */
+  inv.shift();renderInv();
+  var cx=aimCol(),py=Math.max(0,Math.min(ROWS-1,cur.y+1));
+  if(k==='nuke'){
+    toast('used',{n:itemName(k)});sfxCharge();
+    var keep=cur;
+    iblast={t:0,d:520,list:[{k:k,cy:Math.floor(ROWS/2),cx:Math.floor(COLS/2)}],cb:function(){
+      if(state!=='playing'||cur!==keep)return;
+      streak=0;
+      if(gravity&&startFall())resumeCur=keep;
+    }};
+    return;
+  }
+  if(k==='swap'){fireSwap();return}
+  fireItem(k,py,cx);
+}
+/* ===== Board swap: both players trade their whole boards ===== */
+function boardStr(){var a=[],r,c;for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++)a.push(grid[r][c]||'.');return a.join('')}
+function okBoard(b){return typeof b==='string'&&b.length===COLS*ROWS&&/^[.IOTSZJLG]+$/.test(b)}
+function strCells(b){var a=[];for(var i=0;i<b.length;i++)a.push(b[i]==='.'?0:b[i]);return a}
+/* Put a new stack on my board. Item cells on it are dropped; touching blocks of one colour become one piece for gravity. */
+function applyBoard(cells){
+  var r,c;
+  grid=[];gid=[];itm=[];
+  for(r=0;r<ROWS;r++){grid.push(cells.slice(r*COLS,(r+1)*COLS));gid.push(new Array(COLS).fill(0));itm.push(new Array(COLS).fill(0))}
+  for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++){
+    if(!grid[r][c]||gid[r][c])continue;
+    var id=++pidc,t=grid[r][c],st=[[r,c]];gid[r][c]=id;
+    while(st.length){
+      var q=st.pop();
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(function(d){
+        var nr=q[0]+d[0],nc2=q[1]+d[1];
+        if(nr>=0&&nr<ROWS&&nc2>=0&&nc2<COLS&&grid[nr][nc2]===t&&!gid[nr][nc2]){gid[nr][nc2]=id;st.push([nr,nc2])}
+      });
+    }
+  }
+  fall=[];fs=0;fv=0;acc=0;streak=0;showCombo();
+  if(cur){cur.y=0;if(hit(cur.m,cur.x,cur.y))over()}      /* the falling piece restarts at the top of the new stack */
+}
+function swapFx(){toast('hit_swap');sfxHit();stamp('swap',ctr('board'),true);pulse(document.querySelector('.well'),'shake')}
+function fireSwap(){
+  toast('used',{n:itemName('swap')});sfxItem();sfxWhoosh();
+  if(mode==='cpu'&&cpu){
+    var mine=[],theirs=[],r,c;
+    for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++){mine.push(grid[r][c]||0);theirs.push(cpu.g[r][c]||0)}
+    for(r=0;r<ROWS;r++)cpu.g[r]=mine.slice(r*COLS,(r+1)*COLS);
+    stamp('swap',ctr('opp'),true);pulse($('opp'),'hit');
+    swapFx();applyBoard(theirs);
+    return;
+  }
+  /* online: send my stack and wait (frozen) for the opponent's stack; the opponent's shield can block it */
+  swapSeq++;swapWait={n:swapSeq,t:performance.now()};
+  push({sw:boardStr(),swn:swapSeq});
+  stamp('swap',ctr('opp'),true);pulse($('opp'),'hit');
+}
+function receiveSwap(b,n){
+  if(!itemMode||swapWait||!okBoard(b)){push({sr:'',srn:n});return}
+  if(shield>0){shield--;renderBuffs();toast('blocked');sfxItem();stamp('shield',ctr('board'),true);push({sr:'',srn:n});return}
+  swapIn={n:n,b:b};tryApplySwapIn();
+}
+function tryApplySwapIn(){
+  if(!swapIn||state!=='playing'||iblast||swapWait)return;
+  var s=swapIn;swapIn=null;
+  push({sr:boardStr(),srn:s.n});
+  swapFx();applyBoard(strCells(s.b));
+}
+function finishSwap(sr){
+  swapWait=null;
+  if(sr===''){toast('swapblocked');sfxItem();return}
+  if(!okBoard(sr)||state!=='playing')return;
+  swapFx();applyBoard(strCells(sr));
+}
+var swept=[];
 function finishBlast(){
   var ib=iblast;iblast=null;
+  swept=[];
   ib.list.forEach(blastItem);
+  /* Item cells caught in the blast are collected instead of lost: stored ones join the queue, the rest take effect where they were. */
+  var chain=[];
+  swept.forEach(function(o){
+    var k=o.k;if(!ITEMS[k])return;
+    if(STORE.indexOf(k)>=0&&inv.length<INV_MAX){stash(k);return}
+    if(k==='bomb'||k==='laser'||k==='nuke'){chain.push({k:k,cy:o.y,cx:o.x});return}   /* sets off a second blast */
+    if(k==='swap')return;                                                               /* no room left: a swap is not forced on anyone */
+    fireItem(k,o.y,o.x);
+  });
+  swept=[];
+  if(chain.length){
+    chain.forEach(function(h){toast('used',{n:itemName(h.k)})});
+    sfxCharge();
+    iblast={t:0,d:520,list:chain,cb:ib.cb};
+    return;
+  }
   ib.cb();
 }
 function fireItem(k,cy,cx){
@@ -441,7 +596,7 @@ function fireItem(k,cy,cx){
     });
     return;
   }
-  if(k==='shield'){shield=true;sfxItem();renderBuffs();return}
+  if(k==='shield'){shield++;sfxItem();renderBuffs();return}
   if(k==='slow'){slowUntil=pt+8000;sfxItem();renderBuffs();return}
 }
 function blastItem(h){
@@ -451,6 +606,7 @@ function blastItem(h){
      score the same block twice because a cleared cell is empty for subsequent blasts. */
   function eraseCell(y,x){
     if(grid[y][x])removed++;
+    if(itm[y][x])swept.push({k:itm[y][x],y:y,x:x});
     grid[y][x]=0;gid[y][x]=0;itm[y][x]=0;
   }
   if(k==='bomb'){            /* 5x5 blast around the item cell */
@@ -551,7 +707,7 @@ function receiveItem(k){
 }
 function landItem(k){
   var c=ctr('board');
-  if(shield){shield=false;renderBuffs();toast('blocked');sfxItem();stamp('shield',c,true);return}
+  if(shield>0){shield--;renderBuffs();toast('blocked');sfxItem();stamp('shield',c,true);return}
   if(k==='junk')pend=Math.min(pend+3,ROWS);
   else if(k==='speed')fastUntil=pt+8000;
   else if(k==='fog')fogUntil=pt+7000;
@@ -584,13 +740,14 @@ function hit(m,x,y){
 
 function spawn(){
   if(pend>0){addGarbage();if(state==='over')return}
-  cur=next||mk(pull());next=mk(pull());
+  if(resumeCur){cur=resumeCur;resumeCur=null;cur.y=0}
+  else{cur=next||mk(pull());next=mk(pull())}
   drawNext();
   if(hit(cur.m,cur.x,cur.y))over();
 }
 function move(d){
   if(pt<revUntil)d=-d;
-  if(state==='playing'&&!hit(cur.m,cur.x+d,cur.y)){
+  if(state==='playing'&&!iblast&&!swapWait&&!hit(cur.m,cur.x+d,cur.y)){
     cur.x+=d;
     // Sound is intentionally subtle; throttle rapid key-repeat movement.
     var now=performance.now();
@@ -598,7 +755,7 @@ function move(d){
   }
 }
 function rotate(){
-  if(state!=='playing')return;
+  if(state!=='playing'||iblast||swapWait)return;
   /* wall kicks (sideways) first, then floor kicks (upwards) so pieces can turn on the stack or on garbage */
   var r=rot(cur.m),k=[[0,0],[-1,0],[1,0],[-2,0],[2,0],[0,-1],[-1,-1],[1,-1],[0,-2]],top=0;
   while(top<r.length&&!r[top].some(Boolean))top++;      /* first row of the rotated shape that holds blocks */
@@ -608,11 +765,11 @@ function rotate(){
   }
 }
 function soft(){
-  if(state!=='playing')return;
+  if(state!=='playing'||iblast||swapWait)return;
   if(!hit(cur.m,cur.x,cur.y+1)){cur.y++;score+=1;acc=0;hud();tone(260,.035,'sine',.018)}else lock();
 }
 function hard(){
-  if(state!=='playing')return;
+  if(state!=='playing'||iblast||swapWait)return;
   var n=0;
   while(!hit(cur.m,cur.x,cur.y+1)){cur.y++;n++}
   score+=2*n;lock();
@@ -816,7 +973,7 @@ function over(){
   rankCheck(score,lines,level);
 }
 function pause(){
-  if(state==='playing'&&mode!=='vs'){state='paused';overlay('paused','','resume',false);$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display='';$('qt').style.display=''}
+  if(state==='playing'&&!iblast&&!swapWait&&mode!=='vs'){state='paused';overlay('paused','','resume',false);$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display='';$('qt').style.display=''}
 }
 function resume(){state='playing';$('ov').hidden=true;last=performance.now()}
 
@@ -960,6 +1117,7 @@ function loop(t){
   if(state==='ready')attractStep(dt);
   if(boom){boom.t+=dt;if(boom.t>=boom.d)boom=null}
   if(itemMode||bfLast)renderBuffs();
+  if(!!itemMode!==invShown)renderInv();
   if(state==='playing'||state==='anim'||state==='clear'){
     pt+=dt;
     var sec=Math.floor(pt/1000);
@@ -981,7 +1139,9 @@ function loop(t){
     for(var k=0;k<fall.length;k++){if(fall[k].y0+fs<fall[k].to){fin=false;break}}
     if(fin)landFall();
   }
-  if(state==='playing'){
+  if(swapIn)tryApplySwapIn();
+  if(swapWait&&performance.now()-swapWait.t>5000)swapWait=null;   /* no answer: give up and play on */
+  if(state==='playing'&&!iblast&&!swapWait){
     acc+=dt;
     var iv=interval();
     while(acc>=iv&&state==='playing'){acc-=iv;if(!hit(cur.m,cur.x,cur.y+1))cur.y++;else{lock();break}}
@@ -991,7 +1151,7 @@ function loop(t){
 }
 
 /* Button input (hold to repeat) */
-var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,drop:hard};
+var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,drop:hard,fire:fireStored};
 var repeatable={left:1,right:1,down:1};
 Array.prototype.forEach.call(document.querySelectorAll('.ctl button'),function(b){
   var act=b.getAttribute('data-act'),t1=null,t2=null;
@@ -1004,6 +1164,8 @@ Array.prototype.forEach.call(document.querySelectorAll('.ctl button'),function(b
   ['pointerup','pointercancel','pointerleave'].forEach(function(n){b.addEventListener(n,stop)});
   b.addEventListener('contextmenu',function(e){e.preventDefault()});
 });
+
+$('inv').addEventListener('pointerdown',function(e){var t=e.target;if(t&&t.getAttribute&&t.getAttribute('data-first')){e.preventDefault();fireStored()}});
 
 /* Board touch: tap = rotate, horizontal drag = move, drag down = soft drop, fast down swipe = hard drop */
 var p=null;
@@ -1037,7 +1199,7 @@ document.addEventListener('keydown',function(e){
   var k=e.key;
   if(k==='ArrowLeft'){move(-1)}else if(k==='ArrowRight'){move(1)}
   else if(k==='ArrowDown'){soft()}else if(k==='ArrowUp'||k==='x'){rotate()}
-  else if(k===' '){hard()}else if(k==='p'||k==='P'){state==='playing'?pause():state==='paused'&&resume()}
+  else if(k===' '){hard()}else if(k==='f'||k==='F'||k==='z'||k==='Z'){fireStored()}else if(k==='Enter'&&state==='playing'){if(!e.repeat)fireStored()}else if(k==='p'||k==='P'){state==='playing'?pause():state==='paused'&&resume()}
   else return;
   e.preventDefault();
 });
@@ -1259,8 +1421,8 @@ function createSupabaseRoom(code){
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
-  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','cc','g','sc'];
-  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],cc:myCC||'',t:Date.now(),g:'',sc:0};
+  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','cc','g','sc','sw','swn','sr','srn'];
+  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0};
   var remote={},seenKeys={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,hbTimer=null,flushTimer=null,lastFlush=0;
   var retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   function validValue(k,v){
@@ -1275,6 +1437,8 @@ function createSupabaseRoom(code){
     if(k==='ik')return v===''||(typeof v==='string'&&ATTACKS.indexOf(v)>=0);
     if(k==='ie')return Array.isArray(v)&&v.length<=32&&v.every(function(e){return e&&Number.isInteger(e.id)&&e.id>0&&typeof e.k==='string'&&ATTACKS.indexOf(e.k)>=0});
     if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
+    if(k==='swn'||k==='srn')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=1000000;
+    if(k==='sw'||k==='sr')return v===''||(typeof v==='string'&&v.length===COLS*ROWS&&/^[.IOTSZJLG]+$/.test(v));
     if(k==='kind')return v==='viewer';
     if(k==='g')return typeof v==='string'&&v.length===COLS*ROWS&&/^[.IOTSZJLG]+$/.test(v);
     return false;
@@ -1373,7 +1537,7 @@ function createSupabaseRoom(code){
       data=data||{};
       /* A new match resets the event stream; otherwise append each attack to a bounded
          replay window. The 150ms broadcast coalescer can no longer overwrite attacks. */
-      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];}
+      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;}
       if(Number.isInteger(data.iq)&&data.iq>localState.iq&&typeof data.ik==='string'&&ATTACKS.indexOf(data.ik)>=0){
         localState.iq=data.iq;localState.ik=data.ik;
         localState.ie.push({id:data.iq,k:data.ik});
@@ -1601,6 +1765,9 @@ function onPeersCore(ch){
         /* Advance to the sequence watermark even if an old client sent no queue. */
         seenIq=iqv;
       }
+      var swn=Math.floor(Number(P.swn)||0);
+      if(swn>seenSw){seenSw=swn;receiveSwap(typeof P.sw==='string'?P.sw:'',swn)}
+      if(swapWait&&Math.floor(Number(P.srn)||0)===swapWait.n)finishSwap(typeof P.sr==='string'?P.sr:'');
       if(P.dead===true)win('opptopped');
     }
     return;
@@ -1837,7 +2004,10 @@ var I18N={
   "localrank": "Showing scores saved on this device",
   "rlines": "{n} lines",
   "items": "Item mode",
-  "itemhelp": "Some blocks carry one item cell. Clear the line containing it and the item fires automatically. Items are rare: attacks hit your opponent, the rest help you.",
+  "itemhelp": "Some blocks carry one item cell. Clear the line containing it to collect the item. Bomb, laser, slow and shield fire at once. Attack items, Swap and Clear all wait in the queue until you press Fire.",
+  "fire": "Fire",
+  "got": "{n} collected",
+  "itemqueue": "Item queue",
   "used": "{n} used!",
   "blocked": "Your shield blocked the attack!",
   "hit_junk": "Junk lines incoming!",
@@ -1847,6 +2017,9 @@ var I18N={
   "i_bomb": "Bomb",
   "i_laser": "Laser",
   "i_nuke": "Clear all",
+  "i_swap": "Swap boards",
+  "hit_swap": "Boards swapped!",
+  "swapblocked": "The swap was blocked!",
   "i_slow": "Slow",
   "i_shield": "Shield",
   "i_junk": "Junk",
@@ -1948,7 +2121,10 @@ var I18N={
   "localrank": "Op dit apparaat opgeslagen scores",
   "rlines": "{n} rijen",
   "items": "Itemmodus",
-  "itemhelp": "Soms valt er een blok met één itemvakje. Wis de rij waar het in zit en het item wordt automatisch geactiveerd. Aanvalsitems raken je tegenstander, de rest helpt jezelf.",
+  "itemhelp": "Soms valt er een blok met één itemvakje. Wis de rij waar het in zit om het item te krijgen. Bom, laser, vertraging en schild werken meteen. Aanvalsitems, Wisselen en Alles wissen wachten in de rij tot je op Vuur drukt.",
+  "fire": "Vuur",
+  "got": "{n} verzameld",
+  "itemqueue": "Itemrij",
   "used": "{n} ingezet!",
   "blocked": "Je schild blokkeerde de aanval!",
   "hit_junk": "Rommelrijen komen eraan!",
@@ -1958,6 +2134,9 @@ var I18N={
   "i_bomb": "Bom",
   "i_laser": "Laser",
   "i_nuke": "Alles wissen",
+  "i_swap": "Borden wisselen",
+  "hit_swap": "Borden gewisseld!",
+  "swapblocked": "De wissel werd geblokkeerd!",
   "i_slow": "Vertragen",
   "i_shield": "Schild",
   "i_junk": "Rommel",
@@ -2059,7 +2238,10 @@ var I18N={
   "localrank": "이 기기에 저장된 점수를 표시 중",
   "rlines": "{n}줄",
   "items": "아이템전",
-  "itemhelp": "가끔 아이템이 박힌 블록 칸이 내려옵니다. 그 칸이 있는 줄을 지우면 아이템이 자동으로 발동합니다. 공격 아이템은 상대에게, 나머지는 나에게 적용됩니다.",
+  "itemhelp": "가끔 아이템이 박힌 블록 칸이 내려옵니다. 그 칸이 있는 줄을 지우면 아이템을 얻습니다. 폭탄·레이저·감속·방어는 즉시 발동하고, 공격 아이템·화면 교체·전체 삭제는 대기열에 쌓였다가 발사 버튼을 누르면 나갑니다.",
+  "fire": "발사",
+  "got": "{n} 획득",
+  "itemqueue": "아이템 대기열",
   "used": "{n} 발동!",
   "blocked": "방어막이 공격을 막았습니다!",
   "hit_junk": "쓰레기 줄이 날아옵니다!",
@@ -2069,6 +2251,9 @@ var I18N={
   "i_bomb": "폭탄",
   "i_laser": "레이저",
   "i_nuke": "전체 삭제",
+  "i_swap": "화면 교체",
+  "hit_swap": "화면이 서로 바뀌었습니다!",
+  "swapblocked": "화면 교체가 막혔습니다!",
   "i_slow": "슬로우",
   "i_shield": "방어막",
   "i_junk": "쓰레기",
@@ -2170,7 +2355,10 @@ var I18N={
   "localrank": "この端末に保存されたスコアを表示中",
   "rlines": "{n}ライン",
   "items": "アイテム戦",
-  "itemhelp": "ときどきアイテム付きのマスを持つブロックが降ってきます。そのマスを含む行を消すとアイテムが自動で発動します。攻撃アイテムは相手に、それ以外は自分に効果があります。",
+  "itemhelp": "ときどきアイテム付きのマスを持つブロックが降ってきます。そのマスを含む行を消すとアイテムを獲得します。爆弾・レーザー・スロー・シールドはすぐに発動し、攻撃アイテム・盤面入れ替え・全消しは待機列に並び、発射ボタンで使えます。",
+  "fire": "発射",
+  "got": "{n}を獲得",
+  "itemqueue": "アイテム待機列",
   "used": "{n}を発動！",
   "blocked": "シールドが攻撃を防ぎました！",
   "hit_junk": "お邪魔ラインが来ます！",
@@ -2180,6 +2368,9 @@ var I18N={
   "i_bomb": "ボム",
   "i_laser": "レーザー",
   "i_nuke": "全消し",
+  "i_swap": "盤面入れ替え",
+  "hit_swap": "盤面が入れ替わりました！",
+  "swapblocked": "入れ替えが防がれました！",
   "i_slow": "スロー",
   "i_shield": "シールド",
   "i_junk": "お邪魔",
@@ -2281,7 +2472,10 @@ var I18N={
   "localrank": "正在显示保存在本设备的成绩",
   "rlines": "{n} 行",
   "items": "道具战",
-  "itemhelp": "偶尔会出现带有道具的方块格。消除包含它的那一行，道具会自动发动。攻击道具作用于对手，其余作用于自己。",
+  "itemhelp": "偶尔会出现带有道具的方块格。消除包含它的那一行即可获得道具。炸弹、激光、减速和护盾会立即发动；攻击道具、交换画面和全屏清除会进入队列，按发射键才会使用。",
+  "fire": "发射",
+  "got": "获得{n}",
+  "itemqueue": "道具队列",
   "used": "发动{n}！",
   "blocked": "护盾挡住了攻击！",
   "hit_junk": "垃圾行来袭！",
@@ -2291,6 +2485,9 @@ var I18N={
   "i_bomb": "炸弹",
   "i_laser": "激光",
   "i_nuke": "全屏清除",
+  "i_swap": "交换画面",
+  "hit_swap": "画面被交换了！",
+  "swapblocked": "交换被挡下了！",
   "i_slow": "减速",
   "i_shield": "护盾",
   "i_junk": "垃圾行",
@@ -2392,7 +2589,10 @@ var I18N={
   "localrank": "正在顯示儲存在本裝置的成績",
   "rlines": "{n} 行",
   "items": "道具戰",
-  "itemhelp": "偶爾會出現帶有道具的方塊格。消除包含它的那一行，道具會自動發動。攻擊道具作用於對手，其餘作用於自己。",
+  "itemhelp": "偶爾會出現帶有道具的方塊格。消除包含它的那一行即可獲得道具。炸彈、雷射、減速和護盾會立即發動；攻擊道具、交換畫面和全螢幕清除會進入佇列，按發射鍵才會使用。",
+  "fire": "發射",
+  "got": "獲得{n}",
+  "itemqueue": "道具佇列",
   "used": "發動{n}！",
   "blocked": "護盾擋住了攻擊！",
   "hit_junk": "垃圾行來襲！",
@@ -2402,6 +2602,9 @@ var I18N={
   "i_bomb": "炸彈",
   "i_laser": "雷射",
   "i_nuke": "全螢幕清除",
+  "i_swap": "交換畫面",
+  "hit_swap": "畫面被交換了！",
+  "swapblocked": "交換被擋下了！",
   "i_slow": "減速",
   "i_shield": "護盾",
   "i_junk": "垃圾行",
@@ -2503,7 +2706,10 @@ var I18N={
   "localrank": "Mostrando puntuaciones guardadas en este dispositivo",
   "rlines": "{n} líneas",
   "items": "Modo objetos",
-  "itemhelp": "A veces cae un bloque con una casilla de objeto. Al completar la línea que la contiene, el objeto se activa solo. Los de ataque afectan al rival; el resto te ayudan a ti.",
+  "itemhelp": "A veces cae un bloque con una casilla de objeto. Al completar la línea que la contiene, consigues el objeto. Bomba, láser, ralentizar y escudo se activan al instante; los de ataque, Intercambio y Borrar todo esperan en la cola hasta que pulses Lanzar.",
+  "fire": "Lanzar",
+  "got": "{n} obtenido",
+  "itemqueue": "Cola de objetos",
   "used": "¡{n} activado!",
   "blocked": "¡Tu escudo bloqueó el ataque!",
   "hit_junk": "¡Llegan líneas basura!",
@@ -2513,6 +2719,9 @@ var I18N={
   "i_bomb": "Bomba",
   "i_laser": "Láser",
   "i_nuke": "Borrar todo",
+  "i_swap": "Intercambio",
+  "hit_swap": "¡Tableros intercambiados!",
+  "swapblocked": "¡El intercambio fue bloqueado!",
   "i_slow": "Lento",
   "i_shield": "Escudo",
   "i_junk": "Basura",
@@ -2614,7 +2823,10 @@ var I18N={
   "localrank": "Mostrando pontuações salvas neste dispositivo",
   "rlines": "{n} linhas",
   "items": "Modo itens",
-  "itemhelp": "Às vezes cai um bloco com uma célula de item. Ao limpar a linha que a contém, o item é ativado sozinho. Os de ataque atingem o oponente; os outros ajudam você.",
+  "itemhelp": "Às vezes cai um bloco com uma célula de item. Ao limpar a linha que a contém, você ganha o item. Bomba, laser, lentidão e escudo são ativados na hora; os de ataque, Troca e Limpar tudo esperam na fila até você tocar em Lançar.",
+  "fire": "Lançar",
+  "got": "{n} obtido",
+  "itemqueue": "Fila de itens",
   "used": "{n} ativado!",
   "blocked": "Seu escudo bloqueou o ataque!",
   "hit_junk": "Linhas de lixo a caminho!",
@@ -2624,6 +2836,9 @@ var I18N={
   "i_bomb": "Bomba",
   "i_laser": "Laser",
   "i_nuke": "Limpar tudo",
+  "i_swap": "Troca de telas",
+  "hit_swap": "Tabuleiros trocados!",
+  "swapblocked": "A troca foi bloqueada!",
   "i_slow": "Lento",
   "i_shield": "Escudo",
   "i_junk": "Lixo",
@@ -2725,7 +2940,10 @@ var I18N={
   "localrank": "Scores enregistrés sur cet appareil",
   "rlines": "{n} lignes",
   "items": "Mode objets",
-  "itemhelp": "Certains blocs portent une case objet. Complétez la ligne qui la contient et l’objet se déclenche automatiquement. Les objets d’attaque touchent l’adversaire, les autres vous aident.",
+  "itemhelp": "Certains blocs portent une case objet. Complétez la ligne qui la contient pour obtenir l’objet. Bombe, laser, ralentissement et bouclier se déclenchent aussitôt ; les objets d’attaque, Échange et Tout effacer attendent dans la file jusqu’à ce que vous appuyiez sur Tirer.",
+  "fire": "Tirer",
+  "got": "{n} obtenu",
+  "itemqueue": "File d’objets",
   "used": "{n} activé !",
   "blocked": "Votre bouclier a bloqué l’attaque !",
   "hit_junk": "Des lignes déchets arrivent !",
@@ -2735,6 +2953,9 @@ var I18N={
   "i_bomb": "Bombe",
   "i_laser": "Laser",
   "i_nuke": "Tout effacer",
+  "i_swap": "Échange",
+  "hit_swap": "Plateaux échangés !",
+  "swapblocked": "L’échange a été bloqué !",
   "i_slow": "Ralenti",
   "i_shield": "Bouclier",
   "i_junk": "Déchets",
@@ -2763,6 +2984,7 @@ function applyLanguage(){
  var vol=$('musicvol');if(vol&&vol.querySelector('label span'))vol.querySelector('label span').textContent=tr('music');
  var opts=document.querySelectorAll('#lvbox button[data-l]');if(opts.length>=3){opts[0].textContent=tr('easy');opts[1].textContent=tr('normal');opts[2].textContent=tr('hard')}
  var ctl=document.querySelector('[data-act="rot"]');if(ctl)ctl.textContent=tr('rotate');ctl=document.querySelector('[data-act="drop"]');if(ctl)ctl.textContent=tr('drop');
+ var fl=$('firel');if(fl)fl.textContent=tr('fire');aria($('fire'),'fire');aria($('inv'),'itemqueue');
  aria(document.querySelector('[data-act="left"]'),'left');aria(document.querySelector('[data-act="right"]'),'right');aria(document.querySelector('[data-act="down"]'),'down');
  var st=$('settings');if(st){st.setAttribute('aria-label',tr('settings'));st.title=tr('settings')}
  aria($('pause'),'pause');aria($('next'),'nextpiece');aria($('musicvolc'),'musicaria');aria($('cc'),'country');aria($('mf'),'country');
