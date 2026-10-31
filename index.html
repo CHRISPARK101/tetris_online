@@ -900,7 +900,8 @@ function clearRows(){
 }
 function award(n,mult){
   score+=Math.round([0,100,300,500,800][Math.min(n,4)]*level*mult*(1+Math.min(streak,10)*0.1));
-  lines+=n;level=1+Math.floor(lines/10);
+  lines+=n;
+  if(mode!=='vs')level=1+Math.floor(lines/10);   /* 2P: both players share one time-based speed, see loop() */
 }
 
 /* Gravity animation: floating pieces fall with acceleration; lines completed on landing chain */
@@ -1279,6 +1280,7 @@ function loop(t){
   if(!!itemMode!==invShown)renderInv();
   if(state==='playing'||state==='anim'||state==='clear'){
     pt+=dt;
+    if(mode==='vs'){var vl=1+Math.floor(pt/25000);if(vl!==level){level=vl;hud()}}   /* same speed for both players, whatever their scores */
     var sec=Math.floor(pt/1000);
     if(sec!==lsec){lsec=sec;$('tm').textContent=('0'+Math.floor(sec/60)).slice(-2)+':'+('0'+sec%60).slice(-2)}
     if(mode==='cpu'&&cpu){
