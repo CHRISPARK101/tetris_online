@@ -7,7 +7,7 @@
 <title>Tetris</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#eceff7;--ink:#1a1f36;--mute:#6a7190;--well:#f9faff;--grid:#e3e6f2;
@@ -57,6 +57,17 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #settings:focus-visible{outline-offset:2px}
 #cb{position:absolute;top:8px;left:50%;transform:translateX(-50%);padding:4px 12px;border-radius:999px;background:var(--accent);color:var(--onaccent);font-size:13px;font-weight:700;line-height:1.4;pointer-events:none;white-space:nowrap}
 #cb[hidden]{display:none}
+#cpop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:30;line-height:1}
+#cpop .cp{display:flex;flex-direction:column;align-items:center;font-family:"Jua","Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Apple SD Gothic Neo","PingFang SC","PingFang TC","Noto Sans CJK SC","Noto Sans CJK TC","Noto Sans CJK JP",system-ui,sans-serif;font-weight:900;letter-spacing:.02em;will-change:transform,opacity;--fill:#ffd93d;--ext:#e07a00}
+#cpop .cp.t1{--fill:#ffa54a;--ext:#d44a00}
+#cpop .cp.t2{--fill:#ff74b8;--ext:#c2185b}
+#cpop .cp.t3{--fill:#8c6bff;--ext:#3b1fb8}
+#cpop .cp span{display:block;color:var(--fill);text-shadow:.06em 0 #fff,-.06em 0 #fff,0 .06em #fff,0 -.06em #fff,.045em .045em #fff,-.045em .045em #fff,.045em -.045em #fff,-.045em -.045em #fff,0 .13em 0 var(--ext),0 .17em .12em rgba(0,0,0,.25)}
+#cpop .ct{font-size:calc(var(--cs,24px)*1.35)}
+#cpop .cn{font-size:calc(var(--cs,24px)*3.6);margin-top:-.08em}
+#cpop .cn i{font-style:normal;font-size:.6em;margin-left:.04em}
+#cpop .csp{position:absolute;left:50%;top:50%;width:calc(var(--cs,24px)*.9);height:calc(var(--cs,24px)*.9);margin:calc(var(--cs,24px)*-.45) 0 0 calc(var(--cs,24px)*-.45);will-change:transform,opacity}
+#cpop .csp svg{width:100%;height:100%;display:block}
 #vs,#cpub,#rs,#qt,#netbox button,#lvbox button{padding:8px 14px;font-size:14px}
 #lvbox .lvr button{padding:8px 10px}
 #lback{background:transparent}
@@ -72,24 +83,30 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #code{width:120px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:18px;text-align:center}
 #opp{display:block;border-radius:8px;border:1px solid var(--line);background:var(--well)}
 #opp[hidden]{display:none}
-.ctl{display:grid;grid-template-columns:var(--board-width,minmax(0,1fr)) minmax(0,1fr);gap:12px;align-items:stretch;width:100%;box-sizing:border-box}
-.cl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;min-width:0}
-.cl [data-act="down"]{grid-column:1/3}
-.cr{display:grid;grid-template-columns:minmax(0,1fr);gap:9px;align-items:stretch;width:100%;min-width:0}
-.ctl button{width:100%;min-width:0;box-sizing:border-box;height:58px;font-size:22px;font-weight:600}
+.ctl{--bh:clamp(44px,6.2vh,54px);display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
+.cl{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,var(--bh));gap:10px 14px}
+.cl [data-act="left"],.cl [data-act="right"]{grid-row:1/3}
+.cl [data-act="down"]{grid-column:1/3;grid-row:3}
+.cr{display:grid;grid-template-rows:repeat(3,var(--bh));gap:10px}
+.ctl button{height:auto;font-size:22px;font-weight:600}
 .ctl button:active,.ctl button.on{transform:scale(.96);background:var(--line)}
-.ctl [data-act="rot"],.ctl [data-act="drop"]{height:58px;font-size:15px;white-space:nowrap}
-.ctl [data-act="rot"]{font-size:16px;background:var(--btn);border-width:2px;border-color:var(--accent)}
+.ctl [data-act="rot"],.ctl [data-act="drop"]{font-size:15px;white-space:nowrap}
+.ctl [data-act="rot"]{font-size:17px;background:var(--btn);border-width:2px;border-color:var(--accent)}
 .ctl [data-act="drop"]{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
-#fire{--fire:#ff9a3c;width:100%;height:58px;justify-self:stretch;align-self:stretch;padding:0;border-radius:14px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:5px;color:#2a1400;line-height:1;border:1px solid #c85f0a;
-  background:radial-gradient(circle at 35% 26%,#ffe2b8 0,#ffbb6b 24%,#ff8f26 60%,#e56e0c 100%);
-  box-shadow:0 5px 0 #b04a04,0 8px 10px rgba(0,0,0,.22),inset 0 3px 5px rgba(255,255,255,.7),inset 0 -6px 9px rgba(150,55,0,.35);
-  margin:0;transition:transform .06s,box-shadow .06s}
-#fire.on,#fire:active{background:radial-gradient(circle at 35% 26%,#ffe2b8 0,#ffbb6b 24%,#ff8f26 60%,#e56e0c 100%);transform:translateY(6px);box-shadow:0 1px 0 #b04a04,0 3px 6px rgba(0,0,0,.25),inset 0 3px 5px rgba(255,255,255,.55),inset 0 -4px 7px rgba(150,55,0,.4)}
-#fire .fi{font-size:23px;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;font-weight:400}
-#fire small{font-size:10px;font-weight:800;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+#fire{--fire:#ff9a3c;width:100%;height:calc(var(--bh) - 6px);padding:0 6px;border-radius:18px;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:8px;color:#2a1400;line-height:1;border:1px solid #c85f0a;
+  background:linear-gradient(180deg,#ffd49a 0,#ffb15c 35%,#ff8f26 70%,#e56e0c 100%);
+  box-shadow:0 6px 0 #b04a04,0 10px 12px rgba(0,0,0,.26),inset 0 3px 4px rgba(255,255,255,.7),inset 0 -5px 8px rgba(150,55,0,.3);
+  transition:transform .06s,box-shadow .06s}
+#fire.on,#fire:active{background:linear-gradient(180deg,#ffd49a 0,#ffb15c 35%,#ff8f26 70%,#e56e0c 100%);transform:translateY(5px);box-shadow:0 1px 0 #b04a04,0 3px 6px rgba(0,0,0,.25),inset 0 3px 4px rgba(255,255,255,.55),inset 0 -4px 7px rgba(150,55,0,.35)}
+#fire .fi .ico{width:26px;height:26px}
+#inv .sl .ico{width:24px;height:24px}
+#bf .ico{width:20px;height:20px;display:inline-block;vertical-align:middle;margin-right:2px}
+#bf b{font-size:14px;vertical-align:middle;margin-right:4px}
+.fly .ico{width:1em;height:1em;display:block}
+.ico{flex:none}
+#fire .fi{font-size:24px;font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;font-weight:400}
+#fire small{font-size:14px;font-weight:800;text-shadow:0 1px 0 rgba(255,255,255,.5)}
 #fire.empty{opacity:.4;filter:grayscale(.6)}
-@media(max-width:380px){.ctl{gap:8px}.cl{gap:9px}.cr{gap:8px}.ctl button{height:54px}.ctl [data-act="rot"],.ctl [data-act="drop"]{height:54px}#fire{height:54px}}
 .ctl.noitem #fire{visibility:hidden}
 #inv{position:absolute;height:38px;display:flex;justify-content:center;align-items:center;gap:6px}
 #inv[hidden]{display:none}
@@ -165,6 +182,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <div class="well">
       <canvas id="board"></canvas>
       <div id="cb" hidden></div>
+      <div id="cpop" aria-hidden="true"></div>
       <div id="tt" hidden></div>
       <div id="bf" hidden></div>
       <div id="ov">
@@ -220,7 +238,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <div class="cr">
       <button data-act="rot">Rotate</button>
       <button data-act="drop">Drop</button>
-      <button id="fire" data-act="fire" class="empty" aria-label="Fire item"><span class="fi" id="firei">🎁</span><small id="firel">Fire</small></button>
+      <button id="fire" data-act="fire" class="empty" aria-label="Fire item"><span class="fi" id="firei"></span><small id="firel">Fire</small></button>
     </div>
   </div>
 </div>
@@ -346,11 +364,10 @@ function resize(){
   oc=cs/2;
   dpr=window.devicePixelRatio||1;
   var W=cs*COLS,SW=W/2,H=cs*ROWS,x0=Math.max(0,Math.floor((w-W-gap-SW)/2)),y0=rs+Math.max(0,Math.floor((h-H)/2));
-  /* Match the left mobile control pad to the exact rendered playfield width. */
-  var ctl=document.querySelector('.ctl');if(ctl)ctl.style.setProperty('--board-width',W+'px');
   var wl=document.querySelector('.well'),sd=$('side'),vs=mode!=='solo';
   document.documentElement.style.setProperty('--cs',cs+'px');
   wl.style.left=x0+'px';wl.style.top=y0+'px';
+  var cb=document.querySelector('.ctl');if(cb){cb.style.width=(W+gap+SW)+'px';cb.style.marginLeft=x0+'px'}
   var ivb=$('inv');if(ivb){ivb.style.left=x0+'px';ivb.style.width=W+'px';ivb.style.top=Math.max(0,y0-42)+'px'}
   sd.style.left=(x0+W+gap)+'px';sd.style.top=y0+'px';sd.style.width=SW+'px';sd.style.height=H+'px';
   bc.style.width=W+'px';bc.style.height=H+'px';
@@ -372,6 +389,27 @@ function emptyGrid(){var g=[];gid=[];itm=[];for(var r=0;r<ROWS;r++){g.push(new A
    the item fires automatically. Self items help you, attack items hit your opponent (online player or CPU).
    The item stream uses its own seeded random generator, so both online players see the very same item pieces. */
 var ITEMS={bomb:{e:'💣'},laser:{e:'⚡'},nuke:{e:'💥'},slow:{e:'🐢'},shield:{e:'🛡️'},junk:{e:'🧱'},speed:{e:'🚀'},fog:{e:'🌫️'},rev:{e:'🌀'},swap:{e:'🔄'}};
+/* Item icons are drawn as vector shapes, so they look the same on every phone and never depend on the emoji font. */
+var ICONS={
+bomb:'<circle cx="15" cy="19" r="10" fill="#2b2f3a"/><circle cx="11.5" cy="15.5" r="2.8" fill="#fff" opacity=".35"/><path d="M21 10 Q24 6 27 7.5" stroke="#9a7440" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M27.5 2 l1.1 3.2 3.2 1.1 -3.2 1.1 -1.1 3.2 -1.1 -3.2 -3.2 -1.1 3.2 -1.1z" fill="#ffb300"/>',
+laser:'<path d="M18.5 2 L6.5 18 H14 L12 30 L25.5 12 H17.5 Z" fill="#ffd400" stroke="#d48f00" stroke-width="1.6" stroke-linejoin="round"/>',
+nuke:'<path d="M16 2 L19 11 L28 8 L22 15 L30 20 L20 21 L21 30 L16 23 L11 30 L12 21 L2 20 L10 15 L4 8 L13 11 Z" fill="#ff5a1f" stroke="#c4300a" stroke-width="1.3" stroke-linejoin="round"/><circle cx="16" cy="17" r="5" fill="#ffd23f"/>',
+slow:'<rect x="8" y="19" width="4.5" height="6.5" rx="2.2" fill="#7bc96f"/><rect x="19.5" y="19" width="4.5" height="6.5" rx="2.2" fill="#7bc96f"/><path d="M4 21 Q4 8 16 8 Q28 8 28 21 Z" fill="#3ea34a"/><path d="M10.5 21 Q10.5 12.5 16 11.5 Q21.5 12.5 21.5 21" fill="none" stroke="#2b7a35" stroke-width="1.6"/><circle cx="27.5" cy="16.5" r="3.4" fill="#7bc96f"/><circle cx="28.4" cy="15.7" r=".9" fill="#1d2b1d"/>',
+shield:'<path d="M16 2.5 L27 6.5 V16 C27 23 22 27 16 30 C10 27 5 23 5 16 V6.5 Z" fill="#4a7bff" stroke="#2a4fc4" stroke-width="1.6" stroke-linejoin="round"/><path d="M10.5 16 L14.5 20 L22 11.5" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>',
+junk:'<rect x="3" y="7" width="26" height="19" rx="2.5" fill="#d2552f"/><path d="M3 13.3 H29 M3 19.7 H29 M11 7 V13.3 M21 7 V13.3 M16 13.3 V19.7 M8 19.7 V26 M24 19.7 V26" stroke="#f6d7ca" stroke-width="1.7" fill="none"/>',
+speed:'<path d="M11 18 L5.5 25 L11 23.5Z M21 18 L26.5 25 L21 23.5Z" fill="#e5484d"/><path d="M16 2 C22.5 7 23.5 14 21.5 23 H10.5 C8.5 14 9.5 7 16 2Z" fill="#eef1f8" stroke="#8f9ab3" stroke-width="1.3"/><circle cx="16" cy="12" r="3.2" fill="#3f9bff"/><path d="M12.5 23.5 Q16 31.5 19.5 23.5Z" fill="#ff9a3c"/>',
+fog:'<path d="M9 21 A5.5 5.5 0 0 1 9 10 A8 8 0 0 1 23.5 11.5 A5 5 0 0 1 23.5 21 Z" fill="#aab6c8"/><path d="M5 25.5 H27" stroke="#aab6c8" stroke-width="2.6" stroke-linecap="round"/>',
+rev:'<g fill="none" stroke="#8a4ee0" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 H26 M26 11 L20.5 5.5 M26 11 L20.5 16.5"/><path d="M28 22 H6 M6 22 L11.5 16.5 M6 22 L11.5 27.5"/></g>',
+swap:'<g fill="none" stroke="#12a878" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 14 A9.5 9.5 0 0 1 24.5 10.5"/><path d="M25.5 4.5 V11 H19"/><path d="M25.5 18 A9.5 9.5 0 0 1 7.5 21.5"/><path d="M6.5 27.5 V21 H13"/></g>',
+none:'<circle cx="16" cy="16" r="10" fill="none" stroke="#9aa3b8" stroke-width="2.4" stroke-dasharray="4 4"/>'
+};
+function iconSVG(k){return '<svg class="ico" viewBox="0 0 32 32" aria-hidden="true">'+(ICONS[k]||ICONS.none)+'</svg>'}
+var iconImgs={};
+function iconImg(k){
+  var im=iconImgs[k];
+  if(!im){im=iconImgs[k]=new Image();im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="96" height="96">'+(ICONS[k]||'')+'</svg>')}
+  return im;
+}
 var ATTACKS=['junk','speed','fog','rev'];
 var POOL_SOLO=[['bomb',40],['laser',32],['nuke',8],['slow',20]];
 var POOL_FULL=[['bomb',16],['laser',13],['nuke',4],['slow',9],['shield',11],['junk',17],['speed',11],['fog',9],['rev',10],['swap',7]];
@@ -398,12 +436,11 @@ function tagItem(p){
 }
 function icon(ctx,x,y,s,kind){
   var d=ITEMS[kind];if(!d)return;
-  ctx.globalAlpha=.6;ctx.fillStyle='#ffffff';ctx.fillRect(x+2,y+2,s-4,s-4);ctx.globalAlpha=1;
-  ctx.font=Math.max(8,Math.floor(s*.7))+'px '+EMOJI_FONT;
-  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#000';
-  ctx.fillText(d.e,x+s/2,y+s/2+s*.04);
+  ctx.globalAlpha=.7;ctx.fillStyle='#ffffff';ctx.fillRect(x+2,y+2,s-4,s-4);ctx.globalAlpha=1;
+  var im=iconImg(kind);
+  if(im.complete&&im.naturalWidth)ctx.drawImage(im,x+s*.14,y+s*.14,s*.72,s*.72);
 }
-function itemName(k){return ITEMS[k].e+' '+tr('i_'+k)}
+function itemName(k){return tr('i_'+k)}
 function toast(key,vars){
   var e=$('tt');e.textContent=fmt(key,vars);e.hidden=false;
   clearTimeout(ttTimer);ttTimer=setTimeout(function(){e.hidden=true},1800);
@@ -411,11 +448,11 @@ function toast(key,vars){
 function renderBuffs(){
   /* my own boosts (shield, slow) stay in colour; effects the opponent put on me (speed, fog, reverse) are grey */
   var mine='',theirs='';
-  if(shield>0)mine+=ITEMS.shield.e+(shield>1?'×'+shield:'');
-  if(pt<slowUntil)mine+=ITEMS.slow.e;
-  if(pt<fastUntil)theirs+=ITEMS.speed.e;
-  if(pt<fogUntil)theirs+=ITEMS.fog.e;
-  if(pt<revUntil)theirs+=ITEMS.rev.e;
+  if(shield>0)mine+=iconSVG('shield')+(shield>1?'<b>×'+shield+'</b>':'');
+  if(pt<slowUntil)mine+=iconSVG('slow');
+  if(pt<fastUntil)theirs+=iconSVG('speed');
+  if(pt<fogUntil)theirs+=iconSVG('fog');
+  if(pt<revUntil)theirs+=iconSVG('rev');
   var t=mine+'|'+theirs;
   if(t!==bfLast){bfLast=t;var e=$('bf');e.innerHTML=mine+(theirs?'<span class="bfm">'+theirs+'</span>':'');e.hidden=!(mine||theirs)}
 }
@@ -472,11 +509,11 @@ function renderInv(pop){
   var h='';
   for(var i=0;i<INV_MAX;i++){
     var k=inv[i];
-    h+='<div class="sl'+(i===0&&k?' f':'')+(pop&&i===inv.length-1?' pop':'')+'"'+(i===0&&k?' data-first="1"':'')+'>'+(k?ITEMS[k].e:'')+'</div>';
+    h+='<div class="sl'+(i===0&&k?' f':'')+(pop&&i===inv.length-1?' pop':'')+'"'+(i===0&&k?' data-first="1"':'')+'>'+(k?iconSVG(k):'')+'</div>';
   }
   box.innerHTML=h;
   var fb=$('fire'),fi=$('firei');
-  if(fb){fb.classList.toggle('empty',!inv.length);fi.textContent=inv.length?ITEMS[inv[0]].e:'🎁'}
+  if(fb){fb.classList.toggle('empty',!inv.length);fi.innerHTML=iconSVG(inv.length?inv[0]:'none')}
 }
 /* Column of the falling piece: where a fired item starts its flight */
 function aimCol(){
@@ -671,7 +708,7 @@ function fly(kind,a,b,dur,done){
   for(i=0;i<=N;i++){var t=i/N,u=1-t;pts.push([u*u*a.x+2*u*t*mx+t*t*b.x,u*u*a.y+2*u*t*my+t*t*b.y])}
   function layer(n){
     var el=document.createElement('div'),sz=Math.round(size*(1-n*.14));
-    el.className='fly';el.textContent=d.e;el.style.fontSize=sz+'px';
+    el.className='fly';el.innerHTML=iconSVG(kind);el.style.fontSize=sz+'px';
     document.body.appendChild(el);flyers.push(el);els.push(el);
     var frames=pts.map(function(p,j){
       var t=j/N,grow=1+.5*Math.sin(Math.PI*t);
@@ -693,7 +730,7 @@ function fly(kind,a,b,dur,done){
 function stamp(kind,p,big){
   var d=ITEMS[kind];if(!d||!p||!canAnimate())return;
   var sz=Math.round(cs*(big?3.2:2.2)),el=document.createElement('div');
-  el.className='fly';el.textContent=d.e;el.style.fontSize=sz+'px';
+  el.className='fly';el.innerHTML=iconSVG(kind);el.style.fontSize=sz+'px';
   document.body.appendChild(el);flyers.push(el);
   var tx='translate('+Math.round(p.x-sz/2)+'px,'+Math.round(p.y-sz/2)+'px)';
   var an=el.animate([{transform:tx+' scale(.3)',opacity:0},{transform:tx+' scale(1.15)',opacity:1,offset:.35},{transform:tx+' scale(1.5)',opacity:0}],{duration:650,easing:'ease-out',fill:'both'});
@@ -751,7 +788,7 @@ function spawn(){
 function move(d){
   if(pt<revUntil)d=-d;
   if(state==='playing'&&!iblast&&!swapWait&&!hit(cur.m,cur.x+d,cur.y)){
-    cur.x+=d;
+    cur.x+=d;kickT=wnow;
     // Sound is intentionally subtle; throttle rapid key-repeat movement.
     var now=performance.now();
     if(!move._lastSfx||now-move._lastSfx>85){sfxMove();move._lastSfx=now}
@@ -764,7 +801,7 @@ function rotate(){
   while(top<r.length&&!r[top].some(Boolean))top++;      /* first row of the rotated shape that holds blocks */
   for(var i=0;i<k.length;i++){
     if(cur.y+k[i][1]+top<0)continue;                    /* locking above the ceiling ends the game, so never kick up there */
-    if(!hit(r,cur.x+k[i][0],cur.y+k[i][1])){cur.m=r;cur.x+=k[i][0];cur.y+=k[i][1];sfxRotate();return}
+    if(!hit(r,cur.x+k[i][0],cur.y+k[i][1])){cur.m=r;cur.x+=k[i][0];cur.y+=k[i][1];kickT=wnow;sfxRotate();return}
   }
 }
 function soft(){
@@ -775,7 +812,7 @@ function hard(){
   if(state!=='playing'||iblast||swapWait)return;
   var n=0;
   while(!hit(cur.m,cur.x,cur.y+1)){cur.y++;n++}
-  score+=2*n;lock();
+  score+=2*n;hardDrop=true;lock();hardDrop=false;
 }
 function lock(){
   if(!cur||state!=='playing')return;
@@ -789,6 +826,7 @@ function lock(){
     if(cur.m[r][c]){
       var gy=cur.y+r,gx=cur.x+c;
       grid[gy][gx]=cur.t;gid[gy][gx]=cur.id;if(cur.m[r][c]===2&&cur.ik)itm[gy][gx]=cur.ik;
+      var ja=hardDrop?.3:.19;bump(gy,gx,ja,0);bump(gy+1,gx,ja*.5,70);bump(gy,gx-1,ja*.3,50);bump(gy,gx+1,ja*.3,50);
     }
   }
   var rows=fullRows(),n=rows.length;
@@ -839,6 +877,42 @@ function beginClear(rows,done){
   });
   fx={rows:rows,t:0,done:done,parts:parts};
   cur=null;state='clear';
+}
+/* Big bouncy combo text in the middle of the board, with a burst of stars. */
+var STAR_SVG='<svg viewBox="0 0 32 32"><path d="M16 2 L20 12 L30 13 L22.5 20 L25 30 L16 24.5 L7 30 L9.5 20 L2 13 L12 12 Z" fill="#ffe14d" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>';
+function comboPop(n){
+  var host=$('cpop');
+  if(!host||n<2||!canAnimate())return;
+  while(host.firstChild)host.removeChild(host.firstChild);
+  var tier=n>=7?3:n>=5?2:n>=3?1:0,el=document.createElement('div'),i;
+  el.className='cp t'+tier;
+  el.innerHTML='<span class="ct">COMBO</span><span class="cn">'+n+'<i>!</i></span>';
+  host.appendChild(el);
+  var tl=Math.round(Math.random()*8-4),big=1.35+tier*.12;
+  var a=el.animate([
+    {transform:'scale(.15) rotate('+(-14+tl)+'deg)',opacity:0},
+    {transform:'scale('+big+') rotate('+(7+tl)+'deg)',opacity:1,offset:.2},
+    {transform:'scale(.9) rotate('+(-4+tl)+'deg)',opacity:1,offset:.34},
+    {transform:'scale(1.12) rotate('+(2+tl)+'deg)',opacity:1,offset:.48},
+    {transform:'scale(1) rotate('+tl+'deg)',opacity:1,offset:.6},
+    {transform:'scale(1) rotate('+tl+'deg)',opacity:1,offset:.78},
+    {transform:'translateY(-28%) scale(1.06) rotate('+tl+'deg)',opacity:0}
+  ],{duration:1200,easing:'ease-out',fill:'forwards'});
+  a.onfinish=function(){if(el.parentNode)el.parentNode.removeChild(el)};
+  var cn=el.querySelector('.cn');
+  if(cn.animate)cn.animate([{transform:'translateY(0) scale(1)'},{transform:'translateY(-9%) scale(1.1)'},{transform:'translateY(0) scale(1)'}],{duration:320,iterations:3,easing:'ease-in-out'});
+  var N=6+tier*2;
+  for(i=0;i<N;i++){
+    var sp=document.createElement('span'),ang=Math.PI*2*i/N+Math.random()*.6,dist=cs*(2.8+Math.random()*2.2);
+    sp.className='csp';sp.innerHTML=STAR_SVG;host.appendChild(sp);
+    (function(sp){
+      sp.animate([
+        {transform:'translate(0,0) scale(.3) rotate(0deg)',opacity:1},
+        {transform:'translate('+Math.round(Math.cos(ang)*dist)+'px,'+Math.round(Math.sin(ang)*dist)+'px) scale('+(.7+Math.random()*.6)+') rotate(200deg)',opacity:0}
+      ],{duration:650+Math.random()*300,easing:'cubic-bezier(.1,.7,.3,1)',fill:'forwards'}).onfinish=function(){if(sp.parentNode)sp.parentNode.removeChild(sp)};
+    })(sp);
+  }
+  if(n>=4)pulse(document.querySelector('.well'),'shake');
 }
 function showCombo(){
   var e=$('cb');
@@ -904,7 +978,7 @@ function landFall(){
   var rows=fullRows();
   if(rows.length){
     var its=collectItems(rows);
-    streak++;sfxClear(rows.length);sfxCombo(streak);showCombo();award(rows.length,1);hud();attack(rows.length,true);
+    streak++;sfxClear(rows.length);sfxCombo(streak);showCombo();comboPop(streak);award(rows.length,1);hud();attack(rows.length,true);
     beginClear(rows,function(){
       clearRows();
       applyItems(its,rows,function(){
@@ -1015,7 +1089,7 @@ function aquaSprite(color,S){
   return cv;
 }
 var spriteCache={},spriteCount=0;
-function cell(ctx,x,y,s,color,a){
+function cell(ctx,x,y,s,color,a,sx,sy){
   if(a!=null&&a<.2){                         /* landing preview: glassy outline instead of a faint solid */
     ctx.globalAlpha=.16;ctx.fillStyle=color;ctx.fillRect(x+1,y+1,s-2,s-2);
     ctx.globalAlpha=.65;ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.strokeRect(x+1.5,y+1.5,s-3,s-3);
@@ -1024,8 +1098,35 @@ function cell(ctx,x,y,s,color,a){
   var S=Math.max(4,Math.round(s*dpr)),key=color+S,sp=spriteCache[key];
   if(!sp){if(spriteCount>160){spriteCache={};spriteCount=0}sp=spriteCache[key]=aquaSprite(color,S);spriteCount++}
   ctx.globalAlpha=a==null?1:a;
-  ctx.drawImage(sp,x,y,s,s);
+  if(sx&&sy&&(sx!==1||sy!==1)){var w=s*sx,h=s*sy;ctx.drawImage(sp,x+(s-w)/2,y+s-h,w,h)}
+  else ctx.drawImage(sp,x,y,s,s);
   ctx.globalAlpha=1;
+}
+/* Living-droplet motion: a slow ripple runs across the stack, blocks squash when a piece lands on them
+   and wobble back like jelly, and the falling piece shivers when it is moved or turned. */
+var wnow=0,jig=[],kickT=-9999,hardDrop=false,jsx=1,jsy=1;
+function bump(r,c,amp,delay){
+  if(reduceMotion||r<0||r>=ROWS||c<0||c>=COLS)return;
+  if(!jig[r])jig[r]=[];
+  jig[r][c]={t:wnow+(delay||0),a:amp};
+}
+function jellyAt(r,c,idle){
+  jsx=1;jsy=1;
+  if(reduceMotion)return;
+  var k=Math.sin(wnow*.0042+c*.75+r*.5)*idle;
+  jsy=1+k;jsx=1-k*.8;
+  var j=jig[r]&&jig[r][c];
+  if(j){
+    var dt=wnow-j.t;
+    if(dt>900)jig[r][c]=0;
+    else if(dt>=0){var sp=j.a*Math.exp(-dt/230)*Math.cos(dt/48);jsy-=sp;jsx+=sp*.9}
+  }
+}
+function jellyCur(r,c){
+  jellyAt(r,c,.045);
+  if(reduceMotion)return;
+  var dt=wnow-kickT;
+  if(dt>=0&&dt<700){var sp=.13*Math.exp(-dt/200)*Math.cos(dt/42);jsx+=sp;jsy-=sp}
 }
 /* Start-screen decoration: tetrominoes drifting down behind the menu.
    Drawn with the same cell() routine as the game, so it is sharp and scales with any screen size. */
@@ -1068,7 +1169,7 @@ function draw(){
   var hide={};
   if(fx&&fx.t>=FLASH)fx.rows.forEach(function(y){hide[y]=1});
   for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
-    if(grid[r][c]&&!hide[r]){cell(bx,c*cs,r*cs,cs,COL[grid[r][c]]);if(itm[r][c])icon(bx,c*cs,r*cs,cs,itm[r][c])}
+    if(grid[r][c]&&!hide[r]){jellyAt(r,c,.032);cell(bx,c*cs,r*cs,cs,COL[grid[r][c]],null,jsx,jsy);if(itm[r][c])icon(bx,c*cs,r*cs,cs,itm[r][c])}
   }
   if(fx){
     if(fx.t<FLASH){
@@ -1096,7 +1197,7 @@ function draw(){
     for(var a=0;a<cur.m.length;a++)for(var b=0;b<cur.m[a].length;b++){
       if(!cur.m[a][b])continue;
       if(ghostPreview&&!fogOn&&gy!==cur.y)cell(bx,(cur.x+b)*cs,(gy+a)*cs,cs,COL[cur.t],.10);
-      if(cur.y+a>=0){cell(bx,(cur.x+b)*cs,(cur.y+a)*cs,cs,COL[cur.t]);if(cur.m[a][b]===2)icon(bx,(cur.x+b)*cs,(cur.y+a)*cs,cs,cur.ik)}
+      if(cur.y+a>=0){jellyCur(cur.y+a,cur.x+b);cell(bx,(cur.x+b)*cs,(cur.y+a)*cs,cs,COL[cur.t],null,jsx,jsy);if(cur.m[a][b]===2)icon(bx,(cur.x+b)*cs,(cur.y+a)*cs,cs,cur.ik)}
     }
   }
 }
@@ -1116,7 +1217,7 @@ function drawNext(){
 }
 
 function loop(t){
-  var dt=Math.min(t-last,100);last=t;
+  var dt=Math.min(t-last,100);last=t;wnow=t;
   if(state==='ready')attractStep(dt);
   if(boom){boom.t+=dt;if(boom.t>=boom.d)boom=null}
   if(itemMode||bfLast)renderBuffs();
