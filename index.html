@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-visual">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Tetris</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -28,7 +28,7 @@ body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
   overscroll-behavior:none;overflow:hidden}
-#app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:10px;padding:10px 12px 18px;box-sizing:border-box}
+#app{height:var(--appH,100%);max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:10px;padding:10px 12px 18px;box-sizing:border-box}
 .hud{display:grid;grid-template-columns:1.5fr 1fr 1fr auto auto;gap:8px;align-items:center}
 .stat small{display:block;font-size:calc(var(--cs,20px)*.5);color:var(--mute)}
 .stat b{display:block;font-size:calc(var(--cs,20px)*.85);font-variant-numeric:tabular-nums;line-height:1.2}
@@ -113,6 +113,11 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #fire .fb{position:absolute;top:calc(var(--fs)*-.06);right:calc(var(--fs)*-.06);width:calc(var(--fs)*.44);height:calc(var(--fs)*.44);border-radius:50%;background:#fff;border:2px solid #c85f0a;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,.28)}
 #fire .fb:empty{display:none}
 #fire .fb .ico{width:70%;height:70%}
+.ico{flex:none}
+#inv .sl .ico{width:24px;height:24px}
+#bf .ico{width:20px;height:20px;display:inline-block;vertical-align:middle;margin-right:2px}
+#bf b{font-size:14px;vertical-align:middle;margin-right:4px}
+.fly .ico{width:1em;height:1em;display:block}
 #fire.empty{opacity:.4;filter:grayscale(.6)}
 .ctl.noitem #fire{visibility:hidden}
 #inv{position:absolute;height:38px;display:flex;justify-content:center;align-items:center;gap:6px}
@@ -2063,8 +2068,19 @@ document.addEventListener('visibilitychange',function(){
   if(document.hidden){stopMusic();if(mode!=='vs')pause()}
   else if(musicVolume>0)playMusic();
 });
-window.addEventListener('resize',resize);
-window.addEventListener('orientationchange',function(){setTimeout(resize,200)});
+/* Android shrinks the page when the on-screen keyboard opens (iPhone does not). Keep the layout at its full size
+   while a text field has focus, so the board and buttons do not get squeezed; real size changes still apply. */
+var lockedW=0,lockedH=0;
+function textFocused(){var a=document.activeElement;return !!a&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'||a.tagName==='SELECT')}
+function syncViewport(force){
+  var w=window.innerWidth,h=window.innerHeight;
+  if(!force&&lockedH&&textFocused()&&w===lockedW&&h<=lockedH)return false;   /* keyboard is open */
+  lockedW=w;lockedH=h;document.documentElement.style.setProperty('--appH',h+'px');
+  return true;
+}
+syncViewport(true);
+window.addEventListener('resize',function(){if(syncViewport())resize()});
+window.addEventListener('orientationchange',function(){setTimeout(function(){syncViewport(true);resize()},200)});
 try{window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',theme)}catch(e){}
 
 /* UI localization. The language is auto-detected from the browser unless the player picks one.
