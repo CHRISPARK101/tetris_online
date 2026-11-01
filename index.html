@@ -2100,7 +2100,7 @@ function findMatch(){
   joinToken++;leaveRoom();leaveLobby();
   $('join').disabled=false;$('mk').disabled=false;$('rnd').disabled=false;
   mode='solo';state='ready';resize();
-  overlay('battleTitle','rndfinding','',false);ovui(false);$('qt').style.display='';
+  overlay('rnd','rndfinding','',false);ovui(false);$('qt').style.display='';
   if(!supabaseReady()){setOS('joinfail');return}
   var client=getClient();
   var id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('l-'+Date.now()+'-'+Math.random().toString(36).slice(2));
