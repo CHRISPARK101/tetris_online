@@ -2148,14 +2148,24 @@ $('mk').addEventListener('click',function(){createRoom(0)});
 /* Tapping the yellow room code shares it (share sheet on phones, clipboard otherwise). */
 function shareRoomCode(el){
   var c=(typeof roomCode==='string')?roomCode:'';if(!c||mode!=='vs'||!room)return;
-  var text='TETRIS 2P: '+c;
+  var text='TETRIS 2P: '+c,android=/Android/i.test(navigator.userAgent||'');
   function done(){if(!el)return;el.setAttribute('data-t',tr('copied'));el.classList.add('ok');setTimeout(function(){el.classList.remove('ok')},1500)}
+  function copy(){
+    function legacy(){
+      try{var t=document.createElement('textarea');t.value=c;t.setAttribute('readonly','');t.style.cssText='position:fixed;top:0;left:0;opacity:0';document.body.appendChild(t);t.select();t.setSelectionRange(0,99);var ok=document.execCommand('copy');document.body.removeChild(t);if(ok)done()}catch(e){}
+    }
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(c).then(done).catch(legacy);else legacy();
+  }
+  /* Some Android in-app browsers have no navigator.share: open Android's own share sheet through an intent link instead. */
+  function viaIntent(){
+    copy();
+    try{location.href='intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT='+encodeURIComponent(text)+';end'}catch(e){}
+  }
   if(navigator.share){
     var d={title:'TETRIS',text:text};if(/^https?:/.test(location.href))d.url=location.href;
-    navigator.share(d).catch(function(){});
-  }else if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(c).then(done).catch(function(){});
-  }
+    navigator.share(d).catch(function(err){if(err&&err.name==='AbortError')return;if(android)viaIntent();else copy()});
+  }else if(android)viaIntent();
+  else copy();
 }
 $('os').addEventListener('click',function(e){
   var t=e.target;if(t&&t.classList&&t.classList.contains('rc'))shareRoomCode(t);
