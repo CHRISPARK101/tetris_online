@@ -44,6 +44,11 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #mf{font-size:1.15em;vertical-align:middle}
 #mywho{white-space:nowrap}
 #ol[hidden]{display:none}
+#oinv{display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
+#oinv[hidden]{display:none}
+#oinv .sl{aspect-ratio:1/1;min-width:0;border-radius:6px;border:1px dashed var(--line);background:var(--well);display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px}
+#oinv .sl.f{border:1.5px solid var(--fire,#ff9a3c);background:var(--btn)}
+#oinv .sl .ico{width:100%;height:100%}
 .fl{font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif;font-weight:400}
 .ccr{display:flex;gap:8px;align-items:center;justify-content:center;width:100%}
 #cc{max-width:150px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:14px}
@@ -58,8 +63,6 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #go{margin-top:6px;padding:14px 34px;font-size:18px;font-weight:700;background:var(--accent);color:var(--onaccent);border-color:var(--accent)}
 #settings{position:absolute;top:12px;right:12px;z-index:2;width:42px;height:42px;padding:0;border-radius:50%;font-size:23px;display:flex;align-items:center;justify-content:center;line-height:1}
 #settings:focus-visible{outline-offset:2px}
-#cb{position:absolute;top:8px;left:50%;transform:translateX(-50%);padding:4px 12px;border-radius:999px;background:var(--accent);color:var(--onaccent);font-size:13px;font-weight:700;line-height:1.4;pointer-events:none;white-space:nowrap}
-#cb[hidden]{display:none}
 #cpop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:30;line-height:1}
 #cpop .cp{display:flex;flex-direction:column;align-items:center;font-family:"Jua","Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Apple SD Gothic Neo","PingFang SC","PingFang TC","Noto Sans CJK SC","Noto Sans CJK TC","Noto Sans CJK JP",system-ui,sans-serif;font-weight:900;letter-spacing:.02em;will-change:transform,opacity;--fill:#ffd93d;--ext:#e07a00}
 #cpop .cp.t1{--fill:#ffa54a;--ext:#d44a00}
@@ -214,7 +217,6 @@ input,select{-webkit-user-select:text;user-select:text}
     <div id="inv" hidden aria-label="Item queue"></div>
     <div class="well">
       <canvas id="board"></canvas>
-      <div id="cb" hidden></div>
       <div id="cpop" aria-hidden="true"></div>
       <div id="tt" hidden></div>
       <div id="bf" hidden></div>
@@ -251,7 +253,7 @@ input,select{-webkit-user-select:text;user-select:text}
         <button id="vs">2P Battle</button>
         <button id="cpub">Vs CPU</button>
         <button id="rk">👑 Ranking</button>
-        <div id="netbox" hidden><div class="ccr"><span id="ccf" class="fl"></span><select id="cc" aria-label="Your country"></select></div><input id="code" inputmode="numeric" maxlength="6" placeholder="4-digit code" aria-label="Room code"><button id="join">Join</button><button id="back">Back</button></div>
+        <div id="netbox" hidden><input id="code" inputmode="numeric" maxlength="6" placeholder="4-digit code" aria-label="Room code"><button id="join">Join</button><button id="back">Back</button></div>
         <div id="lvbox" hidden><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
       </div>
     </div>
@@ -260,6 +262,7 @@ input,select{-webkit-user-select:text;user-select:text}
       <div class="meta"><span><span id="lvl">Lv</span> <span id="lv">1</span></span><span><span id="lnl">Lines</span> <span id="ln">0</span></span><span id="tm">00:00</span></div>
       <canvas id="next" aria-label="Next piece"></canvas>
       <div id="ol" hidden>CPU</div>
+      <div id="oinv" hidden aria-label="Opponent items"></div>
       <canvas id="opp" hidden></canvas>
           <button id="fire" data-act="fire" class="empty" aria-label="Fire item"><span class="fz" aria-hidden="true"><svg viewBox="0 0 32 32"><g fill="#fff" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"><path d="M16 3.5 L25.5 14 H19.8 V22 H12.2 V14 H6.5 Z"/></g><path d="M12.5 26 H19.5 M14.3 29.6 H17.7" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".9"/></svg></span><span class="fb" id="firei"></span></button>
     </div>
@@ -409,7 +412,7 @@ function resize(){
   nc.style.width=SW+'px';nc.style.height=Math.round(cs*4)+'px';
   nc.width=Math.round(SW*dpr);nc.height=Math.round(cs*4*dpr);
   /* with items on, the opponent's board is drawn a little smaller so the fire button fits under it */
-  if(vs&&itemMode)oc=cs*.4;
+  if(vs&&itemMode)oc=cs*.36;
   var OW=oc*COLS,OH=oc*ROWS;
   op.hidden=!vs;$('ol').hidden=!vs;
   op.style.width=OW+'px';op.style.height=OH+'px';op.style.alignSelf='center';
@@ -545,6 +548,7 @@ function renderInv(pop){
   }
   if(key===invKey&&!pop)return;
   invKey=key;
+  if(mode==='vs'&&room)push({oi:inv.join(',')});
   var h='';
   for(var i=0;i<INV_MAX;i++){
     var k=inv[i];
@@ -954,11 +958,8 @@ function comboPop(n){
   }
   if(n>=4)pulse(document.querySelector('.well'),'shake');
 }
-function showCombo(){
-  var e=$('cb');
-  if(streak>0){e.textContent='COMBO '+streak+'  +'+Math.min(streak,10)*10+'%';e.hidden=false}
-  else e.hidden=true;
-}
+/* The top combo badge was removed: the big COMBO pop-up in the middle of the board shows it instead. */
+function showCombo(){}
 function startFall(){
   fall=[];fs=0;fv=0;
   var seen=[],units=[],occ=[],r,c;
@@ -1389,26 +1390,15 @@ function guessCC(){
   var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){}
   return({'Asia/Seoul':'KR','Asia/Tokyo':'JP','Asia/Shanghai':'CN','Asia/Kolkata':'IN','Asia/Singapore':'SG','Europe/London':'GB','Europe/Paris':'FR','Europe/Berlin':'DE','America/New_York':'US','America/Chicago':'US','America/Los_Angeles':'US','America/Toronto':'CA','America/Sao_Paulo':'BR','Australia/Sydney':'AU'})[tz]||'';
 }
-try{myCC=localStorage.getItem('tetris-cc')||''}catch(e){}
-if(!okc(myCC))myCC=guessCC();
-if(CC.indexOf(myCC)<0)myCC='';
-function fillCountries(){
-  var s=$('cc');
-  s.textContent='';
-  var o=document.createElement('option');o.value='';o.textContent=tr('notset');s.appendChild(o);
-  CC.map(function(c){return{c:c,n:cname(c)}}).sort(function(a,b){return a.n.localeCompare(b.n,LANG)}).forEach(function(x){
-    var e=document.createElement('option');e.value=x.c;e.textContent=x.n;s.appendChild(e);
-  });
-  s.value=myCC;
+/* The country (flag) is no longer picked separately: it follows the language chosen in Settings.
+   "Automatic" uses the region of the browser language / time zone. */
+var LANG_CC={en:'US',ko:'KR',ja:'JP','zh-CN':'CN','zh-TW':'TW',es:'ES',pt:'BR',fr:'FR',nl:'NL'};
+function syncCC(){
+  var c=(LANG_PREF==='auto')?guessCC():(LANG_CC[LANG]||'');
+  if(!okc(c)||CC.indexOf(c)<0)c='';
+  myCC=c;
+  if(typeof room!=='undefined'&&room)push({cc:myCC});
 }
-(function(){
-  var s=$('cc');
-  $('ccf').textContent=flagOf(myCC);
-  s.addEventListener('change',function(){
-    myCC=s.value;$('ccf').textContent=flagOf(myCC);
-    try{localStorage.setItem('tetris-cc',myCC)}catch(e){}
-  });
-})();
 /* If the opponent's tab is frozen (backgrounded) or their link silently died while the channel still looks alive,
    no messages arrive for a long time. Treat that as the opponent leaving so the match cannot hang forever. */
 function checkOppAlive(){
@@ -1417,7 +1407,21 @@ function checkOppAlive(){
   var now=Date.now(),at=opp.presence.at;
   if(at&&now-visAt>8000&&now-at>20000)win('oppleft');
 }
+var oiKey='';
+function setOppInv(){
+  var box=$('oinv');if(!box)return;
+  var show=mode==='vs'&&!!itemMode;
+  box.hidden=!show;
+  if(!show){oiKey='';return}
+  var P=opp&&opp.presence,str=(P&&P.gs===gs&&typeof P.oi==='string')?P.oi:'';
+  if(str===oiKey&&box.childNodes.length)return;
+  oiKey=str;
+  var a=str?str.split(','):[],h='';
+  for(var i=0;i<INV_MAX;i++){var k=a[i];h+='<div class="sl'+(i===0&&k?' f':'')+'">'+(k&&ICONS[k]?iconSVG(k):'')+'</div>'}
+  box.innerHTML=h;
+}
 function olabel(){
+  setOppInv();
   if(mode==='cpu')$('ol').textContent='CPU '+[tr('easy'),tr('normal'),tr('hard')][cpuLvl]+(cpu?' '+cpu.score:'');
   else{
     var c2=opp&&opp.presence?opp.presence.cc:'';
@@ -1582,8 +1586,8 @@ function createSupabaseRoom(code){
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
-  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','cc','g','sc','sw','swn','sr','srn'];
-  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0};
+  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','cc','g','sc','sw','swn','sr','srn'];
+  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0};
   var remote={},seenKeys={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,hbTimer=null,flushTimer=null,lastFlush=0;
   var retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   function validValue(k,v){
@@ -1597,6 +1601,7 @@ function createSupabaseRoom(code){
     if(k==='iq')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
     if(k==='ik')return v===''||(typeof v==='string'&&ATTACKS.indexOf(v)>=0);
     if(k==='ie')return Array.isArray(v)&&v.length<=32&&v.every(function(e){return e&&Number.isInteger(e.id)&&e.id>0&&typeof e.k==='string'&&ATTACKS.indexOf(e.k)>=0});
+    if(k==='oi')return typeof v==='string'&&v.length<=60&&(v===''||v.split(',').every(function(x){return STORE.indexOf(x)>=0}));
     if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
     if(k==='swn'||k==='srn')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=1000000;
     if(k==='sw'||k==='sr')return v===''||(typeof v==='string'&&v.length===COLS*ROWS&&/^[.IOTSZJLG]+$/.test(v));
@@ -1713,7 +1718,7 @@ function createSupabaseRoom(code){
       data=data||{};
       /* A new match resets the event stream; otherwise append each attack to a bounded
          replay window. The 150ms broadcast coalescer can no longer overwrite attacks. */
-      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;}
+      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.oi='';localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;}
       if(Number.isInteger(data.iq)&&data.iq>localState.iq&&typeof data.ik==='string'&&ATTACKS.indexOf(data.ik)>=0){
         localState.iq=data.iq;localState.ik=data.ik;
         localState.ie.push({id:data.iq,k:data.ik});
@@ -3174,12 +3179,12 @@ function applyLanguage(){
  var fl=$('firel');if(fl)fl.textContent=tr('fire');aria($('fire'),'fire');aria($('inv'),'itemqueue');
  aria(document.querySelector('[data-act="left"]'),'left');aria(document.querySelector('[data-act="right"]'),'right');aria(document.querySelector('[data-act="down"]'),'down');
  var st=$('settings');if(st){st.setAttribute('aria-label',tr('settings'));st.title=tr('settings')}
- aria($('pause'),'pause');aria($('next'),'nextpiece');aria($('musicvolc'),'musicaria');aria($('cc'),'country');aria($('mf'),'country');
+ aria($('pause'),'pause');aria($('next'),'nextpiece');aria($('musicvolc'),'musicaria');aria($('mf'),'country');
  $('languageSelect').querySelector('option[value="auto"]').textContent=tr('automatic');
  $('nick').placeholder=tr('nickname');aria($('nick'),'nickname');
  var codeTxt=fmt('roomcode',{n:ROOM_LEN});$('code').placeholder=codeTxt;$('code').setAttribute('aria-label',codeTxt);
  var rank=$('rank');if(rank){rank.setAttribute('aria-label',tr('ranking').replace('👑 ',''));var h=rank.querySelector('h2');if(h)h.textContent=tr('top')}
- initDN(LANG);fillCountries();
+ initDN(LANG);syncCC();
  olabel();
  renderOverlay();
 }
