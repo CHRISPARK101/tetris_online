@@ -1669,24 +1669,39 @@ function createSupabaseRoom(code){
     (old?Promise.resolve(client.removeChannel(old)):Promise.resolve()).catch(function(){}).then(function(){if(!left)connect(null)});
   }
   function connect(done){
-    var ch=client.channel('tt-'+code,{config:{presence:{key:peerId},broadcast:{self:false,ack:false}}});
-    channel=ch;
-    ch.on('presence',{event:'sync'},notify);
-    ch.on('presence',{event:'leave'},function(p){var k=p&&p.key;if(k){delete remote[k];delete seenKeys[k]}});
-    ch.on('broadcast',{event:'game'},onGame);
-    ch.subscribe(function(status){
-      if(left||ch!==channel)return;
-      if(status==='SUBSCRIBED'){
-        clearTimeout(lostTimer);lostTimer=null;clearTimeout(retryTimer);retries=0;
-        subscribed=true;
-        ch.track({kind:'viewer',t:localState.t,cc:localState.cc}).then(function(){
-          notify();scheduleFlush();
-          if(!firstDone){firstDone=true;if(done)done()}
-        }).catch(function(e){if(!firstDone){firstDone=true;if(done)done(e||new Error(tr('joinfail')))}});
-      }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
-        if(!firstDone){firstDone=true;if(done)done(new Error(tr('rtfail')+' '+status));return}
-        setLost(status);
+    /* The Supabase client hands back an existing channel when the same room code is used again, and a channel that is
+       already subscribed refuses new callbacks ("cannot add presence callbacks after subscribe"). So first wait until
+       any old channel for this room is really gone, then build a fresh one. */
+    var topic='tt-'+code,stale=[];
+    try{stale=(client.getChannels?client.getChannels():[]).filter(function(c){return c&&(c.topic==='realtime:'+topic||c.topic===topic)})}catch(e){}
+    Promise.all(stale.map(function(c){return Promise.resolve().then(function(){return client.removeChannel(c)}).catch(function(){})})).then(function(){
+      if(left)return;
+      var ch=null;
+      try{
+        ch=client.channel(topic,{config:{presence:{key:peerId},broadcast:{self:false,ack:false}}});
+        channel=ch;
+        ch.on('presence',{event:'sync'},notify);
+        ch.on('presence',{event:'leave'},function(p){var k=p&&p.key;if(k){delete remote[k];delete seenKeys[k]}});
+        ch.on('broadcast',{event:'game'},onGame);
+      }catch(err){
+        try{if(ch)client.removeChannel(ch)}catch(e2){}
+        if(!firstDone){firstDone=true;if(done)done(err)}else setLost('ERROR');
+        return;
       }
+      ch.subscribe(function(status){
+        if(left||ch!==channel)return;
+        if(status==='SUBSCRIBED'){
+          clearTimeout(lostTimer);lostTimer=null;clearTimeout(retryTimer);retries=0;
+          subscribed=true;
+          ch.track({kind:'viewer',t:localState.t,cc:localState.cc}).then(function(){
+            notify();scheduleFlush();
+            if(!firstDone){firstDone=true;if(done)done()}
+          }).catch(function(e){if(!firstDone){firstDone=true;if(done)done(e||new Error(tr('joinfail')))}});
+        }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+          if(!firstDone){firstDone=true;try{client.removeChannel(ch)}catch(e3){}if(done)done(new Error(tr('rtfail')+' '+status));return}
+          setLost(status);
+        }
+      });
     });
   }
   var api={
