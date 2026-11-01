@@ -1604,9 +1604,9 @@ function connLost(st){
 document.addEventListener('visibilitychange',function(){if(!document.hidden){visAt=Date.now();if(room&&room.poke)room.poke()}});
 window.addEventListener('online',function(){if(room&&room.poke)room.poke()});
 /* Supabase Realtime adapter: Presence carries join/ready state, Broadcast carries fast-changing data (board, attacks). */
-function createSupabaseRoom(code){
+function createSupabaseRoom(code,keepId){
   var client=getClient();
-  var peerId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('p-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+  var peerId=(typeof keepId==='string'&&/^[\w-]{8,100}$/.test(keepId))?keepId:((window.crypto&&crypto.randomUUID)?crypto.randomUUID():('p-'+Date.now()+'-'+Math.random().toString(36).slice(2)));
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
@@ -1734,6 +1734,7 @@ function createSupabaseRoom(code){
     });
   }
   var api={
+    id:peerId,
     peers:getPeers,
     onPeers:function(fn){peerHandler=fn;notify()},
     onLost:function(fn){lostHandler=fn},
@@ -2025,18 +2026,34 @@ function beginCount(seed,c){
 }
 var joinToken=0;
 /* A fresh random room code. The creator checks that nobody is already in that room before using it (see joinRoom). */
+/* Android can close the page while another app (KakaoTalk, to send the code) is in front. So the room is remembered
+   for a few minutes: coming back re-enters the same room with the same code, and "Create room" reuses it. */
+var ROOM_KEY='tetris-room';
+function savedRoom(maxAge){
+  try{
+    var r=JSON.parse(localStorage.getItem(ROOM_KEY)||'null');
+    if(r&&typeof r.code==='string'&&r.code.length===ROOM_LEN&&/^\d+$/.test(r.code)&&typeof r.t==='number'&&Date.now()-r.t<=maxAge)return r;
+  }catch(e){}
+  return null;
+}
+function saveRoom(code,creator,pid){try{localStorage.setItem(ROOM_KEY,JSON.stringify({code:code,creator:!!creator,pid:pid||'',t:Date.now()}))}catch(e){}}
+function forgetRoom(){try{localStorage.removeItem(ROOM_KEY)}catch(e){}}
 function genCode(){
   var lo=Math.pow(10,ROOM_LEN-1),range=9*lo,n;
   try{n=crypto.getRandomValues(new Uint32Array(1))[0]}catch(e){n=Math.floor(Math.random()*4294967296)}
   return String(lo+n%range);
 }
-function createRoom(n){var code=genCode();roomCode=code;setOS('connecting');joinRoom(code,{create:n||0})}
+function createRoom(n){
+  var r=n?null:savedRoom(30*60*1000);
+  if(r&&r.creator){roomCode=r.code;setOS('connecting');joinRoom(r.code,{pid:r.pid,creator:true});return}   /* same room as before */
+  var code=genCode();roomCode=code;setOS('connecting');joinRoom(code,{create:n||0})
+}
 function joinRoom(code,opts){
-  var token=++joinToken,create=(opts&&typeof opts.create==='number')?opts.create:-1;
+  var token=++joinToken,create=(opts&&typeof opts.create==='number')?opts.create:-1,creator=create>=0||!!(opts&&opts.creator);
   leaveRoom();
   var lock=function(on){$('join').disabled=on;$('mk').disabled=on;$('rnd').disabled=on};
   lock(true);
-  createSupabaseRoom(code).then(function(rm){
+  createSupabaseRoom(code,opts&&opts.pid).then(function(rm){
     if(token!==joinToken){rm.leave().catch(function(){});return;}
     room=rm;mode='vs';state='net';
     if(rm.onLost)rm.onLost(connLost);
@@ -2055,6 +2072,7 @@ function joinRoom(code,opts){
         }
         shareCode=code;rm.onPeers(onPeers);
       }
+      saveRoom(code,creator,rm.id);
       resize();
       overlay('battleTitle',fm('roomwait',{c:code}),'ready',false);
       endMenu();$('go').style.display='none';
@@ -2188,7 +2206,7 @@ $('join').addEventListener('click',function(){
   joinRoom(code);
 });
 $('back').addEventListener('click',function(){
-  joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';pendingScore=null;clearBoard();resize();
+  forgetRoom();joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';pendingScore=null;clearBoard();resize();
   overlay('tetris','drag','start',true);
 });
 function gvLabel(){$('gvc').checked=gravityPref;$('itmc').checked=itemPref;$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
@@ -3396,6 +3414,14 @@ grid=emptyGrid();
 overlay('tetris','drag','start',true);
 resize();hud();if(musicVolume>0)playMusic();
 requestAnimationFrame(function(t){last=t;loop(t)});
+/* Came back after the page was closed (e.g. while sharing the code)? Go straight back into the same room. */
+(function(){
+  var r=savedRoom(10*60*1000);
+  if(!r||!supabaseReady())return;
+  $('vs').click();
+  roomCode=r.code;setOS('connecting');
+  joinRoom(r.code,{pid:r.pid,creator:r.creator});
+})();
 })();
 </script>
 </body>
