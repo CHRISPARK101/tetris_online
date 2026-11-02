@@ -217,6 +217,12 @@ input,select{-webkit-user-select:text;user-select:text}
 #opp.hit{animation:ohit .6s}
 @keyframes bhit{0%{box-shadow:inset 0 0 46px 12px rgba(229,72,77,.7)}100%{box-shadow:inset 0 0 0 0 rgba(229,72,77,0)}}
 #board.hit{animation:bhit .65s}
+#pzbar{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:4;display:flex;align-items:center;gap:8px;max-width:calc(100% - 12px);padding:6px 8px 6px 12px;border-radius:999px;background:var(--accent);color:var(--onaccent);font-size:12px;font-weight:700;line-height:1.25;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+#pzbar[hidden]{display:none}
+#pzbt{display:flex;gap:6px;line-height:1}
+#pzbt button{height:auto;min-width:0;padding:6px 10px;font-size:12px;font-weight:700;border-radius:999px;border:0;background:rgba(255,255,255,.92);color:#1b1f3b;cursor:pointer}
+#pzbt button#pzn{background:rgba(0,0,0,.28);color:var(--onaccent)}
+#pzbt button[hidden]{display:none}
 #ov #rcfg{display:flex;flex-direction:column;align-items:center;margin:4px 0}
 #ov #rcfg[hidden]{display:none}
 #ov #rcfgtitle{font-weight:700;color:var(--ink);font-size:14px}
@@ -233,6 +239,7 @@ input,select{-webkit-user-select:text;user-select:text}
       <div id="cpop" aria-hidden="true"></div>
       <div id="tt" hidden></div>
       <div id="bf" hidden></div>
+      <div id="pzbar" hidden><span id="pzt"></span><span id="pzbt"><button id="pzy"></button><button id="pzn"></button></span></div>
       <div id="ov">
         <div id="bubs" aria-hidden="true"></div>
         <h1 id="ot">TETRIS</h1>
@@ -1129,10 +1136,75 @@ function over(){
   overlay('gameover',fm('scorelines',{s:score,l:lines}),'playagain',true);endMenu();
   rankCheck(score,lines,level);
 }
+function enterPaused(){
+  state='paused';overlay('paused',mode==='vs'?'pzboth':'','resume',false);overlay('paused','','resume',false);$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display=mode==='vs'?'none':'';$('qt').style.display=''}
 function pause(){
-  if(state==='playing'&&!iblast&&!swapWait&&mode!=='vs'){state='paused';overlay('paused','','resume',false);$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display='';$('qt').style.display=''}
+  if(mode==='vs'){vsPauseBtn();return}
+  if(state==='playing'&&!iblast&&!swapWait)enterPaused();
 }
-function resume(){state='playing';$('ov').hidden=true;last=performance.now()}
+function doResume(){state='playing';$('ov').hidden=true;last=performance.now()}
+function resume(){if(mode==='vs'&&vsPz!==0)setPz(0);doResume()}
+
+/* ===== 2-player pause: only when BOTH players agree =====
+   pz (shared through presence): 0 = nothing, 1 = "I want to pause / I agree", 2 = "no thanks".
+   Both players at 1 -> both freeze. Either one resuming (or 60 s passing) resumes both. */
+var vsPz=0,pzReqAt=0,pzNoAt=0,pzPausedAt=0,pzMsgUntil=0,pzMode='';
+function setPz(v){vsPz=v;if(room)push({pz:v})}
+function oppPz(){var P=opp&&opp.presence;return(P&&P.gs===gs&&(P.pz===1||P.pz===2))?P.pz:0}
+function inMatch(){return state==='playing'||state==='anim'||state==='clear'}
+function pzShow(m,text,yes,no){
+  pzMode=m;var b=$('pzbar');
+  $('pzt').textContent=text;
+  $('pzy').hidden=!yes;$('pzn').hidden=!no;
+  if(yes)$('pzy').textContent=yes;
+  if(no)$('pzn').textContent=no;
+  $('pzbt').style.display=(yes||no)?'':'none';
+  b.hidden=false;
+}
+function pzHide(){pzMode='';$('pzbar').hidden=true}
+function pzMsg(key){pzShow('msg',tr(key),'','');pzMsgUntil=performance.now()+2600}
+function vsPauseBtn(){
+  if(state==='paused'){resume();return}
+  if(!inMatch()||!opp)return;
+  if(vsPz===1){setPz(0);pzHide();return}                 /* cancel my request */
+  if(oppPz()===1){setPz(1);return}                        /* accept theirs */
+  setPz(1);pzReqAt=performance.now();
+}
+function vsPauseTick(){
+  var now=performance.now();
+  if(mode!=='vs'||!room||!opp||!(inMatch()||state==='paused')){
+    if(vsPz!==0)setPz(0);
+    if(pzMode&&pzMode!=='msg')pzHide();
+    if(pzMode==='msg'&&now>pzMsgUntil)pzHide();
+    return;
+  }
+  var op=oppPz();
+  if(state==='paused'){
+    if(vsPz===0){doResume();return}                      /* I resumed */
+    if(op!==1||now-pzPausedAt>60000){setPz(0);doResume();return}   /* opponent resumed, or time is up */
+    return;
+  }
+  if(vsPz===1&&op===1){
+    if(state==='playing'&&!iblast&&!swapWait){pzHide();pzPausedAt=now;enterPaused()}
+    return;
+  }
+  if(vsPz===1&&op===2){setPz(0);pzMsg('pzdecl');return}
+  if(vsPz===1){
+    if(now-pzReqAt>12000){setPz(0);pzMsg('pznoresp');return}
+    if(pzMode!=='ask')pzShow('ask',tr('pzask'),'','');
+    return;
+  }
+  if(vsPz===2){
+    if(now-pzNoAt>2500||op===0){setPz(0)}
+    if(pzMode==='req')pzHide();
+    return;
+  }
+  if(op===1){if(pzMode!=='req')pzShow('req',tr('pzreq'),tr('pzyes'),tr('pzno'));return}
+  if(pzMode==='msg'){if(now>pzMsgUntil)pzHide();return}
+  if(pzMode)pzHide();
+}
+$('pzy').addEventListener('click',function(){if(oppPz()===1){setPz(1)}});
+$('pzn').addEventListener('click',function(){if(pzMode==='req'){setPz(2);pzNoAt=performance.now();pzHide()}});
 
 /* ===== Aqua jelly blocks: translucent glossy gel tiles, pre-rendered once per colour/size and blitted ===== */
 function hexRGB(h){var n=parseInt(h.slice(1),16);return[n>>16&255,n>>8&255,n&255]}
@@ -1301,6 +1373,7 @@ function loop(t){
   if(state==='ready')attractStep(dt);
   if(boom){boom.t+=dt;if(boom.t>=boom.d)boom=null}
   if(itemMode||bfLast)renderBuffs();
+  if(mode==='vs')vsPauseTick();else if(vsPz!==0)vsPz=0;
   if(!!itemMode!==invShown)renderInv();
   if(state==='playing'||state==='anim'||state==='clear'){
     pt+=dt;
@@ -1578,8 +1651,8 @@ function sendBoard(t){
   var g=a.join('');
   if(g!==sentG){sentG=g;push({g:g,sc:score})}
 }
-var shareCode='',lobby=null;
-function leaveRoom(){shareCode='';leaveLobby();cfg={gv:1,it:0,sv:0};cfgLocked=false;clearTimeout(cfgNoteTimer);cfgNoteTimer=null;if(countTimer){clearInterval(countTimer);countTimer=null;}if(leftTimer){clearTimeout(leftTimer);leftTimer=null;}if(room){var oldRoom=room;room=null;oldRoom.leave().catch(function(){})}opp=null;meP=null;myRdy=false}
+var shareCode='',lobby=null,rndRoom=false;
+function leaveRoom(){vsPz=0;pzHide();shareCode='';leaveLobby();cfg={gv:1,it:0,sv:0};cfgLocked=false;clearTimeout(cfgNoteTimer);cfgNoteTimer=null;if(countTimer){clearInterval(countTimer);countTimer=null;}if(leftTimer){clearTimeout(leftTimer);leftTimer=null;}if(room){var oldRoom=room;room=null;oldRoom.leave().catch(function(){})}opp=null;meP=null;myRdy=false}
 
 /* Supabase client: created once and shared by rooms and the ranking. */
 var sbClient=null;
@@ -1610,8 +1683,8 @@ function createSupabaseRoom(code,keepId){
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
-  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','cc','g','sc','sw','swn','sr','srn'];
-  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0};
+  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','pz','cc','g','sc','sw','swn','sr','srn'];
+  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',pz:0,cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0};
   var remote={},seenKeys={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,hbTimer=null,flushTimer=null,lastFlush=0;
   var retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   function validValue(k,v){
@@ -1625,6 +1698,7 @@ function createSupabaseRoom(code,keepId){
     if(k==='iq')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
     if(k==='ik')return v===''||(typeof v==='string'&&ATTACKS.indexOf(v)>=0);
     if(k==='ie')return Array.isArray(v)&&v.length<=32&&v.every(function(e){return e&&Number.isInteger(e.id)&&e.id>0&&typeof e.k==='string'&&ATTACKS.indexOf(e.k)>=0});
+    if(k==='pz')return v===0||v===1||v===2;
     if(k==='oi')return typeof v==='string'&&v.length<=60&&(v===''||v.split(',').every(function(x){return STORE.indexOf(x)>=0}));
     if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
     if(k==='swn'||k==='srn')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=1000000;
@@ -1955,7 +2029,7 @@ function onPeersCore(ch){
   }
   if(state==='playing'||state==='anim'||state==='clear'){
     if(!opp){
-      if(!leftTimer)leftTimer=setTimeout(function(){leftTimer=null;if(!opp&&(state==='playing'||state==='anim'||state==='clear'))win('oppleft')},8000);
+      if(!leftTimer)leftTimer=setTimeout(function(){leftTimer=null;if(!opp&&(state==='playing'||state==='anim'||state==='clear'||(state==='paused'&&mode==='vs')))win('oppleft')},8000);
       return;
     }
     clearTimeout(leftTimer);leftTimer=null;
@@ -1981,7 +2055,7 @@ function onPeersCore(ch){
   if(!opp&&myRdy&&(state==='net'||state==='over'))setOS('waitreconn');
   if(state==='over'&&mode==='vs'&&!myRdy&&opp&&opp.presence.rdy===true)setOS('wantsrematch');
   if(state==='net'&&!myRdy){
-    var occ=opp&&okc(opp.presence.cc)?opp.presence.cc:'',rc=roomCode;setOS(opp?(occ?function(){return fmt('oppjoinedfrom',{c:cname(occ)})}:'oppjoined'):fm('waitopp',{c:rc}));
+    var occ=opp&&okc(opp.presence.cc)?opp.presence.cc:'',rc=roomCode;setOS(opp?(occ?function(){return fmt('oppjoinedfrom',{c:cname(occ)})}:'oppjoined'):rndRoom?'rndwait':fm('waitopp',{c:rc}));
     $('go').style.display=opp?'':'none';
   }
   check();
@@ -2036,7 +2110,7 @@ function savedRoom(maxAge){
   }catch(e){}
   return null;
 }
-function saveRoom(code,creator,pid){try{localStorage.setItem(ROOM_KEY,JSON.stringify({code:code,creator:!!creator,pid:pid||'',t:Date.now()}))}catch(e){}}
+function saveRoom(code,creator,pid,rnd){try{localStorage.setItem(ROOM_KEY,JSON.stringify({code:code,creator:!!creator,rnd:!!rnd,pid:pid||'',t:Date.now()}))}catch(e){}}
 function forgetRoom(){try{localStorage.removeItem(ROOM_KEY)}catch(e){}}
 function genCode(){
   var lo=Math.pow(10,ROOM_LEN-1),range=9*lo,n;
@@ -2051,6 +2125,7 @@ function createRoom(n){
 function joinRoom(code,opts){
   var token=++joinToken,create=(opts&&typeof opts.create==='number')?opts.create:-1,creator=create>=0||!!(opts&&opts.creator);
   leaveRoom();
+  rndRoom=!!(opts&&opts.rnd);   /* a random-match room: no room code shown, it is not something to share */
   var lock=function(on){$('join').disabled=on;$('mk').disabled=on;$('rnd').disabled=on};
   lock(true);
   createSupabaseRoom(code,opts&&opts.pid).then(function(rm){
@@ -2072,9 +2147,9 @@ function joinRoom(code,opts){
         }
         shareCode=code;rm.onPeers(onPeers);
       }
-      saveRoom(code,creator,rm.id);
+      saveRoom(code,creator,rm.id,rndRoom);
       resize();
-      overlay('battleTitle',fm('roomwait',{c:code}),'ready',false);
+      overlay(rndRoom?'rnd':'battleTitle',rndRoom?'rndwait':fm('roomwait',{c:code}),'ready',false);
       endMenu();$('go').style.display='none';
       onPeers({peers:rm.peers()});
     });
@@ -2120,7 +2195,7 @@ function findMatch(){
   function accept(code){
     if(lobby!==L||L.matched)return;
     L.matched=true;leaveLobby();
-    roomCode=code;setOS('connecting');joinRoom(code);
+    roomCode=code;setOS('connecting');joinRoom(code,{rnd:true});
   }
   function tick(){
     if(lobby!==L||L.matched||!L.ch||!L.subscribed)return;
@@ -2292,6 +2367,14 @@ var I18N={
   "join": "Join room",
   "rnd": "🎲 Random Match",
   "rndfinding": "Looking for an opponent…",
+  "rndwait": "Connecting to your opponent…",
+  "pzask": "Asking your opponent to pause…",
+  "pzreq": "Your opponent wants to pause",
+  "pzyes": "Pause",
+  "pzno": "No",
+  "pzdecl": "Your opponent said no",
+  "pznoresp": "No answer, playing on",
+  "pzboth": "Both players are paused. The game resumes by itself after a minute.",
   "mk": "Create room",
   "copycode": "📋 Share code",
   "copied": "Copied!",
@@ -2413,6 +2496,14 @@ var I18N={
   "join": "Kamer betreden",
   "rnd": "🎲 Willekeurige match",
   "rndfinding": "Tegenstander zoeken…",
+  "rndwait": "Verbinden met je tegenstander…",
+  "pzask": "Tegenstander vragen om pauze…",
+  "pzreq": "Je tegenstander wil pauzeren",
+  "pzyes": "Pauze",
+  "pzno": "Nee",
+  "pzdecl": "Je tegenstander wil niet pauzeren",
+  "pznoresp": "Geen antwoord, we spelen door",
+  "pzboth": "Beide spelers pauzeren. Het spel gaat na een minuut vanzelf verder.",
   "mk": "Kamer maken",
   "copycode": "📋 Code delen",
   "copied": "Gekopieerd!",
@@ -2536,6 +2627,14 @@ var I18N={
   "join": "방 참가",
   "rnd": "🎲 랜덤 매칭",
   "rndfinding": "상대를 찾는 중…",
+  "rndwait": "상대와 연결하는 중…",
+  "pzask": "상대에게 일시정지를 요청하는 중…",
+  "pzreq": "상대가 일시정지를 원해요",
+  "pzyes": "정지",
+  "pzno": "싫어요",
+  "pzdecl": "상대가 거절했어요",
+  "pznoresp": "응답이 없어 계속 진행해요",
+  "pzboth": "두 사람 모두 멈췄어요. 1분 뒤 자동으로 다시 시작돼요.",
   "mk": "방 만들기",
   "copycode": "📋 코드 공유",
   "copied": "복사됨!",
@@ -2659,6 +2758,14 @@ var I18N={
   "join": "ルームに参加",
   "rnd": "🎲 ランダムマッチ",
   "rndfinding": "対戦相手を探しています…",
+  "rndwait": "対戦相手に接続中…",
+  "pzask": "相手に一時停止をお願い中…",
+  "pzreq": "相手が一時停止したがっています",
+  "pzyes": "停止",
+  "pzno": "いいえ",
+  "pzdecl": "相手に断られました",
+  "pznoresp": "返事がないので続行します",
+  "pzboth": "二人とも一時停止中です。1分後に自動で再開します。",
   "mk": "ルームを作る",
   "copycode": "📋 コードを共有",
   "copied": "コピーしました！",
@@ -2782,6 +2889,14 @@ var I18N={
   "join": "加入房间",
   "rnd": "🎲 随机匹配",
   "rndfinding": "正在寻找对手…",
+  "rndwait": "正在连接对手…",
+  "pzask": "正在请求对手暂停…",
+  "pzreq": "对手想要暂停",
+  "pzyes": "暂停",
+  "pzno": "不用",
+  "pzdecl": "对手拒绝了",
+  "pznoresp": "没有回应，继续游戏",
+  "pzboth": "双方已暂停，一分钟后自动继续。",
   "mk": "创建房间",
   "copycode": "📋 分享房间码",
   "copied": "已复制！",
@@ -2905,6 +3020,14 @@ var I18N={
   "join": "加入房間",
   "rnd": "🎲 隨機配對",
   "rndfinding": "正在尋找對手…",
+  "rndwait": "正在連線對手…",
+  "pzask": "正在請求對手暫停…",
+  "pzreq": "對手想要暫停",
+  "pzyes": "暫停",
+  "pzno": "不用",
+  "pzdecl": "對手拒絕了",
+  "pznoresp": "沒有回應，繼續遊戲",
+  "pzboth": "雙方已暫停，一分鐘後自動繼續。",
   "mk": "建立房間",
   "copycode": "📋 分享房間碼",
   "copied": "已複製！",
@@ -3028,6 +3151,14 @@ var I18N={
   "join": "Unirse a sala",
   "rnd": "🎲 Partida aleatoria",
   "rndfinding": "Buscando un oponente…",
+  "rndwait": "Conectando con tu oponente…",
+  "pzask": "Pidiendo pausa al oponente…",
+  "pzreq": "Tu oponente quiere pausar",
+  "pzyes": "Pausar",
+  "pzno": "No",
+  "pzdecl": "Tu oponente dijo que no",
+  "pznoresp": "Sin respuesta, seguimos jugando",
+  "pzboth": "Ambos jugadores en pausa. La partida se reanuda sola en un minuto.",
   "mk": "Crear sala",
   "copycode": "📋 Compartir código",
   "copied": "¡Copiado!",
@@ -3151,6 +3282,14 @@ var I18N={
   "join": "Entrar na sala",
   "rnd": "🎲 Partida aleatória",
   "rndfinding": "Procurando um oponente…",
+  "rndwait": "Conectando ao seu oponente…",
+  "pzask": "Pedindo pausa ao oponente…",
+  "pzreq": "Seu oponente quer pausar",
+  "pzyes": "Pausar",
+  "pzno": "Não",
+  "pzdecl": "Seu oponente recusou",
+  "pznoresp": "Sem resposta, o jogo continua",
+  "pzboth": "Os dois jogadores estão em pausa. O jogo retoma sozinho em um minuto.",
   "mk": "Criar sala",
   "copycode": "📋 Compartilhar código",
   "copied": "Copiado!",
@@ -3274,6 +3413,14 @@ var I18N={
   "join": "Rejoindre la salle",
   "rnd": "🎲 Match aléatoire",
   "rndfinding": "Recherche d’un adversaire…",
+  "rndwait": "Connexion à votre adversaire…",
+  "pzask": "Demande de pause à l’adversaire…",
+  "pzreq": "Votre adversaire veut faire une pause",
+  "pzyes": "Pause",
+  "pzno": "Non",
+  "pzdecl": "Votre adversaire a refusé",
+  "pznoresp": "Pas de réponse, on continue",
+  "pzboth": "Les deux joueurs sont en pause. La partie reprend toute seule dans une minute.",
   "mk": "Créer une salle",
   "copycode": "📋 Partager le code",
   "copied": "Copié !",
@@ -3420,7 +3567,7 @@ requestAnimationFrame(function(t){last=t;loop(t)});
   if(!r||!supabaseReady())return;
   $('vs').click();
   roomCode=r.code;setOS('connecting');
-  joinRoom(r.code,{pid:r.pid,creator:r.creator});
+  joinRoom(r.code,{pid:r.pid,creator:r.creator,rnd:r.rnd});
 })();
 })();
 </script>
