@@ -1137,7 +1137,7 @@ function over(){
   rankCheck(score,lines,level);
 }
 function enterPaused(){
-  state='paused';overlay('paused',mode==='vs'?'pzboth':'','resume',false);overlay('paused','','resume',false);$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rk').style.display='none';$('rs').style.display=mode==='vs'?'none':'';$('qt').style.display=''}
+  state='paused';overlay('paused',mode==='vs'?'pzboth':'','resume',false);$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rnd').style.display='none';$('rk').style.display='none';$('rs').style.display=mode==='vs'?'none':'';$('qt').style.display=''}
 function pause(){
   if(mode==='vs'){vsPauseBtn();return}
   if(state==='playing'&&!iblast&&!swapWait)enterPaused();
