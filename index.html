@@ -213,6 +213,16 @@ input,select{-webkit-user-select:text;user-select:text}
 .fly{position:fixed;left:0;top:0;z-index:80;pointer-events:none;line-height:1;white-space:nowrap;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif;will-change:transform,opacity;filter:drop-shadow(0 0 8px rgba(255,255,255,.9))}
 @keyframes shk{0%,100%{transform:translate(0,0)}15%{transform:translate(-7px,2px)}30%{transform:translate(6px,-3px)}45%{transform:translate(-5px,3px)}60%{transform:translate(4px,-2px)}80%{transform:translate(-2px,1px)}}
 .well.shake{animation:shk .45s}
+@keyframes jlt{0%,100%{transform:translate(0,0)}30%{transform:translate(0,3px)}60%{transform:translate(0,-1px)}}
+.well.jolt{animation:jlt .22s}
+@keyframes pop1{0%{transform:scale(1)}30%{transform:scale(1.025)}100%{transform:scale(1)}}
+@keyframes pop2{0%{transform:scale(1)}30%{transform:scale(1.045)}100%{transform:scale(1)}}
+.well.pop{animation:pop1 .2s ease-out}
+.well.pop2{animation:pop2 .26s ease-out}
+@keyframes oblk{0%{box-shadow:0 0 0 0 rgba(74,123,255,.95);filter:brightness(1.7)}100%{box-shadow:0 0 22px 10px rgba(74,123,255,0);filter:none}}
+#opp.blk{animation:oblk .7s}
+@keyframes bblk{0%{box-shadow:inset 0 0 46px 12px rgba(74,123,255,.75)}100%{box-shadow:inset 0 0 0 0 rgba(74,123,255,0)}}
+#board.blk{animation:bblk .7s}
 @keyframes ohit{0%{box-shadow:0 0 0 0 rgba(229,72,77,.95);filter:brightness(1.5)}100%{box-shadow:0 0 18px 9px rgba(229,72,77,0);filter:none}}
 #opp.hit{animation:ohit .6s}
 @keyframes bhit{0%{box-shadow:inset 0 0 46px 12px rgba(229,72,77,.7)}100%{box-shadow:inset 0 0 0 0 rgba(229,72,77,0)}}
@@ -524,7 +534,7 @@ function sfxBoom(){tone(120,.25,'sawtooth',.07);tone(80,.3,'triangle',.07,.05)}
 function sfxHit(){tone(200,.18,'sawtooth',.05);tone(150,.2,'sawtooth',.05,.1)}
 function resetItemState(){
   inv=[];fireAt=0;resumeCur=null;swapWait=null;swapIn=null;seenSw=0;swapSeq=0;renderInv();
-  shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;boom=null;iblast=null;sinceItem=0;itemTok++;clearFlyers();
+  shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;bkN=0;seenBk=0;boom=null;iblast=null;sinceItem=0;itemTok++;clearFlyers();
   clearTimeout(ttTimer);$('tt').hidden=true;renderBuffs();
 }
 function endItems(){inv=[];resumeCur=null;swapWait=null;swapIn=null;renderInv();iblast=null;itemTok++;clearFlyers();shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;renderBuffs();$('tt').hidden=true}
@@ -649,7 +659,7 @@ function fireSwap(){
 }
 function receiveSwap(b,n){
   if(!itemMode||swapWait||!okBoard(b)){push({sr:'',srn:n});return}
-  if(shield>0){shield--;renderBuffs();toast('blocked');sfxItem();stamp('shield',ctr('board'),true);push({sr:'',srn:n});return}
+  if(shield>0){shield--;renderBuffs();toast('blocked');sfxItem();stamp('shield',ctr('board'),true);pulse($('board'),'blk');bkN++;push({sr:'',srn:n,bk:bkN});return}
   swapIn={n:n,b:b};tryApplySwapIn();
 }
 function tryApplySwapIn(){
@@ -811,7 +821,7 @@ function receiveItem(k){
 }
 function landItem(k){
   var c=ctr('board');
-  if(shield>0){shield--;renderBuffs();toast('blocked');sfxItem();stamp('shield',c,true);return}
+  if(shield>0){shield--;renderBuffs();toast('blocked');sfxItem();stamp('shield',c,true);pulse($('board'),'blk');if(mode==='vs'){bkN++;push({bk:bkN})}return}
   if(k==='junk')pend=Math.min(pend+3,ROWS);
   else if(k==='speed')fastUntil=pt+8000;
   else if(k==='fog')fogUntil=pt+7000;
@@ -843,7 +853,7 @@ function hit(m,x,y){
 }
 
 function spawn(){
-  if(pend>0){addGarbage();if(state==='over')return}
+  if(pend>0){addGarbage();if(state==='over'||state==='dying')return}
   if(resumeCur){cur=resumeCur;resumeCur=null;cur.y=0}
   else{cur=next||mk(pull());next=mk(pull())}
   drawNext();
@@ -930,18 +940,28 @@ function award(n,mult){
 }
 
 /* Gravity animation: floating pieces fall with acceleration; lines completed on landing chain */
-var fall=[],fs=0,fv=0,streak=0,fx=null,FLASH=90,FXD=330;
+var fall=[],fs=0,fv=0,streak=0,fx=null,garbFx=null,pendFlashT=-9999,bkN=0,seenBk=0;
 function fullRows(){var a=[];for(var y=0;y<ROWS;y++)if(grid[y].every(Boolean))a.push(y);return a}
 function beginClear(rows,done){
-  var parts=[];
+  var parts=[],n=rows.length,pw=1+Math.min(n,4)*.35;
   rows.forEach(function(y){
     for(var c=0;c<COLS;c++){
-      var col=COL[grid[y][c]];
-      for(var q=0;q<4;q++)parts.push({x:c+(q%2)*.5,y:y+(q>>1)*.5,vx:(Math.random()-.5)*.008+((q%2)-.5)*.002,vy:-Math.random()*.005-.001,col:col});
+      var col=COL[grid[y][c]],dx=(c-(COLS-1)/2)/COLS;
+      for(var q=0;q<4;q++)parts.push({x:c+(q%2)*.5,y:y+(q>>1)*.5,vx:((Math.random()-.5)*.008+((q%2)-.5)*.002+dx*.006)*pw,vy:(-Math.random()*.006-.001)*pw,col:col,vr:(Math.random()-.5)*.03,sz:.5});
+      if(n>=2||streak>=2)for(var z=0;z<2;z++)parts.push({x:c+.25,y:y+.25,vx:(Math.random()-.5)*.014*pw,vy:(-Math.random()*.010-.002)*pw,col:'#ffffff',vr:0,sz:.22});
     }
   });
-  fx={rows:rows,t:0,done:done,parts:parts};
+  /* a longer flash and a longer burst for bigger clears */
+  fx={rows:rows,t:0,done:done,parts:parts,fl:90+Math.min(n,4)*15,d:330+Math.min(n,4)*45};
   cur=null;state='clear';
+  impact(n);
+}
+/* The "crunch" of breaking blocks: screen jolt/shake, a low thump and a short buzz on phones that support it. */
+function impact(n){
+  if(!reduceMotion)pulse(document.querySelector('.well'),(n>=3||streak>=3)?'pop2':'pop');
+  var f=n>=4?70:n===3?85:n===2?100:120;
+  tone(f,.14,'sine',.06+Math.min(n,4)*.012);if(n>=2)tone(f*1.5,.1,'triangle',.04,.03);
+  try{if(!reduceMotion&&navigator.vibrate)navigator.vibrate(n>=4?[30,25,55]:n>=2?[22]:[10])}catch(e){}
 }
 /* Big bouncy combo text in the middle of the board, with a burst of stars. */
 var STAR_SVG='<svg viewBox="0 0 32 32"><path d="M16 2 L20 12 L30 13 L22.5 20 L25 30 L16 24.5 L7 30 L9.5 20 L2 13 L12 12 Z" fill="#ffe14d" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>';
@@ -977,7 +997,7 @@ function comboPop(n){
       ],{duration:650+Math.random()*300,easing:'cubic-bezier(.1,.7,.3,1)',fill:'forwards'}).onfinish=function(){if(sp.parentNode)sp.parentNode.removeChild(sp)};
     })(sp);
   }
-  if(n>=4)pulse(document.querySelector('.well'),'shake');
+  if(n>=4)pulse(document.querySelector('.well'),'pop2');
 }
 /* The top combo badge was removed: the big COMBO pop-up in the middle of the board shows it instead. */
 function showCombo(){}
@@ -1319,20 +1339,34 @@ function draw(){
   drawAttract();
   if(!grid)return;
   var hide={};
-  if(fx&&fx.t>=FLASH)fx.rows.forEach(function(y){hide[y]=1});
+  if(fx&&fx.t>=fx.fl)fx.rows.forEach(function(y){hide[y]=1});
+  var goff=0,gk=0;
+  if(garbFx){gk=Math.min(1,garbFx.t/garbFx.d);goff=garbFx.n*cs*Math.pow(1-gk,3)}   /* new rows push the stack up smoothly */
+  bx.save();if(goff)bx.translate(0,goff);
   for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
     if(grid[r][c]&&!hide[r]){jellyAt(r,c,.032);cell(bx,c*cs,r*cs,cs,COL[grid[r][c]],null,jsx,jsy);if(itm[r][c])icon(bx,c*cs,r*cs,cs,itm[r][c])}
   }
+  bx.restore();
+  if(garbFx){
+    bx.globalAlpha=(garbFx.n?.5:.35)*(1-gk);bx.fillStyle='#ff5a5f';
+    if(garbFx.n)bx.fillRect(0,(ROWS-garbFx.n)*cs+goff,W,garbFx.n*cs);else bx.fillRect(0,0,W,H);
+    bx.globalAlpha=1;
+  }
   if(fx){
-    if(fx.t<FLASH){
+    if(fx.t<fx.fl){
       bx.globalAlpha=.9;bx.fillStyle='#ffffff';
       fx.rows.forEach(function(y){bx.fillRect(0,y*cs,W,cs)});
       bx.globalAlpha=1;
     }else{
-      var tt=fx.t-FLASH,k=tt/(FXD-FLASH);
+      var tt=fx.t-fx.fl,k=tt/(fx.d-fx.fl);
+      /* shock band that spreads out of the broken rows */
+      bx.globalAlpha=Math.max(0,.55*(1-k*1.4));bx.fillStyle='#ffffff';
+      fx.rows.forEach(function(y){var e=k*cs*.9;bx.fillRect(0,y*cs-e,W,cs+2*e)});
       fx.parts.forEach(function(p){
-        var s=cs*.5*(1-k*.7),px=(p.x+p.vx*tt)*cs+cs*.25-s/2,py=(p.y+p.vy*tt+.00002*tt*tt)*cs+cs*.25-s/2;
-        bx.globalAlpha=1-k;bx.fillStyle=p.col;bx.fillRect(px,py,s,s);
+        var sz=cs*(p.sz||.5)*(1-k*.7),px=(p.x+p.vx*tt)*cs+cs*.25,py=(p.y+p.vy*tt+.00002*tt*tt)*cs+cs*.25;
+        bx.globalAlpha=1-k;bx.fillStyle=p.col;
+        if(p.vr){bx.save();bx.translate(px,py);bx.rotate(p.vr*tt);bx.fillRect(-sz/2,-sz/2,sz,sz);bx.restore()}
+        else bx.fillRect(px-sz/2,py-sz/2,sz,sz);
       });
       bx.globalAlpha=1;
     }
@@ -1342,7 +1376,7 @@ function draw(){
   var fogOn=itemMode&&pt<fogUntil;
   if(fogOn){bx.globalAlpha=.9;bx.fillStyle=TH.well;bx.fillRect(0,0,W,H);bx.globalAlpha=1}
   if(boom){bx.globalAlpha=Math.max(0,.75*(1-boom.t/boom.d));bx.fillStyle=boom.col;bx.fillRect(boom.x*cs,boom.y*cs,boom.w*cs,boom.h*cs);bx.globalAlpha=1}
-  if(pend>0){var ph=Math.min(pend,ROWS)*cs;bx.fillStyle='#e5484d';bx.fillRect(0,H-ph,4,ph)}
+  if(pend>0){var ph=Math.min(pend,ROWS)*cs,pf=Math.max(0,1-(wnow-pendFlashT)/700);bx.fillStyle='#e5484d';bx.fillRect(0,H-ph,4+10*pf,ph);if(pf>0){bx.globalAlpha=.25*pf;bx.fillRect(0,H-ph,W,ph);bx.globalAlpha=1}}
   if(cur&&state!=='over'){
     var gy=cur.y;
     while(!hit(cur.m,cur.x,gy+1))gy++;
@@ -1372,6 +1406,7 @@ function loop(t){
   var dt=Math.min(t-last,100);last=t;wnow=t;
   if(state==='ready')attractStep(dt);
   if(boom){boom.t+=dt;if(boom.t>=boom.d)boom=null}
+  if(garbFx){garbFx.t+=dt;if(garbFx.t>=garbFx.d)garbFx=null}
   if(itemMode||bfLast)renderBuffs();
   if(mode==='vs')vsPauseTick();else if(vsPz!==0)vsPz=0;
   if(!!itemMode!==invShown)renderInv();
@@ -1388,7 +1423,7 @@ function loop(t){
   }
   if(state==='clear'&&fx){
     fx.t+=dt;
-    if(fx.t>=FXD){var dn=fx.done;fx=null;dn()}
+    if(fx.t>=fx.d){var dn=fx.done;fx=null;dn()}
   }
   if(iblast){iblast.t+=dt;if(iblast.t>=iblast.d)finishBlast()}
   if(state==='anim'){
@@ -1593,7 +1628,7 @@ function cpuStep(){
     C.score+=[0,100,300,500,800][Math.min(n,4)];
     var a=n>=4?4:Math.max(0,n-1);
     if(a>0&&C.pend>0){var cc=Math.min(a,C.pend);C.pend-=cc;a-=cc}
-    if(a>0)pend+=a;
+    if(a>0){pend+=a;warnIncoming()}
     if(itemMode&&Math.random()<[.10,.15,.20][cpuLvl])receiveItem(ATTACKS[Math.floor(Math.random()*ATTACKS.length)]);
     olabel();
   }
@@ -1615,16 +1650,43 @@ function attack(n,casc){
   if(a>0&&pend>0){var c=Math.min(a,pend);pend-=c;a-=c}
   if(a>0){if(mode==='cpu'){cpu.pend+=a}else{atk+=a;push({atk:atk})}}
 }
+function warnIncoming(){
+  pendFlashT=wnow;tone(180,.08,'square',.03);tone(140,.1,'square',.03,.09);
+  try{if(!reduceMotion&&navigator.vibrate)navigator.vibrate(18)}catch(e){}
+}
+/* The opponent's shield stopped my item: show it on their board so it does not feel like nothing happened. */
+function oppBlocked(){
+  stamp('shield',ctr('opp'),true);pulse($('opp'),'blk');toast('oppblocked');
+  sfxItem();tone(1400,.1,'triangle',.04,.08);
+}
 function addGarbage(){
-  var h=Math.floor(Math.random()*COLS);
+  var h=Math.floor(Math.random()*COLS),added=0;
   while(pend>0){
     pend--;
-    if(grid[0].some(Boolean)){over();return}
+    if(grid[0].some(Boolean)){garbBury(added);return}
     grid.shift();gid.shift();itm.shift();
     var id=++pidc,row=[],ids=[];
     for(var c=0;c<COLS;c++){row.push(c===h?0:'G');ids.push(c===h?0:id)}
     grid.push(row);gid.push(ids);itm.push(new Array(COLS).fill(0));
+    added++;
   }
+  if(added)garbLand(added);
+}
+/* Gray rows arrive: the stack is pushed up with a red flash, a shake and a heavy thud. */
+function garbLand(n){
+  garbFx={t:0,d:560,n:n};
+  if(!reduceMotion){pulse($('board'),'hit');pulse(document.querySelector('.well'),'jolt')}
+  sfxHit();tone(70,.22,'sine',.1);
+  try{if(!reduceMotion&&navigator.vibrate)navigator.vibrate([40,30,60])}catch(e){}
+}
+/* The gray rows pushed the stack over the top: show it for a moment before the game ends. */
+function garbBury(added){
+  pend=0;garbFx={t:0,d:700,n:added};
+  state='dying';cur=null;fall=[];fx=null;
+  if(!reduceMotion){pulse($('board'),'hit');pulse(document.querySelector('.well'),'jolt')}
+  sfxHit();tone(55,.4,'sine',.12);
+  try{if(!reduceMotion&&navigator.vibrate)navigator.vibrate([60,40,90])}catch(e){}
+  setTimeout(function(){if(state==='dying')over()},780);
 }
 function win(msg){
   state='over';endItems();fx=null;fall=[];cur=null;myRdy=false;push({rdy:false});
@@ -1684,8 +1746,8 @@ function createSupabaseRoom(code,keepId){
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
-  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','pz','cc','g','sc','sw','swn','sr','srn'];
-  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',pz:0,cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0};
+  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','pz','bk','cc','g','sc','sw','swn','sr','srn'];
+  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',pz:0,bk:0,cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0};
   var remote={},seenKeys={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,hbTimer=null,flushTimer=null,lastFlush=0;
   var retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   function validValue(k,v){
@@ -1699,6 +1761,7 @@ function createSupabaseRoom(code,keepId){
     if(k==='iq')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
     if(k==='ik')return v===''||(typeof v==='string'&&ATTACKS.indexOf(v)>=0);
     if(k==='ie')return Array.isArray(v)&&v.length<=32&&v.every(function(e){return e&&Number.isInteger(e.id)&&e.id>0&&typeof e.k==='string'&&ATTACKS.indexOf(e.k)>=0});
+    if(k==='bk')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
     if(k==='pz')return v===0||v===1||v===2;
     if(k==='oi')return typeof v==='string'&&v.length<=60&&(v===''||v.split(',').every(function(x){return STORE.indexOf(x)>=0}));
     if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
@@ -1818,7 +1881,7 @@ function createSupabaseRoom(code,keepId){
       data=data||{};
       /* A new match resets the event stream; otherwise append each attack to a bounded
          replay window. The 150ms broadcast coalescer can no longer overwrite attacks. */
-      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.oi='';localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;}
+      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.oi='';localState.bk=0;localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;}
       if(Number.isInteger(data.iq)&&data.iq>localState.iq&&typeof data.ik==='string'&&ATTACKS.indexOf(data.ik)>=0){
         localState.iq=data.iq;localState.ik=data.ik;
         localState.ie.push({id:data.iq,k:data.ik});
@@ -2037,7 +2100,10 @@ function onPeersCore(ch){
     var P=opp.presence;
     if(P.gs===gs){
       var a=Math.min(1000000,Math.max(0,Math.floor(Number(P.atk)||0)));
-      if(a>seen){var take=Math.min(a-seen,6);pend=Math.min(pend+take,ROWS);seen+=take}
+      if(a>seen){var take=Math.min(a-seen,6);pend=Math.min(pend+take,ROWS);seen+=take;warnIncoming()}
+      var bkv=Math.min(1000000,Math.max(0,Math.floor(Number(P.bk)||0)));
+      if(bkv>seenBk)oppBlocked();
+      seenBk=bkv;
       var iqv=Math.min(1000000,Math.max(0,Math.floor(Number(P.iq)||0)));
       if(iqv>seenIq){
         var hasQueue=Array.isArray(P.ie),events=hasQueue?P.ie:[];
@@ -2457,6 +2523,7 @@ var I18N={
   "itemqueue": "Item queue",
   "used": "{n} used!",
   "blocked": "Your shield blocked the attack!",
+  "oppblocked": "The opponent’s shield blocked your attack!",
   "hit_junk": "Junk lines incoming!",
   "hit_speed": "Your pieces fall faster!",
   "hit_fog": "Fog hides your stack!",
@@ -2588,6 +2655,7 @@ var I18N={
   "itemqueue": "Itemrij",
   "used": "{n} ingezet!",
   "blocked": "Je schild blokkeerde de aanval!",
+  "oppblocked": "Het schild van je tegenstander blokkeerde je aanval!",
   "hit_junk": "Rommelrijen komen eraan!",
   "hit_speed": "Je blokken vallen sneller!",
   "hit_fog": "Mist verbergt je stapel!",
@@ -2719,6 +2787,7 @@ var I18N={
   "itemqueue": "아이템 대기열",
   "used": "{n} 발동!",
   "blocked": "방어막이 공격을 막았습니다!",
+  "oppblocked": "상대의 방어막이 공격을 막았어요!",
   "hit_junk": "쓰레기 줄이 날아옵니다!",
   "hit_speed": "블록이 빨리 떨어집니다!",
   "hit_fog": "안개가 쌓인 블록을 가립니다!",
@@ -2850,6 +2919,7 @@ var I18N={
   "itemqueue": "アイテム待機列",
   "used": "{n}を発動！",
   "blocked": "シールドが攻撃を防ぎました！",
+  "oppblocked": "相手のシールドに攻撃を防がれました！",
   "hit_junk": "お邪魔ラインが来ます！",
   "hit_speed": "ブロックの落下が速くなります！",
   "hit_fog": "霧で積み上げが見えません！",
@@ -2981,6 +3051,7 @@ var I18N={
   "itemqueue": "道具队列",
   "used": "发动{n}！",
   "blocked": "护盾挡住了攻击！",
+  "oppblocked": "对手的护盾挡住了你的攻击！",
   "hit_junk": "垃圾行来袭！",
   "hit_speed": "方块下落变快了！",
   "hit_fog": "迷雾遮住了你的方块堆！",
@@ -3112,6 +3183,7 @@ var I18N={
   "itemqueue": "道具佇列",
   "used": "發動{n}！",
   "blocked": "護盾擋住了攻擊！",
+  "oppblocked": "對手的護盾擋住了你的攻擊！",
   "hit_junk": "垃圾行來襲！",
   "hit_speed": "方塊下落變快了！",
   "hit_fog": "迷霧遮住了你的方塊堆！",
@@ -3243,6 +3315,7 @@ var I18N={
   "itemqueue": "Cola de objetos",
   "used": "¡{n} activado!",
   "blocked": "¡Tu escudo bloqueó el ataque!",
+  "oppblocked": "¡El escudo del oponente bloqueó tu ataque!",
   "hit_junk": "¡Llegan líneas basura!",
   "hit_speed": "¡Tus piezas caen más rápido!",
   "hit_fog": "¡La niebla oculta tu pila!",
@@ -3374,6 +3447,7 @@ var I18N={
   "itemqueue": "Fila de itens",
   "used": "{n} ativado!",
   "blocked": "Seu escudo bloqueou o ataque!",
+  "oppblocked": "O escudo do oponente bloqueou o seu ataque!",
   "hit_junk": "Linhas de lixo a caminho!",
   "hit_speed": "Suas peças caem mais rápido!",
   "hit_fog": "A névoa esconde sua pilha!",
@@ -3505,6 +3579,7 @@ var I18N={
   "itemqueue": "File d’objets",
   "used": "{n} activé !",
   "blocked": "Votre bouclier a bloqué l’attaque !",
+  "oppblocked": "Le bouclier de l’adversaire a bloqué votre attaque !",
   "hit_junk": "Des lignes déchets arrivent !",
   "hit_speed": "Vos pièces tombent plus vite !",
   "hit_fog": "Le brouillard cache votre pile !",
