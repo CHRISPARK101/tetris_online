@@ -1610,7 +1610,8 @@ $('lback').addEventListener('click',function(){$('back').click()});
 function ovui(a){$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='';['go','settings','cpub','vs','rnd','rk'].forEach(function(i){$(i).style.display=a?'':'none'});$('settingsbox').hidden=true;$('nbox').hidden=true;$('rs').style.display='none';$('qt').style.display='none';$('netbox').hidden=true;$('lvbox').hidden=true}
 function attack(n,casc){
   if(mode==='solo')return;
-  var a=(n>=4?4:Math.max(0,n-1))+(casc?1:0);
+  /* Chain reactions (combo) send more the longer the chain: combo 2 = +1 row, 3 = +2, ... up to +6, on top of the usual rows. */
+  var a=(n>=4?4:Math.max(0,n-1))+(casc?Math.min(Math.max(streak-1,1),6):0);
   if(a>0&&pend>0){var c=Math.min(a,pend);pend-=c;a-=c}
   if(a>0){if(mode==='cpu'){cpu.pend+=a}else{atk+=a;push({atk:atk})}}
 }
@@ -2362,7 +2363,7 @@ var I18N={
   "main": "Main menu",
   "battle": "2P Battle",
   "battleTitle": "2P Battle",
-  "ranking": "👑 Ranking",
+  "ranking": "👑 Ranking Battle",
   "cpu": "Vs CPU",
   "join": "Join room",
   "rnd": "🎲 Random Match",
@@ -2491,7 +2492,7 @@ var I18N={
   "restart": "Opnieuw starten",
   "main": "Hoofdmenu",
   "battle": "2P-gevecht",
-  "ranking": "👑 Ranglijst",
+  "ranking": "👑 Ranglijstwedstrijd",
   "cpu": "Tegen CPU",
   "join": "Kamer betreden",
   "rnd": "🎲 Willekeurige match",
@@ -2622,7 +2623,7 @@ var I18N={
   "restart": "다시 시작",
   "main": "메인 화면",
   "battle": "2인 대전",
-  "ranking": "👑 랭킹",
+  "ranking": "👑 랭킹전",
   "cpu": "CPU 대전",
   "join": "방 참가",
   "rnd": "🎲 랜덤 매칭",
@@ -2753,7 +2754,7 @@ var I18N={
   "restart": "再スタート",
   "main": "メインメニュー",
   "battle": "2人対戦",
-  "ranking": "👑 ランキング",
+  "ranking": "👑 ランキング戦",
   "cpu": "CPU対戦",
   "join": "ルームに参加",
   "rnd": "🎲 ランダムマッチ",
@@ -2884,7 +2885,7 @@ var I18N={
   "restart": "重新开始",
   "main": "主菜单",
   "battle": "双人对战",
-  "ranking": "👑 排行榜",
+  "ranking": "👑 排位赛",
   "cpu": "人机对战",
   "join": "加入房间",
   "rnd": "🎲 随机匹配",
@@ -3015,7 +3016,7 @@ var I18N={
   "restart": "重新開始",
   "main": "主選單",
   "battle": "雙人對戰",
-  "ranking": "👑 排行榜",
+  "ranking": "👑 排位賽",
   "cpu": "人機對戰",
   "join": "加入房間",
   "rnd": "🎲 隨機配對",
@@ -3146,7 +3147,7 @@ var I18N={
   "restart": "Reiniciar",
   "main": "Menú principal",
   "battle": "Duelo 2P",
-  "ranking": "👑 Clasificación",
+  "ranking": "👑 Batalla de ranking",
   "cpu": "Vs CPU",
   "join": "Unirse a sala",
   "rnd": "🎲 Partida aleatoria",
@@ -3277,7 +3278,7 @@ var I18N={
   "restart": "Reiniciar",
   "main": "Menu principal",
   "battle": "Batalha 2P",
-  "ranking": "👑 Classificação",
+  "ranking": "👑 Batalha de ranking",
   "cpu": "Vs CPU",
   "join": "Entrar na sala",
   "rnd": "🎲 Partida aleatória",
@@ -3408,7 +3409,7 @@ var I18N={
   "restart": "Recommencer",
   "main": "Menu principal",
   "battle": "Duel à 2",
-  "ranking": "👑 Classement",
+  "ranking": "👑 Combat classé",
   "cpu": "Vs CPU",
   "join": "Rejoindre la salle",
   "rnd": "🎲 Match aléatoire",
