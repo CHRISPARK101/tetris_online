@@ -534,10 +534,10 @@ function sfxBoom(){tone(120,.25,'sawtooth',.07);tone(80,.3,'triangle',.07,.05)}
 function sfxHit(){tone(200,.18,'sawtooth',.05);tone(150,.2,'sawtooth',.05,.1)}
 function resetItemState(){
   inv=[];fireAt=0;resumeCur=null;swapWait=null;swapIn=null;seenSw=0;swapSeq=0;renderInv();
-  shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;bkN=0;seenBk=0;boom=null;iblast=null;sinceItem=0;itemTok++;clearFlyers();
+  shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;bkN=0;seenBk=0;boom=null;blastFxs=[];iblast=null;sinceItem=0;itemTok++;clearFlyers();
   clearTimeout(ttTimer);$('tt').hidden=true;renderBuffs();
 }
-function endItems(){inv=[];resumeCur=null;swapWait=null;swapIn=null;renderInv();iblast=null;itemTok++;clearFlyers();shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;renderBuffs();$('tt').hidden=true}
+function endItems(){inv=[];resumeCur=null;swapWait=null;swapIn=null;renderInv();iblast=null;itemTok++;clearFlyers();shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;blastFxs=[];renderBuffs();$('tt').hidden=true}
 function topRow(){for(var r=0;r<ROWS;r++)if(grid[r].some(Boolean))return r;return ROWS}
 function wipe(r){grid[r].fill(0);gid[r].fill(0);itm[r].fill(0)}
 /* The item cell was part of a cleared line: collect it before the rows disappear ... */
@@ -713,13 +713,57 @@ function fireItem(k,cy,cx){
   if(k==='shield'){shield++;sfxItem();renderBuffs();return}
   if(k==='slow'){slowUntil=pt+8000;sfxItem();renderBuffs();return}
 }
+/* Bomb / laser / nuke feedback without shaking the screen: debris from the broken blocks, a shock ring or a zap line,
+   a soft zoom punch, a low thud (or a crackle for the laser) and a short buzz on phones that support it. */
+function debris(list,x,y,col,k,cx,cy){
+  var n=k==='nuke'?1:k==='laser'?2:3;
+  for(var q=0;q<n;q++){
+    var vx,vy;
+    if(k==='laser'){vx=(Math.random()<.5?-1:1)*(.003+Math.random()*.007);vy=(Math.random()-.5)*.004}
+    else{
+      var dx=x-cx,dy=y-cy,d=Math.sqrt(dx*dx+dy*dy)||1,sp=(k==='nuke'?.008:.006)*(.5+Math.random());
+      vx=dx/d*sp+(Math.random()-.5)*.003;vy=dy/d*sp-Math.random()*.003;
+    }
+    list.push({x:x+.5,y:y+.5,vx:vx,vy:vy,col:col,vr:(Math.random()-.5)*.03});
+  }
+}
+function blastImpact(k){
+  if(!reduceMotion)pulse(document.querySelector('.well'),k==='nuke'?'pop2':'pop');
+  if(k==='bomb'){tone(55,.28,'sine',.12);tone(90,.18,'triangle',.06,.02)}
+  else if(k==='laser'){tone(1800,.07,'sawtooth',.025);tone(700,.16,'sawtooth',.03,.04);tone(90,.12,'sine',.06)}
+  else tone(45,.5,'sine',.14);
+  try{if(!reduceMotion&&navigator.vibrate)navigator.vibrate(k==='laser'?[16]:k==='nuke'?[40,30,70]:[35,20,45])}catch(e){}
+}
+function drawBlastFx(){
+  var H=cs*ROWS;
+  blastFxs.forEach(function(e){
+    var k=Math.min(1,e.t/e.d);
+    if(e.type==='ring'){
+      var R=cs*(.6+(e.big?7:3.4)*(1-Math.pow(1-k,3)));
+      bx.globalAlpha=.85*(1-k);bx.strokeStyle='#ffe2a6';bx.lineWidth=Math.max(1,cs*.38*(1-k));
+      bx.beginPath();bx.arc(e.x*cs,e.y*cs,R,0,6.2832);bx.stroke();bx.globalAlpha=1;
+    }else if(e.type==='zap'){
+      var w=.06+.3*(1-k),x=e.x*cs;
+      bx.globalAlpha=.4*(1-k);bx.fillStyle='#ffe14d';bx.fillRect(x-(.45+.9*k)*cs,0,(.9+1.8*k)*cs,H);
+      bx.globalAlpha=.95*(1-k);bx.fillStyle='#ffffff';bx.fillRect(x-w*cs/2,0,w*cs,H);bx.globalAlpha=1;
+    }else{
+      e.parts.forEach(function(p){
+        var t=e.t,sz=cs*.3*(1-k*.7),px=(p.x+p.vx*t)*cs,py=(p.y+p.vy*t+.00002*t*t)*cs;
+        bx.globalAlpha=1-k;bx.fillStyle=p.col;
+        bx.save();bx.translate(px,py);bx.rotate(p.vr*t);bx.fillRect(-sz/2,-sz/2,sz,sz);bx.restore();
+      });
+      bx.globalAlpha=1;
+    }
+  });
+}
 function blastItem(h){
   var k=h.k,cy=h.cy,cx=h.cx,r,c,removed=0;
   sfxBoom();
   /* Award points only for occupied cells actually removed. Overlapping blasts cannot
      score the same block twice because a cleared cell is empty for subsequent blasts. */
+  var parts=[];
   function eraseCell(y,x){
-    if(grid[y][x])removed++;
+    if(grid[y][x]){removed++;debris(parts,x,y,COL[grid[y][x]],k,cx,cy)}
     if(itm[y][x])swept.push({k:itm[y][x],y:y,x:x});
     grid[y][x]=0;gid[y][x]=0;itm[y][x]=0;
   }
@@ -727,13 +771,18 @@ function blastItem(h){
     var r0=Math.max(0,cy-2),r1=Math.min(ROWS-1,cy+2),c0=Math.max(0,cx-2),c1=Math.min(COLS-1,cx+2);
     for(r=r0;r<=r1;r++)for(c=c0;c<=c1;c++)eraseCell(r,c);
     boom={t:0,d:320,x:c0,y:r0,w:c1-c0+1,h:r1-r0+1,col:'#ff9f1c'};
+    blastFxs.push({t:0,d:520,type:'ring',x:cx+.5,y:cy+.5,big:0});
   }else if(k==='laser'){     /* the whole column of the item cell */
     for(r=0;r<ROWS;r++)eraseCell(r,cx);
     boom={t:0,d:320,x:cx-.35,y:0,w:1.7,h:ROWS,col:'#ffe14d'};
+    blastFxs.push({t:0,d:360,type:'zap',x:cx+.5});
   }else if(k==='nuke'){
     for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++)eraseCell(r,c);
     boom={t:0,d:380,x:0,y:0,w:COLS,h:ROWS,col:'#ffffff'};
+    blastFxs.push({t:0,d:700,type:'ring',x:COLS/2,y:ROWS/2,big:1});
   }
+  if(parts.length)blastFxs.push({t:0,d:640,type:'parts',parts:parts});
+  blastImpact(k);
   if(removed){score+=removed*10;hud()}
   /* gravity mode: the caller runs startFall() right after this, so floating blocks drop with the normal animation */
 }
@@ -940,7 +989,7 @@ function award(n,mult){
 }
 
 /* Gravity animation: floating pieces fall with acceleration; lines completed on landing chain */
-var fall=[],fs=0,fv=0,streak=0,fx=null,garbFx=null,pendFlashT=-9999,bkN=0,seenBk=0;
+var fall=[],fs=0,fv=0,streak=0,fx=null,blastFxs=[],garbFx=null,pendFlashT=-9999,bkN=0,seenBk=0;
 function fullRows(){var a=[];for(var y=0;y<ROWS;y++)if(grid[y].every(Boolean))a.push(y);return a}
 function beginClear(rows,done){
   var parts=[],n=rows.length,pw=1+Math.min(n,4)*.35;
@@ -1376,6 +1425,7 @@ function draw(){
   var fogOn=itemMode&&pt<fogUntil;
   if(fogOn){bx.globalAlpha=.9;bx.fillStyle=TH.well;bx.fillRect(0,0,W,H);bx.globalAlpha=1}
   if(boom){bx.globalAlpha=Math.max(0,.75*(1-boom.t/boom.d));bx.fillStyle=boom.col;bx.fillRect(boom.x*cs,boom.y*cs,boom.w*cs,boom.h*cs);bx.globalAlpha=1}
+  if(blastFxs.length)drawBlastFx();
   if(pend>0){var ph=Math.min(pend,ROWS)*cs,pf=Math.max(0,1-(wnow-pendFlashT)/700);bx.fillStyle='#e5484d';bx.fillRect(0,H-ph,4+10*pf,ph);if(pf>0){bx.globalAlpha=.25*pf;bx.fillRect(0,H-ph,W,ph);bx.globalAlpha=1}}
   if(cur&&state!=='over'){
     var gy=cur.y;
@@ -1406,6 +1456,7 @@ function loop(t){
   var dt=Math.min(t-last,100);last=t;wnow=t;
   if(state==='ready')attractStep(dt);
   if(boom){boom.t+=dt;if(boom.t>=boom.d)boom=null}
+  if(blastFxs.length){blastFxs.forEach(function(e){e.t+=dt});blastFxs=blastFxs.filter(function(e){return e.t<e.d})}
   if(garbFx){garbFx.t+=dt;if(garbFx.t>=garbFx.d)garbFx=null}
   if(itemMode||bfLast)renderBuffs();
   if(mode==='vs')vsPauseTick();else if(vsPz!==0)vsPz=0;
