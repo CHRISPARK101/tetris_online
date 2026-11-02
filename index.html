@@ -61,6 +61,38 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #ov{position:absolute;inset:0;border-radius:10px;background:var(--veil);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;line-height:1.4}
 #ov[hidden]{display:none}
 #ov h1{margin:0;font-size:34px;letter-spacing:-.02em}
+#endfx{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:10px}
+#endfx i{position:absolute;top:-3%;display:block;opacity:0;animation:cf var(--d,2.4s) var(--dl,0s) ease-in both}
+@keyframes cf{0%{opacity:1;transform:translate(0,0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translate(var(--dx,0),var(--h,600px)) rotate(var(--r,360deg))}}
+#endem{font-size:56px;line-height:1;margin-bottom:2px}
+#endem[hidden]{display:none}
+#wait{position:relative;width:124px;height:124px;margin-bottom:2px;display:flex;align-items:center;justify-content:center}
+#wait[hidden]{display:none}
+#wait .rg{position:absolute;inset:0;border-radius:50%;border:2px solid var(--accent);opacity:0;animation:wping 2.4s ease-out infinite}
+#wait .rg:nth-child(2){animation-delay:.8s}
+#wait .rg:nth-child(3){animation-delay:1.6s}
+#wait .pc{display:grid;grid-template-columns:repeat(3,17px);grid-auto-rows:17px;gap:2px;animation:wspin 2.4s infinite}
+#wait .pc u{display:block;border-radius:5px;background:var(--accent);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 10px rgba(124,131,255,.45)}
+#wait .pc u:nth-child(1){grid-column:2;grid-row:1}
+#wait .pc u:nth-child(2){grid-column:1;grid-row:2}
+#wait .pc u:nth-child(3){grid-column:2;grid-row:2}
+#wait .pc u:nth-child(4){grid-column:3;grid-row:2}
+@keyframes wping{0%{transform:scale(.3);opacity:.9}100%{transform:scale(1.05);opacity:0}}
+@keyframes wspin{0%{transform:rotate(0)}22%{transform:rotate(90deg)}25%{transform:rotate(90deg)}47%{transform:rotate(180deg)}50%{transform:rotate(180deg)}72%{transform:rotate(270deg)}75%{transform:rotate(270deg)}97%,100%{transform:rotate(360deg)}}
+#ov.winfx{background:radial-gradient(circle at 50% 36%,rgba(255,206,84,.30),rgba(255,206,84,0) 62%),var(--veil)}
+#ov.winfx h1{animation:winpop .75s cubic-bezier(.2,1.5,.4,1) both;text-shadow:0 0 18px rgba(255,200,60,.55)}
+#ov.winfx #endem{animation:trophy 1s ease-out both}
+#ov.losefx{background:linear-gradient(rgba(70,0,16,.38),rgba(70,0,16,0) 70%),var(--veil)}
+#ov.losefx h1{animation:losedrop .6s ease-out both}
+#ov.losefx #endem{animation:wob .95s ease-out both}
+#ov.coolfx{background:linear-gradient(rgba(40,70,140,.28),rgba(40,70,140,0) 70%),var(--veil)}
+#ov.coolfx h1{animation:losedrop .6s ease-out both}
+#ov.coolfx #endem{animation:trophy 1s ease-out both}
+#ov.still *{animation:none!important}
+@keyframes winpop{0%{transform:scale(.3);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
+@keyframes losedrop{0%{transform:translateY(-34px) scale(1.15);opacity:0}65%{transform:translateY(5px) scale(1);opacity:1}100%{transform:none}}
+@keyframes trophy{0%{transform:translateY(-70px) scale(.4);opacity:0}55%{transform:translateY(8px) scale(1.15);opacity:1}100%{transform:none}}
+@keyframes wob{0%{transform:translateY(-40px) rotate(0);opacity:0}45%{transform:translateY(0) rotate(-14deg);opacity:1}65%{transform:rotate(10deg)}85%{transform:rotate(-5deg)}100%{transform:none}}
 #ov p{margin:0;font-size:14px;color:var(--mute);max-width:240px}
 #ot,#os{text-wrap:balance}
 html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:normal}
@@ -250,8 +282,10 @@ input,select{-webkit-user-select:text;user-select:text}
       <div id="tt" hidden></div>
       <div id="bf" hidden></div>
       <div id="pzbar" hidden><span id="pzt"></span><span id="pzbt"><button id="pzy"></button><button id="pzn"></button></span></div>
-      <div id="ov">
+      <div id="ov"><div id="endfx" aria-hidden="true"></div>
         <div id="bubs" aria-hidden="true"></div>
+        <div id="wait" hidden aria-hidden="true"><span class="rg"></span><span class="rg"></span><span class="rg"></span><span class="pc"><u></u><u></u><u></u><u></u></span></div>
+        <div id="endem" hidden aria-hidden="true"></div>
         <h1 id="ot">TETRIS</h1>
         <p id="os">Drag to move, tap to rotate, flick down to drop</p>
         <p id="ob"></p>
@@ -410,6 +444,9 @@ function tone(freq,dur,type,vol,delay){
     o.connect(g);g.connect(audioCtx.destination);o.start(t);o.stop(t+(dur||.12)+.02);
   }catch(e){}
 }
+function sfxWin(){[523,659,784,1047].forEach(function(f,i){tone(f,.22,'triangle',.06,i*.11)});tone(1319,.45,'sine',.05,.5)}
+function sfxCool(){tone(392,.2,'triangle',.05);tone(523,.3,'triangle',.05,.14);tone(659,.4,'sine',.04,.3)}
+function sfxLose(){[440,370,311,262].forEach(function(f,i){tone(f,.28,'sine',.06,i*.16)});tone(110,.6,'sine',.07,.55)}
 function sfxMove(){tone(300,.045,'sine',.025)}
 function sfxRotate(){tone(420,.065,'triangle',.04);tone(560,.055,'sine',.025,.035)}
 function sfxPlace(){tone(240,.10,'triangle',.075);tone(145,.13,'sine',.055,.025)}
@@ -534,10 +571,10 @@ function sfxBoom(){tone(120,.25,'sawtooth',.07);tone(80,.3,'triangle',.07,.05)}
 function sfxHit(){tone(200,.18,'sawtooth',.05);tone(150,.2,'sawtooth',.05,.1)}
 function resetItemState(){
   inv=[];fireAt=0;resumeCur=null;swapWait=null;swapIn=null;seenSw=0;swapSeq=0;renderInv();
-  shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;bkN=0;seenBk=0;boom=null;blastFxs=[];iblast=null;sinceItem=0;itemTok++;clearFlyers();
+  shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;bkN=0;seenBk=0;boom=null;blastFxs=[];swapAnim=null;iblast=null;sinceItem=0;itemTok++;clearFlyers();
   clearTimeout(ttTimer);$('tt').hidden=true;renderBuffs();
 }
-function endItems(){inv=[];resumeCur=null;swapWait=null;swapIn=null;renderInv();iblast=null;itemTok++;clearFlyers();shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;blastFxs=[];renderBuffs();$('tt').hidden=true}
+function endItems(){inv=[];resumeCur=null;swapWait=null;swapIn=null;renderInv();iblast=null;itemTok++;clearFlyers();shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;blastFxs=[];swapAnim=null;renderBuffs();$('tt').hidden=true}
 function topRow(){for(var r=0;r<ROWS;r++)if(grid[r].some(Boolean))return r;return ROWS}
 function wipe(r){grid[r].fill(0);gid[r].fill(0);itm[r].fill(0)}
 /* The item cell was part of a cleared line: collect it before the rows disappear ... */
@@ -625,6 +662,7 @@ function strCells(b){var a=[];for(var i=0;i<b.length;i++)a.push(b[i]==='.'?0:b[i
 /* Put a new stack on my board. Item cells on it are dropped; touching blocks of one colour become one piece for gravity. */
 function applyBoard(cells){
   var r,c;
+  swapAnim={t:0,d:760,old:grid.map(function(row){return row.slice()})};   /* the board flips: old stack turns edge-on, the new one turns back */
   grid=[];gid=[];itm=[];
   for(r=0;r<ROWS;r++){grid.push(cells.slice(r*COLS,(r+1)*COLS));gid.push(new Array(COLS).fill(0));itm.push(new Array(COLS).fill(0))}
   for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++){
@@ -641,7 +679,7 @@ function applyBoard(cells){
   fall=[];fs=0;fv=0;acc=0;streak=0;showCombo();
   if(cur){cur.y=0;if(hit(cur.m,cur.x,cur.y))over()}      /* the falling piece restarts at the top of the new stack */
 }
-function swapFx(){toast('hit_swap');sfxHit();stamp('swap',ctr('board'),true);pulse(document.querySelector('.well'),'shake')}
+function swapFx(){toast('hit_swap');sfxHit();stamp('swap',ctr('board'),true);tone(320,.2,'sine',.05);tone(640,.22,'sine',.045,.14)}
 function fireSwap(){
   toast('used',{n:itemName('swap')});sfxItem();sfxWhoosh();
   if(mode==='cpu'&&cpu){
@@ -989,7 +1027,7 @@ function award(n,mult){
 }
 
 /* Gravity animation: floating pieces fall with acceleration; lines completed on landing chain */
-var fall=[],fs=0,fv=0,streak=0,fx=null,blastFxs=[],garbFx=null,pendFlashT=-9999,bkN=0,seenBk=0;
+var fall=[],fs=0,fv=0,streak=0,fx=null,swapAnim=null,blastFxs=[],garbFx=null,pendFlashT=-9999,bkN=0,seenBk=0;
 function fullRows(){var a=[];for(var y=0;y<ROWS;y++)if(grid[y].every(Boolean))a.push(y);return a}
 function beginClear(rows,done){
   var parts=[],n=rows.length,pw=1+Math.min(n,4)*.35;
@@ -1170,6 +1208,8 @@ function renderOverlay(){
   renderCfg();
 }
 function overlay(title,sub,btn,showBest){
+  var wt=$('wait');if(wt)wt.hidden=true;
+  if(title!=='victory'&&title!=='youlose'&&title!=='gameover')endFx(null);
   ovui(true);
   ovT=title;ovS=sub;ovB=btn;ovBest=!!showBest;
   renderOverlay();
@@ -1199,10 +1239,11 @@ function endMenu(){
 }
 function over(){
   state='over';endItems();
-  if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});unlockCfg();endSub=fm('scorelines',{s:score,l:lines});overlay('youlose',endSub,'rematch',false);endMenu();return}
+  if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});unlockCfg();endSub=fm('scorelines',{s:score,l:lines});overlay('youlose',endSub,'rematch',false);endMenu();endFx('lose');return}
+  var newBest=score>0&&(itemMode?score>bestItems:score>best);
   if(itemMode){if(score>bestItems){bestItems=score;try{localStorage.setItem('tetris-best-items',String(bestItems))}catch(e){}}}
   else if(score>best){best=score;try{localStorage.setItem('tetris-best',String(best))}catch(e){}}
-  overlay('gameover',fm('scorelines',{s:score,l:lines}),'playagain',true);endMenu();
+  overlay('gameover',fm('scorelines',{s:score,l:lines}),'playagain',true);endMenu();endFx(newBest?'best':'cool');
   rankCheck(score,lines,level);
 }
 function enterPaused(){
@@ -1391,11 +1432,19 @@ function draw(){
   if(fx&&fx.t>=fx.fl)fx.rows.forEach(function(y){hide[y]=1});
   var goff=0,gk=0;
   if(garbFx){gk=Math.min(1,garbFx.t/garbFx.d);goff=garbFx.n*cs*Math.pow(1-gk,3)}   /* new rows push the stack up smoothly */
+  var sk=swapAnim?Math.min(1,swapAnim.t/swapAnim.d):1,oldG=(swapAnim&&sk<.5)?swapAnim.old:null;
   bx.save();if(goff)bx.translate(0,goff);
+  if(swapAnim){var sxs=Math.max(.02,Math.abs(Math.cos(Math.PI*sk)));bx.translate(W/2,0);bx.scale(sxs,1);bx.translate(-W/2,0)}
   for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
-    if(grid[r][c]&&!hide[r]){jellyAt(r,c,.032);cell(bx,c*cs,r*cs,cs,COL[grid[r][c]],null,jsx,jsy);if(itm[r][c])icon(bx,c*cs,r*cs,cs,itm[r][c])}
+    var g0=oldG?oldG[r][c]:grid[r][c];
+    if(g0&&!hide[r]){jellyAt(r,c,.032);cell(bx,c*cs,r*cs,cs,COL[g0],null,jsx,jsy);if(!oldG&&itm[r][c])icon(bx,c*cs,r*cs,cs,itm[r][c])}
   }
   bx.restore();
+  if(swapAnim){   /* a soft light sweeps across while the stacks trade places */
+    var lx=(sk*1.5-.25)*W,lg=bx.createLinearGradient(lx-cs*1.6,0,lx+cs*1.6,0);
+    lg.addColorStop(0,'rgba(255,255,255,0)');lg.addColorStop(.5,'rgba(255,255,255,'+(.4*Math.sin(Math.PI*sk))+')');lg.addColorStop(1,'rgba(255,255,255,0)');
+    bx.fillStyle=lg;bx.fillRect(lx-cs*1.6,0,cs*3.2,H);
+  }
   if(garbFx){
     bx.globalAlpha=(garbFx.n?.5:.35)*(1-gk);bx.fillStyle='#ff5a5f';
     if(garbFx.n)bx.fillRect(0,(ROWS-garbFx.n)*cs+goff,W,garbFx.n*cs);else bx.fillRect(0,0,W,H);
@@ -1458,6 +1507,7 @@ function loop(t){
   if(boom){boom.t+=dt;if(boom.t>=boom.d)boom=null}
   if(blastFxs.length){blastFxs.forEach(function(e){e.t+=dt});blastFxs=blastFxs.filter(function(e){return e.t<e.d})}
   if(garbFx){garbFx.t+=dt;if(garbFx.t>=garbFx.d)garbFx=null}
+  if(swapAnim){swapAnim.t+=dt;if(swapAnim.t>=swapAnim.d)swapAnim=null}
   if(itemMode||bfLast)renderBuffs();
   if(mode==='vs')vsPauseTick();else if(vsPz!==0)vsPz=0;
   if(!!itemMode!==invShown)renderInv();
@@ -1739,9 +1789,35 @@ function garbBury(added){
   try{if(!reduceMotion&&navigator.vibrate)navigator.vibrate([60,40,90])}catch(e){}
   setTimeout(function(){if(state==='dying')over()},780);
 }
+/* Result screens: confetti and a bouncing happy face for a win, a drooping title and falling dust for a loss,
+   and a calm sunglasses face for a solo run that did not beat the best score. */
+function endFx(kind){
+  var box=$('endfx'),em=$('endem'),ov=$('ov');if(!box||!em)return;
+  box.textContent='';ov.classList.remove('winfx','losefx','coolfx');ov.classList.toggle('still',!!reduceMotion);
+  if(!kind){em.hidden=true;return}
+  var good=kind==='win'||kind==='best',cool=kind==='cool';
+  ov.classList.add(good?'winfx':cool?'coolfx':'losefx');
+  em.textContent=kind==='win'?'🥳':kind==='best'?'🤩':cool?'😎':'😵';em.hidden=false;
+  if(good)sfxWin();else if(cool)sfxCool();else sfxLose();
+  if(reduceMotion)return;
+  var n=good?46:cool?14:20,h=(ov.clientHeight||600)+30,pal=['#ff5a5f','#ffb703','#4cc9f0','#7bd88f','#b388ff','#ffe14d'];
+  for(var i=0;i<n;i++){
+    var e=document.createElement('i'),sz=good?5+Math.random()*6:7+Math.random()*9;
+    e.style.left=(Math.random()*100)+'%';
+    e.style.width=sz+'px';e.style.height=(good?sz*1.6:sz)+'px';
+    e.style.background=good?pal[i%pal.length]:cool?'#9ec5ff':'#8b90a8';
+    if(!good){e.style.borderRadius='3px';e.style.filter='brightness('+(.7+Math.random()*.5)+')'}
+    e.style.setProperty('--d',(good?1.8+Math.random()*1.6:2.8+Math.random()*2)+'s');
+    e.style.setProperty('--dl',(Math.random()*(good?1:1.4))+'s');
+    e.style.setProperty('--dx',((Math.random()-.5)*(good?120:50))+'px');
+    e.style.setProperty('--r',((Math.random()-.5)*(good?900:240))+'deg');
+    e.style.setProperty('--h',h+'px');
+    box.appendChild(e);
+  }
+}
 function win(msg){
   state='over';endItems();fx=null;fall=[];cur=null;myRdy=false;push({rdy:false});
-  unlockCfg();endSub=msg;overlay('victory',msg,'rematch',false);endMenu();
+  unlockCfg();endSub=msg;overlay('victory',msg,'rematch',false);endMenu();endFx('win');
 }
 function drawOpp(){
   if(mode==='solo')return;
@@ -2267,7 +2343,7 @@ function joinRoom(code,opts){
       }
       saveRoom(code,creator,rm.id,rndRoom);
       resize();
-      overlay(rndRoom?'rnd':'battleTitle',rndRoom?'rndwait':fm('roomwait',{c:code}),'ready',false);
+      overlay(rndRoom?'rndtitle':'battleTitle',rndRoom?'rndwait':fm('roomwait',{c:code}),'ready',false);
       endMenu();$('go').style.display='none';
       onPeers({peers:rm.peers()});
     });
@@ -2293,7 +2369,7 @@ function findMatch(){
   joinToken++;leaveRoom();leaveLobby();
   $('join').disabled=false;$('mk').disabled=false;$('rnd').disabled=false;
   mode='solo';state='ready';resize();
-  overlay('rnd','rndfinding','',false);ovui(false);$('qt').style.display='';
+  overlay('rndtitle','rndfinding','',false);ovui(false);$('qt').style.display='';$('wait').hidden=false;$('ov').classList.toggle('still',!!reduceMotion);
   if(!supabaseReady()){setOS('joinfail');return}
   var client=getClient();
   var id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('l-'+Date.now()+'-'+Math.random().toString(36).slice(2));
@@ -2484,6 +2560,7 @@ var I18N={
   "cpu": "Vs CPU",
   "join": "Join room",
   "rnd": "🎲 Random Match",
+  "rndtitle": "Random Match",
   "rndfinding": "Looking for an opponent…",
   "rndwait": "Connecting to your opponent…",
   "pzask": "Asking your opponent to pause…",
@@ -2614,6 +2691,7 @@ var I18N={
   "cpu": "Tegen CPU",
   "join": "Kamer betreden",
   "rnd": "🎲 Willekeurige match",
+  "rndtitle": "Willekeurige match",
   "rndfinding": "Tegenstander zoeken…",
   "rndwait": "Verbinden met je tegenstander…",
   "pzask": "Tegenstander vragen om pauze…",
@@ -2746,6 +2824,7 @@ var I18N={
   "cpu": "CPU 대전",
   "join": "방 참가",
   "rnd": "🎲 랜덤 매칭",
+  "rndtitle": "랜덤 매칭",
   "rndfinding": "상대를 찾는 중…",
   "rndwait": "상대와 연결하는 중…",
   "pzask": "상대에게 일시정지를 요청하는 중…",
@@ -2878,6 +2957,7 @@ var I18N={
   "cpu": "CPU対戦",
   "join": "ルームに参加",
   "rnd": "🎲 ランダムマッチ",
+  "rndtitle": "ランダムマッチ",
   "rndfinding": "対戦相手を探しています…",
   "rndwait": "対戦相手に接続中…",
   "pzask": "相手に一時停止をお願い中…",
@@ -3010,6 +3090,7 @@ var I18N={
   "cpu": "人机对战",
   "join": "加入房间",
   "rnd": "🎲 随机匹配",
+  "rndtitle": "随机匹配",
   "rndfinding": "正在寻找对手…",
   "rndwait": "正在连接对手…",
   "pzask": "正在请求对手暂停…",
@@ -3142,6 +3223,7 @@ var I18N={
   "cpu": "人機對戰",
   "join": "加入房間",
   "rnd": "🎲 隨機配對",
+  "rndtitle": "隨機配對",
   "rndfinding": "正在尋找對手…",
   "rndwait": "正在連線對手…",
   "pzask": "正在請求對手暫停…",
@@ -3274,6 +3356,7 @@ var I18N={
   "cpu": "Vs CPU",
   "join": "Unirse a sala",
   "rnd": "🎲 Partida aleatoria",
+  "rndtitle": "Partida aleatoria",
   "rndfinding": "Buscando un oponente…",
   "rndwait": "Conectando con tu oponente…",
   "pzask": "Pidiendo pausa al oponente…",
@@ -3406,6 +3489,7 @@ var I18N={
   "cpu": "Vs CPU",
   "join": "Entrar na sala",
   "rnd": "🎲 Partida aleatória",
+  "rndtitle": "Partida aleatória",
   "rndfinding": "Procurando um oponente…",
   "rndwait": "Conectando ao seu oponente…",
   "pzask": "Pedindo pausa ao oponente…",
@@ -3538,6 +3622,7 @@ var I18N={
   "cpu": "Vs CPU",
   "join": "Rejoindre la salle",
   "rnd": "🎲 Match aléatoire",
+  "rndtitle": "Match aléatoire",
   "rndfinding": "Recherche d’un adversaire…",
   "rndwait": "Connexion à votre adversaire…",
   "pzask": "Demande de pause à l’adversaire…",
