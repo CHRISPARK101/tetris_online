@@ -39,6 +39,9 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #pause{flex:none;width:calc(var(--cs,20px)*2.2);height:calc(var(--cs,20px)*2.2);font-size:calc(var(--cs,20px)*.8);padding:0}
 #stage{position:relative;flex:1;min-height:0}
 /* Ad strip: reserved under the controls with a gap so the banner is never tapped by accident. Height 0 = no ad. */
+#rnd{display:inline-flex;align-items:center;justify-content:center}
+#rnd .ric{position:relative;display:block;flex:none;width:24px;height:24px;margin-right:9px}
+#rnd .ric i{position:absolute;display:block;width:5px;height:5px;border-radius:1.5px;box-shadow:inset 0 -1.5px 0 rgba(0,0,0,.25);transition:left .4s cubic-bezier(.3,1.6,.5,1),top .4s cubic-bezier(.3,1.6,.5,1),background .4s}
 #adslot{flex:0 0 auto;height:var(--adh,0px);margin-top:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:8px;border:1px dashed var(--line);font-size:11px;color:var(--mute)}
 #adslot[hidden]{display:none}
 .well{position:absolute;line-height:0}
@@ -140,8 +143,9 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 #opp[hidden]{display:none}
 .ctl{--bh:clamp(46px,6.6vh,58px);padding-bottom:6px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
 .cl{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,var(--bh));gap:16px 14px}
-.cl [data-act="down"]{grid-column:1;grid-row:2}
-.cl [data-act="drop"]{grid-column:2;grid-row:2}
+.cl [data-act="down"]{grid-column:1/3;grid-row:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1}
+.cl [data-act="down"] .ar{font-size:20px;line-height:1}
+.cl [data-act="down"] small{font-size:clamp(9px,2.8vw,11px);font-weight:600;opacity:.7;white-space:nowrap;line-height:1.1;letter-spacing:0}
 .cr{display:grid;grid-template-rows:calc(var(--bh)*2 + 16px)}
 .ctl button,#pause{position:relative;height:auto;font-size:22px;font-weight:600;border:1px solid var(--line);
   background-color:var(--btn);background-image:linear-gradient(180deg,rgba(255,255,255,var(--kgloss)) 0,rgba(255,255,255,0) 55%);
@@ -149,12 +153,9 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
   transition:transform .06s,box-shadow .06s}
 #pause{height:calc(var(--cs,20px)*2.2)}
 .ctl button:active,.ctl button.on,#pause:active{transform:translateY(5px);box-shadow:0 1px 0 var(--kedge),0 2px 4px rgba(0,0,0,.18),inset 0 2px 3px rgba(255,255,255,.5)}
-.ctl [data-act="rot"],.ctl [data-act="drop"]{font-size:15px;white-space:normal;line-height:1.15;padding-left:6px;padding-right:6px}
-.ctl [data-act="drop"]{font-size:clamp(11px,3.5vw,15px)}
+.ctl [data-act="rot"]{font-size:15px;white-space:normal;line-height:1.15;padding-left:6px;padding-right:6px}
 .ctl [data-act="rot"]{font-size:20px;border:2px solid var(--accent);box-shadow:0 6px 0 var(--kacc),0 10px 12px rgba(0,0,0,.16),inset 0 2px 3px rgba(255,255,255,.7)}
 .ctl [data-act="rot"]:active,.ctl [data-act="rot"].on{box-shadow:0 1px 0 var(--kacc),0 2px 4px rgba(0,0,0,.18),inset 0 2px 3px rgba(255,255,255,.5)}
-.ctl [data-act="drop"]{background-color:var(--accent);border-color:var(--accent);color:var(--onaccent);box-shadow:0 6px 0 var(--kacc),0 10px 12px rgba(0,0,0,.16),inset 0 2px 3px rgba(255,255,255,.45)}
-.ctl [data-act="drop"]:active,.ctl [data-act="drop"].on{box-shadow:0 1px 0 var(--kacc),0 2px 4px rgba(0,0,0,.18),inset 0 2px 3px rgba(255,255,255,.3)}
 #fire{--fire:#ff9a3c;--fs:64px;flex:none;align-self:center;margin-top:auto;margin-bottom:8px;width:var(--fs);height:var(--fs);padding:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#2a1400;line-height:1;border:1px solid #c85f0a;
   background:radial-gradient(circle at 35% 26%,#ffe2b8 0,#ffbb6b 24%,#ff8f26 60%,#e56e0c 100%);
   box-shadow:0 6px 0 #b04a04,0 10px 12px rgba(0,0,0,.28),inset 0 3px 5px rgba(255,255,255,.7),inset 0 -6px 9px rgba(150,55,0,.35);
@@ -342,8 +343,7 @@ input,select{-webkit-user-select:text;user-select:text}
     <div class="cl">
       <button data-act="left" aria-label="Left">◀</button>
       <button data-act="right" aria-label="Right">▶</button>
-      <button data-act="down" aria-label="Down">▼</button>
-      <button data-act="drop">Drop</button>
+      <button data-act="down" aria-label="Down"><span class="ar">▼</span><small id="dtcap"></small></button>
     </div>
     <div class="cr">
       <button data-act="rot">Rotate</button>
@@ -472,6 +472,26 @@ function theme(){
 }
 /* Banner height in px (50 = standard mobile banner, 0 = none). Open the game with ?ad=1 to preview the layout with a placeholder. */
 var AD_H=/[?&]ad=1(&|$)/.test(location.search)?50:0;
+/* Random Match button icon: four little blocks that keep morphing into a random piece shape and colour. */
+var RND_SHAPES=[[[0,1],[1,1],[2,1],[3,1]],[[1,1],[2,1],[1,2],[2,2]],[[0,1],[1,1],[2,1],[1,2]],[[1,1],[2,1],[0,2],[1,2]],[[0,1],[1,1],[1,2],[2,2]],[[0,1],[1,1],[2,1],[2,2]],[[0,1],[1,1],[2,1],[0,2]]];
+var RND_COL=['#ff5a5f','#ffb703','#4cc9f0','#7bd88f','#b388ff','#ffe14d','#ff8fab'],rndI=-1,rndTimer=null;
+function rndStep(force){
+  var ic=document.querySelector('#rnd .ric');if(!ic||(force!==true&&!ic.offsetParent))return;
+  var n;do{n=Math.floor(Math.random()*RND_SHAPES.length)}while(n===rndI);rndI=n;
+  var sh=RND_SHAPES[n],col=RND_COL[Math.floor(Math.random()*RND_COL.length)],q=ic.children;
+  for(var i=0;i<4;i++){q[i].style.left=(sh[i][0]*6)+'px';q[i].style.top=((sh[i][1]-1)*6+6)+'px';q[i].style.background=col}
+}
+function setRndBtn(){
+  var b=$('rnd');if(!b)return;
+  b.textContent='';
+  var ic=document.createElement('span');ic.className='ric';ic.setAttribute('aria-hidden','true');
+  for(var i=0;i<4;i++)ic.appendChild(document.createElement('i'));
+  var t=document.createElement('span');t.textContent=tr('rnd');
+  b.appendChild(ic);b.appendChild(t);
+  rndI=-1;rndStep(true);
+  clearInterval(rndTimer);rndTimer=null;
+  if(!reduceMotion)rndTimer=setInterval(function(){rndStep()},1100);
+}
 function applyAd(){
   var el=$('adslot');if(!el)return;
   el.hidden=!AD_H;
@@ -1575,15 +1595,21 @@ function loop(t){
 }
 
 /* Button input (hold to repeat) */
-var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,drop:hard,fire:fireStored};
+var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,fire:fireStored};
 var repeatable={left:1,right:1,down:1};
 Array.prototype.forEach.call(document.querySelectorAll('.ctl button,#fire'),function(b){
-  var act=b.getAttribute('data-act'),t1=null,t2=null;
+  var act=b.getAttribute('data-act'),t1=null,t2=null,downAt=0,quickAt=0;
   function stop(){clearTimeout(t1);clearInterval(t2);b.classList.remove('on')}
   b.addEventListener('pointerdown',function(e){
     e.preventDefault();stop();b.classList.add('on');
+    var now=performance.now();downAt=now;
+    /* ▼ tapped twice quickly (the first one was a short tap, not a hold) = drop the piece instantly */
+    if(act==='down'&&quickAt&&now-quickAt<300){quickAt=0;hard();return}
     acts[act]();
     if(repeatable[act]){t1=setTimeout(function(){t2=setInterval(acts[act],act==='down'?45:70)},170)}
+  });
+  b.addEventListener('pointerup',function(){
+    if(act==='down'&&downAt&&performance.now()-downAt<190)quickAt=downAt;else quickAt=0;
   });
   ['pointerup','pointercancel','pointerleave'].forEach(function(n){b.addEventListener(n,stop)});
   b.addEventListener('contextmenu',function(e){e.preventDefault()});
@@ -2613,7 +2639,7 @@ var I18N={
   "ranking": "👑 Ranking Battle",
   "cpu": "Vs CPU",
   "join": "Join room",
-  "rnd": "🎲 Random Match",
+  "rnd": "Random Match",
   "rndtitle": "Random Match",
   "rndfinding": "Looking for an opponent…",
   "rndwait": "Connecting to your opponent…",
@@ -2641,7 +2667,8 @@ var I18N={
   "save": "Save",
   "skip": "Skip",
   "best": "Best score",
-  "drag": "Drag to move, tap to rotate, flick down to drop",
+  "drag": "Drag to move, tap to rotate, double-tap ▼ to drop instantly",
+  "dtap": "2× tap: instant drop",
   "paused": "Paused",
   "resume": "Resume",
   "difficulty": "Choose a difficulty",
@@ -2745,7 +2772,7 @@ var I18N={
   "ranking": "👑 Ranglijstwedstrijd",
   "cpu": "Tegen CPU",
   "join": "Kamer betreden",
-  "rnd": "🎲 Willekeurige match",
+  "rnd": "Willekeurige match",
   "rndtitle": "Willekeurige match",
   "rndfinding": "Tegenstander zoeken…",
   "rndwait": "Verbinden met je tegenstander…",
@@ -2773,7 +2800,8 @@ var I18N={
   "save": "Opslaan",
   "skip": "Overslaan",
   "best": "Beste score",
-  "drag": "Sleep om te bewegen, tik om te draaien en veeg omlaag om te laten vallen",
+  "drag": "Sleep om te bewegen, tik om te draaien, tik twee keer op ▼ om direct te laten vallen",
+  "dtap": "2× tikken: direct vallen",
   "paused": "Gepauzeerd",
   "resume": "Hervatten",
   "difficulty": "Kies een moeilijkheidsgraad",
@@ -2879,7 +2907,7 @@ var I18N={
   "ranking": "👑 랭킹전",
   "cpu": "CPU 대전",
   "join": "방 참가",
-  "rnd": "🎲 랜덤 매칭",
+  "rnd": "랜덤 매칭",
   "rndtitle": "랜덤 매칭",
   "rndfinding": "상대를 찾는 중…",
   "rndwait": "상대와 연결하는 중…",
@@ -2907,7 +2935,8 @@ var I18N={
   "save": "저장",
   "skip": "건너뛰기",
   "best": "최고 점수",
-  "drag": "드래그하여 이동, 탭하여 회전, 아래로 쓸어내려 즉시 내리기",
+  "drag": "드래그하여 이동, 탭하여 회전, ▼ 두 번 탭하여 즉시 내리기",
+  "dtap": "2회 탭 즉시 내리기",
   "paused": "일시 정지",
   "resume": "계속하기",
   "difficulty": "난이도를 선택하세요",
@@ -3013,7 +3042,7 @@ var I18N={
   "ranking": "👑 ランキング戦",
   "cpu": "CPU対戦",
   "join": "ルームに参加",
-  "rnd": "🎲 ランダムマッチ",
+  "rnd": "ランダムマッチ",
   "rndtitle": "ランダムマッチ",
   "rndfinding": "対戦相手を探しています…",
   "rndwait": "対戦相手に接続中…",
@@ -3041,7 +3070,8 @@ var I18N={
   "save": "保存",
   "skip": "スキップ",
   "best": "最高スコア",
-  "drag": "ドラッグで移動、タップで回転、下にスワイプで落下",
+  "drag": "ドラッグで移動、タップで回転、▼を2回タップで一気に落下",
+  "dtap": "2回タップで一気に落下",
   "paused": "一時停止",
   "resume": "再開",
   "difficulty": "難易度を選択",
@@ -3147,7 +3177,7 @@ var I18N={
   "ranking": "👑 排位赛",
   "cpu": "人机对战",
   "join": "加入房间",
-  "rnd": "🎲 随机匹配",
+  "rnd": "随机匹配",
   "rndtitle": "随机匹配",
   "rndfinding": "正在寻找对手…",
   "rndwait": "正在连接对手…",
@@ -3175,7 +3205,8 @@ var I18N={
   "save": "保存",
   "skip": "跳过",
   "best": "最高分",
-  "drag": "拖动移动，点击旋转，向下滑动快速下落",
+  "drag": "拖动移动，点击旋转，双击▼快速下落",
+  "dtap": "双击快速下落",
   "paused": "已暂停",
   "resume": "继续",
   "difficulty": "选择难度",
@@ -3281,7 +3312,7 @@ var I18N={
   "ranking": "👑 排位賽",
   "cpu": "人機對戰",
   "join": "加入房間",
-  "rnd": "🎲 隨機配對",
+  "rnd": "隨機配對",
   "rndtitle": "隨機配對",
   "rndfinding": "正在尋找對手…",
   "rndwait": "正在連線對手…",
@@ -3309,7 +3340,8 @@ var I18N={
   "save": "儲存",
   "skip": "略過",
   "best": "最高分",
-  "drag": "拖曳移動，點擊旋轉，向下滑動快速下落",
+  "drag": "拖曳移動，點擊旋轉，雙擊▼快速下落",
+  "dtap": "雙擊快速下落",
   "paused": "已暫停",
   "resume": "繼續",
   "difficulty": "選擇難度",
@@ -3415,7 +3447,7 @@ var I18N={
   "ranking": "👑 Batalla de ranking",
   "cpu": "Vs CPU",
   "join": "Unirse a sala",
-  "rnd": "🎲 Partida aleatoria",
+  "rnd": "Partida aleatoria",
   "rndtitle": "Partida aleatoria",
   "rndfinding": "Buscando un oponente…",
   "rndwait": "Conectando con tu oponente…",
@@ -3443,7 +3475,8 @@ var I18N={
   "save": "Guardar",
   "skip": "Omitir",
   "best": "Mejor puntuación",
-  "drag": "Arrastra para mover, toca para girar y desliza hacia abajo para soltar",
+  "drag": "Arrastra para mover, toca para girar y toca ▼ dos veces para soltar",
+  "dtap": "2 toques: caída rápida",
   "paused": "Pausado",
   "resume": "Continuar",
   "difficulty": "Elige dificultad",
@@ -3549,7 +3582,7 @@ var I18N={
   "ranking": "👑 Batalha de ranking",
   "cpu": "Vs CPU",
   "join": "Entrar na sala",
-  "rnd": "🎲 Partida aleatória",
+  "rnd": "Partida aleatória",
   "rndtitle": "Partida aleatória",
   "rndfinding": "Procurando um oponente…",
   "rndwait": "Conectando ao seu oponente…",
@@ -3577,7 +3610,8 @@ var I18N={
   "save": "Salvar",
   "skip": "Pular",
   "best": "Melhor pontuação",
-  "drag": "Arraste para mover, toque para girar e deslize para baixo para soltar",
+  "drag": "Arraste para mover, toque para girar e toque duas vezes em ▼ para soltar",
+  "dtap": "2 toques: queda rápida",
   "paused": "Pausado",
   "resume": "Continuar",
   "difficulty": "Escolha a dificuldade",
@@ -3683,7 +3717,7 @@ var I18N={
   "ranking": "👑 Combat classé",
   "cpu": "Vs CPU",
   "join": "Rejoindre la salle",
-  "rnd": "🎲 Match aléatoire",
+  "rnd": "Match aléatoire",
   "rndtitle": "Match aléatoire",
   "rndfinding": "Recherche d’un adversaire…",
   "rndwait": "Connexion à votre adversaire…",
@@ -3711,7 +3745,8 @@ var I18N={
   "save": "Enregistrer",
   "skip": "Passer",
   "best": "Meilleur score",
-  "drag": "Faites glisser pour déplacer, touchez pour tourner et balayez vers le bas pour lâcher",
+  "drag": "Faites glisser pour déplacer, touchez pour tourner et touchez ▼ deux fois pour lâcher",
+  "dtap": "2 touches : chute rapide",
   "paused": "En pause",
   "resume": "Reprendre",
   "difficulty": "Choisissez une difficulté",
@@ -3812,11 +3847,11 @@ function applyLanguage(){
  function aria(el,key){if(el)el.setAttribute('aria-label',tr(key))}
  txt('settingstitle','settings');txt('languageLabel','language');
  [['rktn','rkclassic'],['rkti','items'],['cgv','gravity'],['cit','items'],['kgv','gravity'],['rgv','gravity'],['rit','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
- txt('settingsback','back');txt('rs','restart');txt('qt','main');txt('vs','battle');txt('rk','ranking');txt('cpub','cpu');txt('join','join');txt('mk','mk');txt('rnd','rnd');txt('back','back');txt('lback','back');txt('nsave','save');txt('nskip','skip');txt('rstart','startgame');txt('rclose','close');
+ txt('settingsback','back');txt('rs','restart');txt('qt','main');txt('vs','battle');txt('rk','ranking');txt('cpub','cpu');txt('dtcap','dtap');txt('join','join');txt('mk','mk');setRndBtn();txt('back','back');txt('lback','back');txt('nsave','save');txt('nskip','skip');txt('rstart','startgame');txt('rclose','close');
  txt('lvl','level');txt('lnl','lines');
  var vol=$('musicvol');if(vol&&vol.querySelector('label span'))vol.querySelector('label span').textContent=tr('music');
  var opts=document.querySelectorAll('#lvbox button[data-l]');if(opts.length>=3){opts[0].textContent=tr('easy');opts[1].textContent=tr('normal');opts[2].textContent=tr('hard')}
- var ctl=document.querySelector('[data-act="rot"]');if(ctl)ctl.textContent=tr('rotate');ctl=document.querySelector('[data-act="drop"]');if(ctl)ctl.textContent=tr('drop');
+ var ctl=document.querySelector('[data-act="rot"]');if(ctl)ctl.textContent=tr('rotate');
  var fl=$('firel');if(fl)fl.textContent=tr('fire');aria($('fire'),'fire');aria($('inv'),'itemqueue');
  aria(document.querySelector('[data-act="left"]'),'left');aria(document.querySelector('[data-act="right"]'),'right');aria(document.querySelector('[data-act="down"]'),'down');
  var st=$('settings');if(st){st.setAttribute('aria-label',tr('settings'));st.title=tr('settings')}
