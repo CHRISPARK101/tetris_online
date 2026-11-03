@@ -151,8 +151,8 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 .cl [data-act="down"].on::after{opacity:1;animation:holdbar .3s linear forwards}
 @keyframes holdbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .cl [data-act="down"] small{font-size:clamp(9px,2.8vw,11px);font-weight:600;opacity:.7;white-space:nowrap;line-height:1.1;letter-spacing:0}
-.cr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:var(--bh);gap:14px;align-items:stretch}
-.cr button{min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:2px 0;border-radius:14px}
+.cr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:clamp(68px,9vh,78px);gap:14px;align-items:stretch}
+.cr button{min-width:0;min-height:68px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 0;border-radius:14px}
 .cr .btn-label{font-size:clamp(10px,2.8vw,13px);font-weight:700;line-height:1.05;white-space:nowrap}
 .ctl button,#pause{position:relative;height:auto;font-size:22px;font-weight:600;border:1px solid var(--line);
   background-color:var(--btn);background-image:linear-gradient(180deg,rgba(255,255,255,var(--kgloss)) 0,rgba(255,255,255,0) 55%);
@@ -373,8 +373,8 @@ input,select{-webkit-user-select:text;user-select:text}
       <button data-act="down" aria-label="Down"><span class="ar">▼</span></button>
     </div>
     <div class="cr">
-      <button data-act="rot" id="rotb" aria-label="Rotate"><span class="dz" aria-hidden="true"><svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M25 16.5 A9 9 0 1 1 21.6 9.4"/><path d="M23.6 3.8 L22 10 L15.8 8.6"/></g></svg></span><span class="btn-label" id="rotLabel">회전</span></button>
       <button data-act="hard" aria-label="Instant drop"><svg viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5 L16 14 L24 6.5"/><path d="M8 14.5 L16 22 L24 14.5"/></g><path d="M7.5 27.2 H24.5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg><span class="btn-label" id="dropLabel">즉시 내리기</span></button>
+      <button data-act="rot" id="rotb" aria-label="Rotate"><span class="dz" aria-hidden="true"><svg viewBox="0 0 32 32"><g fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M25 16.5 A9 9 0 1 1 21.6 9.4"/><path d="M23.6 3.8 L22 10 L15.8 8.6"/></g></svg></span><span class="btn-label" id="rotLabel">회전</span></button>
     </div>
   </div>
 </div>
