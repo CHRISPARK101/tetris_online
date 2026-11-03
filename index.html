@@ -178,6 +178,8 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 input,select{-webkit-user-select:text;user-select:text}
 #ov{overflow:auto}
+#ov>*{flex-shrink:0}
+#ov>:not(#bubs):not(#settings):not(#endfx){zoom:var(--ovk,1)}
 #settingsbox[hidden]{display:none}
 .setting-title{font-size:18px;margin:8px 0 4px}
 #settingsbox{width:100%;display:flex;flex-direction:column;align-items:center;gap:8px}
@@ -1207,6 +1209,20 @@ function renderOverlay(){
   $('ob').textContent=ovBest&&bv>0?(tr('best')+' '+bv):'';
   renderCfg();
 }
+/* Short screens (small phones, a folded Flip, landscape…): scale the overlay's content down so nothing is squashed or cut off. */
+var fitRaf=0;
+function fitOvSoon(){if(fitRaf)return;fitRaf=requestAnimationFrame(function(){fitRaf=0;fitOv()})}
+function fitOv(){
+  var ov=$('ov');if(!ov||ov.hidden)return;
+  ov.style.setProperty('--ovk','1');
+  var cs0=getComputedStyle(ov),pad=(parseFloat(cs0.paddingTop)||0)+(parseFloat(cs0.paddingBottom)||0);
+  var need=ov.scrollHeight,have=ov.clientHeight;
+  if(need<=have+1)return;
+  var k=Math.max(.55,(have-pad)/Math.max(1,need-pad)*.98);
+  ov.style.setProperty('--ovk',k.toFixed(3));
+  need=ov.scrollHeight;
+  if(need>ov.clientHeight+1){k=Math.max(.5,k*(ov.clientHeight-pad)/Math.max(1,need-pad)*.98);ov.style.setProperty('--ovk',k.toFixed(3))}
+}
 function overlay(title,sub,btn,showBest){
   var wt=$('wait');if(wt)wt.hidden=true;
   if(title!=='victory'&&title!=='youlose'&&title!=='gameover')endFx(null);
@@ -2085,18 +2101,34 @@ function cleanNick(v){
 }
 function menuBtns(on){['settings','cpub','vs','rnd','rk'].forEach(function(i){$(i).style.display=on?'':'none'});$('settingsbox').hidden=true}
 function rankCheck(sc,ln,lv){
-  /* Show the nickname prompt immediately. Do not wait for a network ranking query;
-     the ranking screen itself displays up to the top twenty scores. */
+  /* Ask for a nickname only when the score would actually reach the top twenty of its board. */
   rankTok++;
+  var tok=rankTok,settled=false,timer=null;
   pendingScore=null;
   if(!(sc>0))return;
-  pendingScore={score:sc,lines:ln,level:lv,items:!!itemMode};
-  setOS(fm('savescore',{s:sc}));
-  var inp=$('nick');
-  try{inp.value=localStorage.getItem('tetris-nick')||''}catch(e){inp.value=''}
-  menuBtns(false);
-  $('nbox').hidden=false;
-  try{inp.focus({preventScroll:true})}catch(e){try{inp.focus()}catch(err){}}
+  var items=!!itemMode;
+  function ask(){
+    if(settled||tok!==rankTok)return;
+    settled=true;clearTimeout(timer);
+    pendingScore={score:sc,lines:ln,level:lv,items:items};
+    setOS(fm('savescore',{s:sc}));
+    var inp=$('nick');
+    try{inp.value=localStorage.getItem('tetris-nick')||''}catch(e){inp.value=''}
+    menuBtns(false);
+    $('nbox').hidden=false;
+    try{inp.focus({preventScroll:true})}catch(e){try{inp.focus()}catch(err){}}
+  }
+  function miss(cut){
+    if(settled||tok!==rankTok)return;
+    settled=true;clearTimeout(timer);
+    setOS(function(){return fmt('scorelines',{s:sc,l:ln})+' · '+fmt('rankmiss',{s:cut})});
+  }
+  timer=setTimeout(ask,3000);      /* a slow or failing network must not block saving: just ask */
+  loadBoard(items).then(function(bd){
+    var rows=(bd&&bd.rows)||[];
+    if(rows.length>=RANK_N&&sc<=rows[RANK_N-1].score)miss(rows[RANK_N-1].score);
+    else ask();
+  }).catch(ask);
 }
 var rankViewTok=0;
 function showRank(hl,items){
@@ -2638,6 +2670,7 @@ var I18N={
   "errcfg": "Online play is not configured yet.",
   "rtfail": "Realtime connection failed:",
   "savescore": "Score {s}. Enter your nickname to save your score.",
+  "rankmiss": "Not in the top 20 (20th place: {s})",
   "invalidscore": "Invalid score data; score was not saved.",
   "savedglobal": "Saved to the global ranking!",
   "savedlocal": "Saved on this device (global ranking unavailable).",
@@ -2771,6 +2804,7 @@ var I18N={
   "errcfg": "Online spelen is nog niet ingesteld.",
   "rtfail": "Realtime-verbinding mislukt:",
   "savescore": "Score {s}. Voer je bijnaam in om de score op te slaan.",
+  "rankmiss": "Niet in de top 20 (20e plaats: {s})",
   "invalidscore": "Ongeldige scoregegevens; score niet opgeslagen.",
   "savedglobal": "Opgeslagen in de wereldranglijst!",
   "savedlocal": "Opgeslagen op dit apparaat (wereldranglijst niet beschikbaar).",
@@ -2904,6 +2938,7 @@ var I18N={
   "errcfg": "온라인 대전이 아직 설정되지 않았습니다.",
   "rtfail": "실시간 연결 실패:",
   "savescore": "점수 {s}. 닉네임을 입력해 점수를 저장하세요.",
+  "rankmiss": "20위 안에 들지 못했어요 (20위 점수: {s})",
   "invalidscore": "점수 데이터가 올바르지 않아 저장하지 않았습니다.",
   "savedglobal": "전체 랭킹에 저장했습니다!",
   "savedlocal": "이 기기에 저장했습니다 (전체 랭킹을 사용할 수 없음).",
@@ -3037,6 +3072,7 @@ var I18N={
   "errcfg": "オンライン対戦はまだ設定されていません。",
   "rtfail": "リアルタイム接続に失敗しました:",
   "savescore": "スコア {s}。ニックネームを入力して保存してください。",
+  "rankmiss": "トップ20に入れませんでした（20位: {s}）",
   "invalidscore": "スコアデータが無効なため保存されませんでした。",
   "savedglobal": "グローバルランキングに保存しました！",
   "savedlocal": "この端末に保存しました（グローバルランキングは利用できません）。",
@@ -3170,6 +3206,7 @@ var I18N={
   "errcfg": "在线对战尚未配置。",
   "rtfail": "实时连接失败：",
   "savescore": "得分 {s}。请输入昵称以保存成绩。",
+  "rankmiss": "未进入前20名（第20名：{s}）",
   "invalidscore": "成绩数据无效，未保存。",
   "savedglobal": "已保存到全球排行榜！",
   "savedlocal": "已保存到本设备（全球排行榜不可用）。",
@@ -3303,6 +3340,7 @@ var I18N={
   "errcfg": "線上對戰尚未設定。",
   "rtfail": "即時連線失敗：",
   "savescore": "得分 {s}。請輸入暱稱以儲存成績。",
+  "rankmiss": "未進入前20名（第20名：{s}）",
   "invalidscore": "成績資料無效，未儲存。",
   "savedglobal": "已儲存到全球排行榜！",
   "savedlocal": "已儲存到本裝置（全球排行榜無法使用）。",
@@ -3436,6 +3474,7 @@ var I18N={
   "errcfg": "El juego en línea aún no está configurado.",
   "rtfail": "Falló la conexión en tiempo real:",
   "savescore": "Puntos {s}. Introduce tu apodo para guardar la puntuación.",
+  "rankmiss": "No entraste en el top 20 (puesto 20: {s})",
   "invalidscore": "Datos de puntuación no válidos; no se guardó.",
   "savedglobal": "¡Guardado en la clasificación mundial!",
   "savedlocal": "Guardado en este dispositivo (clasificación mundial no disponible).",
@@ -3569,6 +3608,7 @@ var I18N={
   "errcfg": "O jogo online ainda não foi configurado.",
   "rtfail": "Falha na conexão em tempo real:",
   "savescore": "Pontos {s}. Digite seu apelido para salvar a pontuação.",
+  "rankmiss": "Você não entrou no top 20 (20º lugar: {s})",
   "invalidscore": "Dados de pontuação inválidos; não foi salvo.",
   "savedglobal": "Salvo no ranking global!",
   "savedlocal": "Salvo neste dispositivo (ranking global indisponível).",
@@ -3702,6 +3742,7 @@ var I18N={
   "errcfg": "Le jeu en ligne n’est pas encore configuré.",
   "rtfail": "Échec de la connexion en temps réel :",
   "savescore": "Score {s}. Saisissez votre pseudo pour enregistrer le score.",
+  "rankmiss": "Hors du top 20 (20e place : {s})",
   "invalidscore": "Données de score invalides ; score non enregistré.",
   "savedglobal": "Enregistré dans le classement mondial !",
   "savedlocal": "Enregistré sur cet appareil (classement mondial indisponible).",
@@ -3773,6 +3814,9 @@ grid=emptyGrid();
 overlay('tetris','drag','start',true);
 resize();hud();if(musicVolume>0)playMusic();
 requestAnimationFrame(function(t){last=t;loop(t)});
+try{new MutationObserver(fitOvSoon).observe($('ov'),{subtree:true,childList:true,attributes:true,attributeFilter:['hidden','class']})}catch(e){}
+try{new ResizeObserver(fitOvSoon).observe($('ov'))}catch(e){window.addEventListener('resize',fitOvSoon)}
+fitOvSoon();
 /* Came back after the page was closed (e.g. while sharing the code)? Go straight back into the same room. */
 (function(){
   var r=savedRoom(10*60*1000);
