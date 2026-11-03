@@ -56,6 +56,8 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #cc{max-width:150px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:14px}
 #lvbox{display:flex;flex-direction:column;align-items:center;gap:16px}
 #lvbox .lvr{display:flex;gap:6px}
+#lvbox .swr{display:flex;flex-direction:column;align-items:center;gap:2px}
+#rank .sw{flex:0 0 auto;justify-content:center;padding:0 0 10px}
 #lvbox[hidden]{display:none}
 #board{display:block;border-radius:10px;border:1px solid var(--line);background:var(--well);touch-action:none}
 #ov{position:absolute;inset:0;border-radius:10px;background:var(--veil);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:16px;line-height:1.4}
@@ -305,9 +307,6 @@ input,select{-webkit-user-select:text;user-select:text}
         <div id="settingsbox" hidden>
           <h2 class="setting-title" id="settingstitle">Settings</h2>
           <label class="language-row" for="languageSelect"><span id="languageLabel">Language</span><select id="languageSelect"><option value="auto">Automatic</option><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh-CN">简体中文</option><option value="zh-TW">繁體中文</option><option value="es">Español</option><option value="pt">Português</option><option value="fr">Français</option><option value="nl">Nederlands</option></select></label>
-          <label id="gv" class="sw"><span>Gravity mode</span><input type="checkbox" id="gvc" role="switch"><i></i></label>
-          <label id="itm" class="sw"><span>Item mode</span><input type="checkbox" id="itmc" role="switch"><i></i></label>
-          <p id="itmhelp"></p>
           <label id="ghv" class="sw"><span>Landing preview</span><input type="checkbox" id="ghvc" role="switch"><i></i></label>
           <label id="snd" class="sw"><span>Sound effects</span><input type="checkbox" id="sndc" role="switch"><i></i></label>
           <div id="musicvol" class="music-volume">
@@ -321,7 +320,7 @@ input,select{-webkit-user-select:text;user-select:text}
         <button id="cpub">Vs CPU</button>
         <button id="rk">👑 Ranking</button>
         <div id="netbox" hidden><input id="code" inputmode="numeric" maxlength="6" placeholder="000000" aria-label="Room code"><div class="nrow"><button id="mk">Create room</button><button id="join">Join room</button></div><button id="back">Back</button></div>
-        <div id="lvbox" hidden><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
+        <div id="lvbox" hidden><div class="swr"><label id="cgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="cgvc" role="switch"><i></i></label><label id="cit" class="sw"><span>Item mode</span><input type="checkbox" id="citc" role="switch"><i></i></label></div><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
       </div>
     </div>
     <div id="side">
@@ -347,7 +346,7 @@ input,select{-webkit-user-select:text;user-select:text}
   </div>
 </div>
 <div id="ver" aria-hidden="true">v0.7.0</div>
-<div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 20</h2><div class="rk-tabs"><button id="rktn" class="on">Classic</button><button id="rkti">Item mode</button></div><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
+<div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 20</h2><div class="rk-tabs"><button id="rktn" class="on">Classic</button><button id="rkti">Item mode</button></div><label id="kgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="kgvc" role="switch"><i></i></label><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
 <script src="supabase.js"></script>
 <script>
@@ -1263,7 +1262,7 @@ function over(){
   rankCheck(score,lines,level);
 }
 function enterPaused(){
-  state='paused';overlay('paused',mode==='vs'?'pzboth':'','resume',false);$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='none';$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rnd').style.display='none';$('rk').style.display='none';$('rs').style.display=mode==='vs'?'none':'';$('qt').style.display=''}
+  state='paused';overlay('paused',mode==='vs'?'pzboth':'','resume',false);$('settings').style.display='none';$('settingsbox').hidden=true;$('cpub').style.display='none';$('vs').style.display='none';$('rnd').style.display='none';$('rk').style.display='none';$('rs').style.display=mode==='vs'?'none':'';$('qt').style.display=''}
 function pause(){
   if(mode==='vs'){vsPauseBtn();return}
   if(state==='playing'&&!iblast&&!swapWait)enterPaused();
@@ -1751,7 +1750,7 @@ function cpuStep(){
   }
 }
 $('cpub').addEventListener('click',function(){
-  joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';resize();
+  syncModeUI();joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';resize();
   overlay('cpuTitle','difficulty','',false);
   ovui(false);$('lvbox').hidden=false;
 });
@@ -1759,7 +1758,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#lvbox [data-l]'),functi
   b.addEventListener('click',function(){startCpu(+b.getAttribute('data-l'))});
 });
 $('lback').addEventListener('click',function(){$('back').click()});
-function ovui(a){$('gv').style.display=$('itm').style.display=$('itmhelp').style.display='';['go','settings','cpub','vs','rnd','rk'].forEach(function(i){$(i).style.display=a?'':'none'});$('settingsbox').hidden=true;$('nbox').hidden=true;$('rs').style.display='none';$('qt').style.display='none';$('netbox').hidden=true;$('lvbox').hidden=true}
+function ovui(a){['go','settings','cpub','vs','rnd','rk'].forEach(function(i){$(i).style.display=a?'':'none'});$('settingsbox').hidden=true;$('nbox').hidden=true;$('rs').style.display='none';$('qt').style.display='none';$('netbox').hidden=true;$('lvbox').hidden=true}
 function attack(n,casc){
   if(mode==='solo')return;
   /* Chain reactions (combo) send more the longer the chain: combo 2 = +1 row, 3 = +2, ... up to +6, on top of the usual rows. */
@@ -2132,6 +2131,7 @@ function rankCheck(sc,ln,lv){
 }
 var rankViewTok=0;
 function showRank(hl,items){
+  syncModeUI();
   if(items==null)items=hl?!!hl.items:!!itemPref;       /* default: the board of the mode you play */
   rankItems=!!items;
   var viewTok=++rankViewTok;
@@ -2166,7 +2166,7 @@ $('rkti').addEventListener('click',function(){showRank(null,true)});
 $('rk').addEventListener('click',function(){showRank(null)});
 $('rstart').addEventListener('click',function(){
   rankViewTok++;$('rank').hidden=true;
-  if(itemPref!==rankItems){itemPref=rankItems;try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(err){}$('itmc').checked=itemPref}   /* play the mode of the board you are looking at */
+  if(itemPref!==rankItems){itemPref=rankItems;try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(err){}syncModeUI()}   /* play the mode of the board you are looking at */
   joinToken++;$('join').disabled=false;leaveRoom();mode='solo';resize();start();
 });
 $('rclose').addEventListener('click',function(){rankViewTok++;$('rank').hidden=true});
@@ -2510,7 +2510,7 @@ $('back').addEventListener('click',function(){
   forgetRoom();joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';pendingScore=null;clearBoard();resize();
   overlay('tetris','drag','start',true);
 });
-function gvLabel(){$('gvc').checked=gravityPref;$('itmc').checked=itemPref;$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
+function gvLabel(){syncModeUI();$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
 $('settings').addEventListener('click',function(){
   $('settingsbox').hidden=false;
   ['settings','cpub','vs','rnd','rk','go'].forEach(function(i){$(i).style.display='none'});
@@ -2521,16 +2521,23 @@ $('settingsback').addEventListener('click',function(){
   ['settings','cpub','vs','rnd','rk'].forEach(function(i){$(i).style.display=''});
   $('go').style.display=(state==='over'||state==='paused')?'':'none';
 });
-$('gvc').addEventListener('change',function(){
-  gravityPref=this.checked;
+/* Gravity / item mode are chosen where they matter: on the CPU difficulty screen and in the ranking dialog. */
+function syncModeUI(){$('cgvc').checked=gravityPref;$('citc').checked=itemPref;$('kgvc').checked=gravityPref}
+function setGravityPref(v){
+  gravityPref=!!v;
   try{localStorage.setItem('tetris-gravity',gravityPref?'1':'0')}catch(e){}
   if(mode!=='vs')gravity=gravityPref;
-});
-$('itmc').addEventListener('change',function(){
-  itemPref=this.checked;
+  syncModeUI();
+}
+function setItemPref(v){
+  itemPref=!!v;
   try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(e){}
   if(mode!=='vs'){itemMode=itemPref;renderOverlay()}
-});
+  syncModeUI();
+}
+$('cgvc').addEventListener('change',function(){setGravityPref(this.checked)});
+$('kgvc').addEventListener('change',function(){setGravityPref(this.checked)});
+$('citc').addEventListener('change',function(){setItemPref(this.checked)});
 $('ghvc').addEventListener('change',function(){
   ghostPreview=this.checked;
   try{localStorage.setItem('tetris-ghost',ghostPreview?'1':'0')}catch(e){}
@@ -3789,9 +3796,9 @@ function applyLanguage(){
  function txt(id,key){var el=$(id);if(el)el.textContent=tr(key)}
  function aria(el,key){if(el)el.setAttribute('aria-label',tr(key))}
  txt('settingstitle','settings');txt('languageLabel','language');
- [['rktn','rkclassic'],['rkti','items'],['gv','gravity'],['itm','items'],['rgv','gravity'],['rit','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
+ [['rktn','rkclassic'],['rkti','items'],['cgv','gravity'],['cit','items'],['kgv','gravity'],['rgv','gravity'],['rit','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
  txt('settingsback','back');txt('rs','restart');txt('qt','main');txt('vs','battle');txt('rk','ranking');txt('cpub','cpu');txt('join','join');txt('mk','mk');txt('rnd','rnd');txt('back','back');txt('lback','back');txt('nsave','save');txt('nskip','skip');txt('rstart','startgame');txt('rclose','close');
- txt('lvl','level');txt('lnl','lines');txt('itmhelp','itemhelp');
+ txt('lvl','level');txt('lnl','lines');
  var vol=$('musicvol');if(vol&&vol.querySelector('label span'))vol.querySelector('label span').textContent=tr('music');
  var opts=document.querySelectorAll('#lvbox button[data-l]');if(opts.length>=3){opts[0].textContent=tr('easy');opts[1].textContent=tr('normal');opts[2].textContent=tr('hard')}
  var ctl=document.querySelector('[data-act="rot"]');if(ctl)ctl.textContent=tr('rotate');ctl=document.querySelector('[data-act="drop"]');if(ctl)ctl.textContent=tr('drop');
