@@ -151,7 +151,9 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 .cl [data-act="down"].on::after{opacity:1;animation:holdbar .3s linear forwards}
 @keyframes holdbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .cl [data-act="down"] small{font-size:clamp(9px,2.8vw,11px);font-weight:600;opacity:.7;white-space:nowrap;line-height:1.1;letter-spacing:0}
-.cr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:clamp(68px,9vh,78px);gap:14px;align-items:stretch}
+.cr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,clamp(68px,9vh,78px));gap:12px;align-items:stretch}
+.cr #rotb{grid-column:1;grid-row:1}
+.cr [data-act="hard"]{grid-column:2;grid-row:2}
 .cr button{min-width:0;min-height:68px;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 0;border-radius:14px}
 .cr .btn-label{font-size:clamp(10px,2.8vw,13px);font-weight:700;line-height:1.05;white-space:nowrap}
 .ctl button,#pause{position:relative;height:auto;font-size:22px;font-weight:600;border:1px solid var(--line);
@@ -163,7 +165,7 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 .ctl [data-act="hard"]{color:#fff;background:linear-gradient(180deg,#34445f 0%,#1b2940 58%,#111c30 100%);border:2px solid #0b1424;--kedge:#080f1b;--kacc:#080f1b;box-shadow:0 6px 0 #080f1b,0 10px 12px rgba(0,0,0,.28),inset 0 2px 3px rgba(255,255,255,.22)}
 .ctl [data-act="hard"] svg{display:block;width:clamp(27px,8vw,36px);height:clamp(27px,8vw,36px)}
 .ctl [data-act="hard"]:active,.ctl [data-act="hard"].on{box-shadow:0 1px 0 #080f1b,0 2px 4px rgba(0,0,0,.25),inset 0 2px 3px rgba(255,255,255,.15)}
-.ctl #rotb{width:100%;height:var(--bh);margin:0;border-radius:14px;color:#fff;background:linear-gradient(180deg,#5279b8 0%,#31558e 58%,#203d6b 100%);border:2px solid #192f53;box-shadow:0 6px 0 #152947,0 10px 12px rgba(0,0,0,.24),inset 0 2px 3px rgba(255,255,255,.3)}
+.ctl #rotb{width:100%;height:100%;min-height:68px;margin:0;border-radius:14px;color:#fff;background:linear-gradient(180deg,#5279b8 0%,#31558e 58%,#203d6b 100%);border:2px solid #192f53;box-shadow:0 6px 0 #152947,0 10px 12px rgba(0,0,0,.24),inset 0 2px 3px rgba(255,255,255,.3)}
 .ctl #rotb .dz{width:clamp(25px,7.5vw,34px);height:clamp(25px,7.5vw,34px);filter:none}
 .ctl #rotb:active,.ctl #rotb.on{transform:translateY(5px);box-shadow:0 1px 0 #152947,0 2px 4px rgba(0,0,0,.2),inset 0 2px 3px rgba(255,255,255,.2)}
 #fire{--fire:#ff9a3c;flex:none;align-self:center;margin-top:auto;margin-bottom:0;width:var(--fs);height:var(--fs);padding:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#2a1400;line-height:1;border:1px solid #c85f0a;
