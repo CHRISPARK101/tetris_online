@@ -38,6 +38,9 @@ body{margin:0;height:100%;background:var(--bg);color:var(--ink);
 button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(--line);border-radius:14px;touch-action:manipulation;cursor:pointer}
 #pause{flex:none;width:calc(var(--cs,20px)*2.2);height:calc(var(--cs,20px)*2.2);font-size:calc(var(--cs,20px)*.8);padding:0}
 #stage{position:relative;flex:1;min-height:0}
+/* Ad strip: reserved under the controls with a gap so the banner is never tapped by accident. Height 0 = no ad. */
+#adslot{flex:0 0 auto;height:var(--adh,0px);margin-top:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:8px;border:1px dashed var(--line);font-size:11px;color:var(--mute)}
+#adslot[hidden]{display:none}
 .well{position:absolute;line-height:0}
 #side{position:absolute;display:flex;flex-direction:column;gap:6px;min-height:0}
 #side .top{display:flex;gap:6px;align-items:center}
@@ -227,7 +230,7 @@ input,select{-webkit-user-select:text;user-select:text}
 #ov.att>:not(#bubs):not(#settings){position:relative;z-index:1}
 #bubs i{position:absolute;bottom:-40px;border-radius:50%;background:radial-gradient(circle at 30% 26%,rgba(255,255,255,.95) 0,rgba(255,255,255,.4) 16%,rgba(150,210,255,.1) 55%,rgba(120,180,255,.32) 100%);border:1px solid var(--glb);box-shadow:inset 0 -3px 6px rgba(100,170,255,.28);animation:bubrise linear infinite;will-change:transform,opacity}
 @keyframes bubrise{0%{transform:translate(0,0) scale(.7);opacity:0}12%{opacity:.9}50%{transform:translate(14px,-260px) scale(1)}100%{transform:translate(-10px,-560px) scale(1.05);opacity:0}}
-#ov.att #vs,#ov.att #rnd,#ov.att #cpub,#ov.att #rk,#ov.att #lvbox button,#ov.att #netbox button{position:relative;overflow:hidden;min-width:150px;padding:14px 30px;font-size:18px;font-weight:700;color:var(--ink);border:1.5px solid var(--glb);border-radius:30px 34px 28px 32px/27px 24px 29px 26px;
+#ov.att #vs,#ov.att #rnd,#ov.att #cpub,#ov.att #rk,#ov.att #lvbox button,#ov.att #netbox button{position:relative;overflow:hidden;min-width:140px;padding:11px 24px;font-size:16px;font-weight:700;color:var(--ink);border:1.5px solid var(--glb);border-radius:30px 34px 28px 32px/27px 24px 29px 26px;
   background:radial-gradient(120% 150% at 28% 12%,var(--gl1) 0,var(--gl2) 34%,var(--gl3) 62%,var(--gl4) 100%);
   -webkit-backdrop-filter:blur(6px) saturate(1.4);backdrop-filter:blur(6px) saturate(1.4);
   box-shadow:inset 0 2px 5px var(--gl1),inset 0 -7px 12px var(--gl4),0 8px 18px rgba(60,100,200,.2);
@@ -345,6 +348,7 @@ input,select{-webkit-user-select:text;user-select:text}
     </div>
   </div>
 </div>
+<div id="adslot" hidden aria-label="Advertisement"></div>
 <div id="ver" aria-hidden="true">v0.7.0</div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 20</h2><div class="rk-tabs"><button id="rktn" class="on">Classic</button><button id="rkti">Item mode</button></div><label id="kgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="kgvc" role="switch"><i></i></label><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
@@ -464,7 +468,16 @@ function theme(){
   TH.well=s.getPropertyValue('--well').trim()||TH.well;
   TH.grid=s.getPropertyValue('--grid').trim()||TH.grid;
 }
+/* Banner height in px (50 = standard mobile banner, 0 = none). Open the game with ?ad=1 to preview the layout with a placeholder. */
+var AD_H=/[?&]ad=1(&|$)/.test(location.search)?50:0;
+function applyAd(){
+  var el=$('adslot');if(!el)return;
+  el.hidden=!AD_H;
+  document.documentElement.style.setProperty('--adh',AD_H+'px');
+  if(AD_H&&!el.firstChild)el.textContent='AD 320×50';
+}
 function resize(){
+  applyAd();
   var st=$('stage'),w=st.clientWidth,rs=itemMode?42:0,h=st.clientHeight-rs,gap=10;
   cs=Math.max(8,Math.floor(Math.min(h/ROWS,(w-gap)/(COLS*1.5))));
   oc=cs/2;
