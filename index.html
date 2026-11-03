@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0f1224">
-<title>Tetris</title>
+<title>Block Duel Online</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
@@ -146,7 +146,7 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 .cl [data-act="down"]{grid-column:1/3;grid-row:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1}
 .cl [data-act="down"] .ar{font-size:20px;line-height:1}
 .cl [data-act="down"]::after{content:"";position:absolute;left:10%;right:10%;bottom:5px;height:3px;border-radius:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;opacity:0;pointer-events:none}
-.cl [data-act="down"].on::after{opacity:1;animation:holdbar .45s linear forwards}
+.cl [data-act="down"].on::after{opacity:1;animation:holdbar .3s linear forwards}
 @keyframes holdbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .cl [data-act="down"] small{font-size:clamp(9px,2.8vw,11px);font-weight:600;opacity:.7;white-space:nowrap;line-height:1.1;letter-spacing:0}
 .cr{display:grid;grid-template-rows:calc(var(--bh)*2 + 16px)}
@@ -229,6 +229,14 @@ input,select{-webkit-user-select:text;user-select:text}
 #ov.att{background:var(--veil2)}
 #ov.att h1{font-size:44px;letter-spacing:.02em;line-height:1.1}
 #ov.att h1 span{display:inline-block;padding:0 .015em;background:linear-gradient(160deg,rgba(255,255,255,.95) 0,var(--c) 38%,var(--c2) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;-webkit-text-stroke:1.5px var(--glb);filter:drop-shadow(0 4px 5px var(--sh));animation:dropbob 2.8s ease-in-out infinite;animation-delay:calc(var(--i)*-.42s)}
+#ov.att h1 .ol{display:inline-flex;align-items:center;gap:5px;margin-left:8px;vertical-align:baseline;font-size:15px;line-height:1;font-weight:800;font-style:italic;letter-spacing:.06em;transform:skewX(-8deg)}
+#ov.att h1 .ol em{font-style:italic;background:linear-gradient(90deg,#7df9c5 0,#ffffff 45%,#7df9c5 90%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;filter:drop-shadow(0 0 6px rgba(52,224,143,.55));animation:olshine 2.2s linear infinite}
+#ov.att h1 .sg{display:inline-flex;align-items:flex-end;gap:2px;height:13px}
+#ov.att h1 .sg i{display:block;width:3px;height:4px;border-radius:1.5px;background:#34e08f;box-shadow:0 0 6px rgba(52,224,143,.7);animation:olbar 1s ease-in-out infinite}
+#ov.att h1 .sg i:nth-child(2){animation-delay:.18s}
+#ov.att h1 .sg i:nth-child(3){animation-delay:.36s}
+@keyframes olbar{0%,100%{height:4px}50%{height:13px}}
+@keyframes olshine{from{background-position:220% 0}to{background-position:-20% 0}}
 @keyframes dropbob{0%,100%{translate:0 0;transform:scale(1,1)}50%{translate:0 -8px;transform:scale(.96,1.07)}}
 #ov.att{background:linear-gradient(180deg,rgba(140,205,255,.2),rgba(255,255,255,0) 45%),var(--veil2)}
 #bubs{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:10px;z-index:0;display:none}
@@ -299,7 +307,7 @@ input,select{-webkit-user-select:text;user-select:text}
         <div id="bubs" aria-hidden="true"></div>
         <div id="wait" hidden aria-hidden="true"><span class="rg"></span><span class="rg"></span><span class="rg"></span><span class="pc"><u></u><u></u><u></u><u></u></span></div>
         <div id="endem" hidden aria-hidden="true"></div>
-        <h1 id="ot">TETRIS</h1>
+        <h1 id="ot">BLOCK DUEL</h1>
         <p id="os">Drag to move, tap to rotate, flick down to drop</p>
         <p id="ob"></p>
         <div id="rcfg" hidden>
@@ -1236,9 +1244,12 @@ function fillBubbles(){
 function renderOverlay(){
   fillBubbles();
   if(ovT==='tetris'){   /* main title is never translated; each letter is its own little drop */
-    var L=[['T','#2fc4e6','#1b8fb0'],['E','#4b6ff0','#2a43b8'],['T','#a65bd8','#6f2fa0'],['R','#ee5a5a','#b32b2b'],['I','#f28b3a','#b85a10'],['S','#4cc46a','#25883f']];
-    $('ot').innerHTML=L.map(function(x,i){return '<span style="--i:'+i+';--c:'+x[1]+';--c2:'+x[2]+';--sh:'+x[1]+'66">'+x[0]+'</span>'}).join('');
-    $('ot').setAttribute('aria-label','TETRIS');
+    var L1=[['B','#2fc4e6','#1b8fb0'],['L','#4b6ff0','#2a43b8'],['O','#a65bd8','#6f2fa0'],['C','#ee5a5a','#b32b2b'],['K','#f28b3a','#b85a10']];
+    var L2=[['D','#4cc46a','#25883f'],['U','#2fc4e6','#1b8fb0'],['E','#f5b800','#b87d00'],['L','#ee5a5a','#b32b2b']];
+    var lt=function(x,i){return '<span style="--i:'+i+';--c:'+x[1]+';--c2:'+x[2]+';--sh:'+x[1]+'66">'+x[0]+'</span>'};
+    /* "online" is small and alive: signal bars that keep rising and falling next to a shimmering word */
+    $('ot').innerHTML=L1.map(lt).join('')+'<br>'+L2.map(function(x,i){return lt(x,i+5)}).join('')+'<small class="ol" aria-hidden="true"><b class="sg"><i></i><i></i><i></i></b><em>online</em></small>';
+    $('ot').setAttribute('aria-label','Block Duel online');
   }else{$('ot').textContent=txtOf(ovT);$('ot').removeAttribute('aria-label')}
   paintOS();
   $('go').textContent=txtOf(ovB);
@@ -1598,6 +1609,7 @@ function loop(t){
 }
 
 /* Button input (hold to repeat) */
+var HOLD_DROP_MS=300;   /* hold ▼ this long (ms) and the piece drops all the way */
 var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,fire:fireStored};
 var repeatable={left:1,right:1,down:1};
 Array.prototype.forEach.call(document.querySelectorAll('.ctl button,#fire'),function(b){
@@ -1608,7 +1620,7 @@ Array.prototype.forEach.call(document.querySelectorAll('.ctl button,#fire'),func
     acts[act]();
     if(repeatable[act]){t1=setTimeout(function(){t2=setInterval(acts[act],act==='down'?45:70)},170)}
     /* holding ▼: it falls fast like before, and after a moment the piece drops all the way at once */
-    if(act==='down')t3=setTimeout(function(){stop();hard()},450);
+    if(act==='down')t3=setTimeout(function(){stop();hard()},HOLD_DROP_MS);
   });
   ['pointerup','pointercancel','pointerleave'].forEach(function(n){b.addEventListener(n,stop)});
   b.addEventListener('contextmenu',function(e){e.preventDefault()});
@@ -2507,7 +2519,7 @@ $('mk').addEventListener('click',function(){createRoom(0)});
 /* Tapping the yellow room code shares it (share sheet on phones, clipboard otherwise). */
 function shareRoomCode(el){
   var c=(typeof roomCode==='string')?roomCode:'';if(!c||mode!=='vs'||!room)return;
-  var text='TETRIS 2P: '+c,android=/Android/i.test(navigator.userAgent||'');
+  var text='BLOCK DUEL: '+c,android=/Android/i.test(navigator.userAgent||'');
   function done(){if(!el)return;el.setAttribute('data-t',tr('copied'));el.classList.add('ok');setTimeout(function(){el.classList.remove('ok')},1500)}
   function copy(){
     function legacy(){
@@ -2521,7 +2533,7 @@ function shareRoomCode(el){
     try{location.href='intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT='+encodeURIComponent(text)+';end'}catch(e){}
   }
   if(navigator.share){
-    var d={title:'TETRIS',text:text};if(/^https?:/.test(location.href))d.url=location.href;
+    var d={title:'Block Duel Online',text:text};if(/^https?:/.test(location.href))d.url=location.href;
     navigator.share(d).catch(function(err){if(err&&err.name==='AbortError')return;if(android)viaIntent();else copy()});
   }else if(android)viaIntent();
   else copy();
