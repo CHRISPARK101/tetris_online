@@ -145,6 +145,9 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 .cl{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,var(--bh));gap:16px 14px}
 .cl [data-act="down"]{grid-column:1/3;grid-row:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1}
 .cl [data-act="down"] .ar{font-size:20px;line-height:1}
+.cl [data-act="down"]::after{content:"";position:absolute;left:10%;right:10%;bottom:5px;height:3px;border-radius:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;opacity:0;pointer-events:none}
+.cl [data-act="down"].on::after{opacity:1;animation:holdbar .45s linear forwards}
+@keyframes holdbar{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .cl [data-act="down"] small{font-size:clamp(9px,2.8vw,11px);font-weight:600;opacity:.7;white-space:nowrap;line-height:1.1;letter-spacing:0}
 .cr{display:grid;grid-template-rows:calc(var(--bh)*2 + 16px)}
 .ctl button,#pause{position:relative;height:auto;font-size:22px;font-weight:600;border:1px solid var(--line);
@@ -1598,18 +1601,14 @@ function loop(t){
 var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,fire:fireStored};
 var repeatable={left:1,right:1,down:1};
 Array.prototype.forEach.call(document.querySelectorAll('.ctl button,#fire'),function(b){
-  var act=b.getAttribute('data-act'),t1=null,t2=null,downAt=0,quickAt=0;
-  function stop(){clearTimeout(t1);clearInterval(t2);b.classList.remove('on')}
+  var act=b.getAttribute('data-act'),t1=null,t2=null,t3=null;
+  function stop(){clearTimeout(t1);clearInterval(t2);clearTimeout(t3);b.classList.remove('on')}
   b.addEventListener('pointerdown',function(e){
     e.preventDefault();stop();b.classList.add('on');
-    var now=performance.now();downAt=now;
-    /* ▼ tapped twice quickly (the first one was a short tap, not a hold) = drop the piece instantly */
-    if(act==='down'&&quickAt&&now-quickAt<300){quickAt=0;hard();return}
     acts[act]();
     if(repeatable[act]){t1=setTimeout(function(){t2=setInterval(acts[act],act==='down'?45:70)},170)}
-  });
-  b.addEventListener('pointerup',function(){
-    if(act==='down'&&downAt&&performance.now()-downAt<190)quickAt=downAt;else quickAt=0;
+    /* holding ▼: it falls fast like before, and after a moment the piece drops all the way at once */
+    if(act==='down')t3=setTimeout(function(){stop();hard()},450);
   });
   ['pointerup','pointercancel','pointerleave'].forEach(function(n){b.addEventListener(n,stop)});
   b.addEventListener('contextmenu',function(e){e.preventDefault()});
@@ -2667,8 +2666,8 @@ var I18N={
   "save": "Save",
   "skip": "Skip",
   "best": "Best score",
-  "drag": "Drag to move, tap to rotate, double-tap ▼ to drop instantly",
-  "dtap": "2× tap: instant drop",
+  "drag": "Drag to move, tap to rotate, hold ▼ to drop instantly",
+  "dtap": "Hold: instant drop",
   "paused": "Paused",
   "resume": "Resume",
   "difficulty": "Choose a difficulty",
@@ -2800,8 +2799,8 @@ var I18N={
   "save": "Opslaan",
   "skip": "Overslaan",
   "best": "Beste score",
-  "drag": "Sleep om te bewegen, tik om te draaien, tik twee keer op ▼ om direct te laten vallen",
-  "dtap": "2× tikken: direct vallen",
+  "drag": "Sleep om te bewegen, tik om te draaien, houd ▼ ingedrukt om direct te laten vallen",
+  "dtap": "Vasthouden: direct vallen",
   "paused": "Gepauzeerd",
   "resume": "Hervatten",
   "difficulty": "Kies een moeilijkheidsgraad",
@@ -2935,8 +2934,8 @@ var I18N={
   "save": "저장",
   "skip": "건너뛰기",
   "best": "최고 점수",
-  "drag": "드래그하여 이동, 탭하여 회전, ▼ 두 번 탭하여 즉시 내리기",
-  "dtap": "2회 탭 즉시 내리기",
+  "drag": "드래그하여 이동, 탭하여 회전, ▼ 길게 눌러 즉시 내리기",
+  "dtap": "길게 누르면 즉시 내리기",
   "paused": "일시 정지",
   "resume": "계속하기",
   "difficulty": "난이도를 선택하세요",
@@ -3070,8 +3069,8 @@ var I18N={
   "save": "保存",
   "skip": "スキップ",
   "best": "最高スコア",
-  "drag": "ドラッグで移動、タップで回転、▼を2回タップで一気に落下",
-  "dtap": "2回タップで一気に落下",
+  "drag": "ドラッグで移動、タップで回転、▼長押しで一気に落下",
+  "dtap": "長押しで一気に落下",
   "paused": "一時停止",
   "resume": "再開",
   "difficulty": "難易度を選択",
@@ -3205,8 +3204,8 @@ var I18N={
   "save": "保存",
   "skip": "跳过",
   "best": "最高分",
-  "drag": "拖动移动，点击旋转，双击▼快速下落",
-  "dtap": "双击快速下落",
+  "drag": "拖动移动，点击旋转，长按▼快速下落",
+  "dtap": "长按快速下落",
   "paused": "已暂停",
   "resume": "继续",
   "difficulty": "选择难度",
@@ -3340,8 +3339,8 @@ var I18N={
   "save": "儲存",
   "skip": "略過",
   "best": "最高分",
-  "drag": "拖曳移動，點擊旋轉，雙擊▼快速下落",
-  "dtap": "雙擊快速下落",
+  "drag": "拖曳移動，點擊旋轉，長按▼快速下落",
+  "dtap": "長按快速下落",
   "paused": "已暫停",
   "resume": "繼續",
   "difficulty": "選擇難度",
@@ -3475,8 +3474,8 @@ var I18N={
   "save": "Guardar",
   "skip": "Omitir",
   "best": "Mejor puntuación",
-  "drag": "Arrastra para mover, toca para girar y toca ▼ dos veces para soltar",
-  "dtap": "2 toques: caída rápida",
+  "drag": "Arrastra para mover, toca para girar y mantén ▼ para soltar",
+  "dtap": "Mantén: caída rápida",
   "paused": "Pausado",
   "resume": "Continuar",
   "difficulty": "Elige dificultad",
@@ -3610,8 +3609,8 @@ var I18N={
   "save": "Salvar",
   "skip": "Pular",
   "best": "Melhor pontuação",
-  "drag": "Arraste para mover, toque para girar e toque duas vezes em ▼ para soltar",
-  "dtap": "2 toques: queda rápida",
+  "drag": "Arraste para mover, toque para girar e segure ▼ para soltar",
+  "dtap": "Segure: queda rápida",
   "paused": "Pausado",
   "resume": "Continuar",
   "difficulty": "Escolha a dificuldade",
@@ -3745,8 +3744,8 @@ var I18N={
   "save": "Enregistrer",
   "skip": "Passer",
   "best": "Meilleur score",
-  "drag": "Faites glisser pour déplacer, touchez pour tourner et touchez ▼ deux fois pour lâcher",
-  "dtap": "2 touches : chute rapide",
+  "drag": "Faites glisser pour déplacer, touchez pour tourner et maintenez ▼ pour lâcher",
+  "dtap": "Maintenir : chute rapide",
   "paused": "En pause",
   "resume": "Reprendre",
   "difficulty": "Choisissez une difficulté",
