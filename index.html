@@ -46,6 +46,8 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #adslot[hidden]{display:none}
 .well{position:absolute;line-height:0}
 #side{position:absolute;display:flex;flex-direction:column;gap:6px;min-height:0}
+:root{--fs:64px}
+#side>*{flex-shrink:0}
 #side .top{display:flex;gap:6px;align-items:center}
 #side .meta{display:flex;flex-wrap:wrap;gap:0 6px;justify-content:space-between;font-size:calc(var(--cs,20px)*.5);color:var(--mute)}
 #ol{font-size:calc(var(--cs,20px)*.55);font-weight:700;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -159,12 +161,12 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 .ctl [data-act="rot"]{font-size:15px;white-space:normal;line-height:1.15;padding-left:6px;padding-right:6px}
 .ctl [data-act="rot"]{font-size:20px;border:2px solid var(--accent);box-shadow:0 6px 0 var(--kacc),0 10px 12px rgba(0,0,0,.16),inset 0 2px 3px rgba(255,255,255,.7)}
 .ctl [data-act="rot"]:active,.ctl [data-act="rot"].on{box-shadow:0 1px 0 var(--kacc),0 2px 4px rgba(0,0,0,.18),inset 0 2px 3px rgba(255,255,255,.5)}
-#fire{--fire:#ff9a3c;--fs:64px;flex:none;align-self:center;margin-top:auto;margin-bottom:8px;width:var(--fs);height:var(--fs);padding:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#2a1400;line-height:1;border:1px solid #c85f0a;
+#fire{--fire:#ff9a3c;flex:none;align-self:center;margin-top:auto;margin-bottom:0;width:var(--fs);height:var(--fs);padding:0;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#2a1400;line-height:1;border:1px solid #c85f0a;
   background:radial-gradient(circle at 35% 26%,#ffe2b8 0,#ffbb6b 24%,#ff8f26 60%,#e56e0c 100%);
   box-shadow:0 6px 0 #b04a04,0 10px 12px rgba(0,0,0,.28),inset 0 3px 5px rgba(255,255,255,.7),inset 0 -6px 9px rgba(150,55,0,.35);
   transition:transform .06s,box-shadow .06s}
 #fire.on,#fire:active{background:radial-gradient(circle at 35% 26%,#ffe2b8 0,#ffbb6b 24%,#ff8f26 60%,#e56e0c 100%);transform:translateY(5px);box-shadow:0 1px 0 #b04a04,0 3px 6px rgba(0,0,0,.25),inset 0 3px 5px rgba(255,255,255,.55),inset 0 -4px 7px rgba(150,55,0,.4)}
-#fire.nof{visibility:hidden}
+#fire.nof{display:none}
 #fire{position:relative}
 #fire .fz{display:block;width:calc(var(--fs)*.56);height:calc(var(--fs)*.56);filter:drop-shadow(0 2px 0 rgba(150,55,0,.6))}
 #fire .fz svg{display:block;width:100%;height:100%}
@@ -177,7 +179,17 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 #bf b{font-size:14px;vertical-align:middle;margin-right:4px}
 .fly .ico{width:1em;height:1em;display:block}
 #fire.empty{opacity:.4;filter:grayscale(.6)}
-.ctl.noitem #fire{visibility:hidden}
+.ctl.noitem #fire{display:none}
+#drop{flex:none;align-self:center;position:relative;margin-top:0;margin-bottom:8px;width:var(--fs);height:var(--fs);padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;line-height:1;border:1px solid #1d4fb8;
+  background:radial-gradient(circle at 35% 26%,#cfe3ff 0,#7db4ff 24%,#3d86f0 60%,#2564d1 100%);
+  box-shadow:0 6px 0 #173f93,0 10px 12px rgba(0,0,0,.28),inset 0 3px 5px rgba(255,255,255,.7),inset 0 -6px 9px rgba(10,40,120,.35);
+  transition:transform .06s,box-shadow .06s}
+#drop.on,#drop:active{transform:translateY(5px);box-shadow:0 1px 0 #173f93,0 3px 6px rgba(0,0,0,.25),inset 0 3px 5px rgba(255,255,255,.55),inset 0 -4px 7px rgba(10,40,120,.4)}
+#drop .dz{display:block;width:calc(var(--fs)*.56);height:calc(var(--fs)*.56);filter:drop-shadow(0 2px 0 rgba(10,40,120,.6))}
+#drop .dz svg{display:block;width:100%;height:100%}
+#fire:not(.nof){margin-top:auto}
+#fire.nof+#drop{margin-top:auto}
+#fire:not(.nof){margin-bottom:6px}
 #inv{position:absolute;height:38px;display:flex;justify-content:center;align-items:center;gap:6px}
 #inv[hidden]{display:none}
 #inv .sl{width:34px;height:34px;border-radius:10px;border:1px dashed var(--line);background:var(--well);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif;box-sizing:border-box}
@@ -348,13 +360,14 @@ input,select{-webkit-user-select:text;user-select:text}
       <div id="oinv" hidden aria-label="Opponent items"></div>
       <canvas id="opp" hidden></canvas>
           <button id="fire" data-act="fire" class="empty" aria-label="Fire item"><span class="fz" aria-hidden="true"><svg viewBox="0 0 32 32"><g fill="#fff" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"><path d="M16 3.5 L25.5 14 H19.8 V22 H12.2 V14 H6.5 Z"/></g><path d="M12.5 26 H19.5 M14.3 29.6 H17.7" stroke="#fff" stroke-width="2.6" stroke-linecap="round" opacity=".9"/></svg></span><span class="fb" id="firei"></span></button>
+      <button id="drop" data-act="hard" aria-label="Instant drop"><span class="dz" aria-hidden="true"><svg viewBox="0 0 32 32"><g fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6.5 L16 14 L24 6.5"/><path d="M8 14.5 L16 22 L24 14.5"/></g><path d="M7.5 27.2 H24.5" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/></svg></span></button>
     </div>
   </div>
   <div class="ctl noitem">
     <div class="cl">
       <button data-act="left" aria-label="Left">◀</button>
       <button data-act="right" aria-label="Right">▶</button>
-      <button data-act="down" aria-label="Down"><span class="ar">▼</span><small id="dtcap"></small></button>
+      <button data-act="down" aria-label="Down"><span class="ar">▼</span></button>
     </div>
     <div class="cr">
       <button data-act="rot">Rotate</button>
@@ -527,12 +540,24 @@ function resize(){
   nc.style.width=SW+'px';nc.style.height=Math.round(cs*4)+'px';
   nc.width=Math.round(SW*dpr);nc.height=Math.round(cs*4*dpr);
   /* with items on, the opponent's board is drawn a little smaller so the fire button fits under it */
-  if(vs&&itemMode)oc=cs*.36;
-  var OW=oc*COLS,OH=oc*ROWS;
   op.hidden=!vs;$('ol').hidden=!vs;
+  var fsz=Math.min(Math.round(SW*.9),Math.round(cs*(itemMode?2.4:3.1)))+'px';
+  document.documentElement.style.setProperty('--fs',fsz);
+  if(vs){
+    /* fit the opponent's board into whatever height is left in the side column, so the flag label and item slots never get squeezed or covered */
+    olabel();
+    var used=0,n=0;
+    Array.prototype.forEach.call(sd.children,function(ch){
+      var cst=getComputedStyle(ch);if(cst.display==='none')return;
+      n++;if(ch===op)return;
+      used+=ch.offsetHeight+(parseFloat(cst.marginBottom)||0);
+    });
+    var avail=H-used-6*(n-1)-2;
+    oc=Math.max(2,Math.min(itemMode?cs*.36:cs/2,Math.floor(avail/ROWS*10)/10));
+  }
+  var OW=oc*COLS,OH=oc*ROWS;
   op.style.width=OW+'px';op.style.height=OH+'px';op.style.alignSelf='center';
   op.width=Math.round(OW*dpr);op.height=Math.round(OH*dpr);
-  document.documentElement.style.setProperty('--fs',Math.min(Math.round(SW*.9),Math.round(cs*3.1))+'px');
   olabel();
   theme();drawNext();
 }
@@ -1609,18 +1634,15 @@ function loop(t){
 }
 
 /* Button input (hold to repeat) */
-var HOLD_DROP_MS=300;   /* hold ▼ this long (ms) and the piece drops all the way */
-var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,fire:fireStored};
+var acts={left:function(){move(-1)},right:function(){move(1)},down:soft,rot:rotate,fire:fireStored,hard:hard};
 var repeatable={left:1,right:1,down:1};
-Array.prototype.forEach.call(document.querySelectorAll('.ctl button,#fire'),function(b){
-  var act=b.getAttribute('data-act'),t1=null,t2=null,t3=null;
-  function stop(){clearTimeout(t1);clearInterval(t2);clearTimeout(t3);b.classList.remove('on')}
+Array.prototype.forEach.call(document.querySelectorAll('.ctl button,#fire,#drop'),function(b){
+  var act=b.getAttribute('data-act'),t1=null,t2=null;
+  function stop(){clearTimeout(t1);clearInterval(t2);b.classList.remove('on')}
   b.addEventListener('pointerdown',function(e){
     e.preventDefault();stop();b.classList.add('on');
     acts[act]();
     if(repeatable[act]){t1=setTimeout(function(){t2=setInterval(acts[act],act==='down'?45:70)},170)}
-    /* holding ▼: it falls fast like before, and after a moment the piece drops all the way at once */
-    if(act==='down')t3=setTimeout(function(){stop();hard()},HOLD_DROP_MS);
   });
   ['pointerup','pointercancel','pointerleave'].forEach(function(n){b.addEventListener(n,stop)});
   b.addEventListener('contextmenu',function(e){e.preventDefault()});
@@ -2678,7 +2700,7 @@ var I18N={
   "save": "Save",
   "skip": "Skip",
   "best": "Best score",
-  "drag": "Drag to move, tap to rotate, hold ▼ to drop instantly",
+  "drag": "Drag to move, tap to rotate, use the blue button to drop instantly",
   "dtap": "Hold: instant drop",
   "paused": "Paused",
   "resume": "Resume",
@@ -2811,7 +2833,7 @@ var I18N={
   "save": "Opslaan",
   "skip": "Overslaan",
   "best": "Beste score",
-  "drag": "Sleep om te bewegen, tik om te draaien, houd ▼ ingedrukt om direct te laten vallen",
+  "drag": "Sleep om te bewegen, tik om te draaien, gebruik de blauwe knop om direct te laten vallen",
   "dtap": "Vasthouden: direct vallen",
   "paused": "Gepauzeerd",
   "resume": "Hervatten",
@@ -2946,7 +2968,7 @@ var I18N={
   "save": "저장",
   "skip": "건너뛰기",
   "best": "최고 점수",
-  "drag": "드래그하여 이동, 탭하여 회전, ▼ 길게 눌러 즉시 내리기",
+  "drag": "드래그하여 이동, 탭하여 회전, 파란 버튼으로 즉시 내리기",
   "dtap": "길게 누르면 즉시 내리기",
   "paused": "일시 정지",
   "resume": "계속하기",
@@ -3081,7 +3103,7 @@ var I18N={
   "save": "保存",
   "skip": "スキップ",
   "best": "最高スコア",
-  "drag": "ドラッグで移動、タップで回転、▼長押しで一気に落下",
+  "drag": "ドラッグで移動、タップで回転、青いボタンで一気に落下",
   "dtap": "長押しで一気に落下",
   "paused": "一時停止",
   "resume": "再開",
@@ -3216,7 +3238,7 @@ var I18N={
   "save": "保存",
   "skip": "跳过",
   "best": "最高分",
-  "drag": "拖动移动，点击旋转，长按▼快速下落",
+  "drag": "拖动移动，点击旋转，点蓝色按钮快速下落",
   "dtap": "长按快速下落",
   "paused": "已暂停",
   "resume": "继续",
@@ -3351,7 +3373,7 @@ var I18N={
   "save": "儲存",
   "skip": "略過",
   "best": "最高分",
-  "drag": "拖曳移動，點擊旋轉，長按▼快速下落",
+  "drag": "拖曳移動，點擊旋轉，點藍色按鈕快速下落",
   "dtap": "長按快速下落",
   "paused": "已暫停",
   "resume": "繼續",
@@ -3486,7 +3508,7 @@ var I18N={
   "save": "Guardar",
   "skip": "Omitir",
   "best": "Mejor puntuación",
-  "drag": "Arrastra para mover, toca para girar y mantén ▼ para soltar",
+  "drag": "Arrastra para mover, toca para girar y usa el botón azul para soltar",
   "dtap": "Mantén: caída rápida",
   "paused": "Pausado",
   "resume": "Continuar",
@@ -3621,7 +3643,7 @@ var I18N={
   "save": "Salvar",
   "skip": "Pular",
   "best": "Melhor pontuação",
-  "drag": "Arraste para mover, toque para girar e segure ▼ para soltar",
+  "drag": "Arraste para mover, toque para girar e use o botão azul para soltar",
   "dtap": "Segure: queda rápida",
   "paused": "Pausado",
   "resume": "Continuar",
@@ -3756,7 +3778,7 @@ var I18N={
   "save": "Enregistrer",
   "skip": "Passer",
   "best": "Meilleur score",
-  "drag": "Faites glisser pour déplacer, touchez pour tourner et maintenez ▼ pour lâcher",
+  "drag": "Faites glisser pour déplacer, touchez pour tourner et utilisez le bouton bleu pour lâcher",
   "dtap": "Maintenir : chute rapide",
   "paused": "En pause",
   "resume": "Reprendre",
