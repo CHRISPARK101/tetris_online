@@ -1380,7 +1380,8 @@ function finishFall(){
   state='playing';acc=0;spawn();
   var comboRun=rankTok;setTimeout(function(){if(comboRun===rankTok&&state==='playing'&&!fall.length){streak=0;showCombo()}},1200);
 }
-function interval(){var v=Math.max(90,820-(level-1)*70);if(pt<fastUntil)v=Math.max(55,v*.3);if(pt<slowUntil)v*=2.5;return v}
+function interval(){var v=820-(level-1)*70;if(v<90)v=Math.max(40,90-(level-12)*5);   /* up to level 12 as before (90 ms); after that it keeps getting faster by 5 ms per level down to 40 ms */
+  if(pt<fastUntil)v=Math.min(v,Math.max(55,v*.3));if(pt<slowUntil)v*=2.5;return v}
 
 function hud(){$('sc').textContent=score;$('lv').textContent=level;$('ln').textContent=lines}
 
