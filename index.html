@@ -9,7 +9,7 @@
 <title>Block Duel Online</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Jua&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#eceff7;--ink:#1a1f36;--mute:#6a7190;--well:#f9faff;--grid:#e3e6f2;
@@ -30,6 +30,8 @@ body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
   overscroll-behavior:none;overflow:hidden}
+/* game-style font for the menu screens: Fredoka for Latin letters, Jua for Korean, rounded system fonts for other scripts */
+#ov,#rank{font-family:"Fredoka","Jua","Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Apple SD Gothic Neo","PingFang SC","PingFang TC","Noto Sans CJK JP","Noto Sans KR",system-ui,sans-serif;font-synthesis:none}
 #app{height:calc(var(--appH,100%) - var(--adbox,0px));max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:4px;padding:4px 8px 8px;box-sizing:border-box}
 .hud{display:grid;grid-template-columns:1.5fr 1fr 1fr auto auto;gap:8px;align-items:center}
 .stat small{display:block;font-size:calc(var(--cs,20px)*.5);color:var(--mute)}
