@@ -370,8 +370,8 @@ input,select{-webkit-user-select:text;user-select:text}
 
 
 /* ===== Diamond pad: item (top), rotate (right), drop (bottom). Icons only, sits right next to the arrow keys. ===== */
-.ctl{--b:calc(var(--bh)*1.04);--dx:calc(var(--b)*.95);--dy:calc(var(--b)*.72);grid-template-columns:minmax(0,1fr) auto;align-items:center}
-.cr{display:block;position:relative;width:calc(var(--b) + var(--dx));height:calc(var(--b) + var(--dy)*2);min-height:0}
+.ctl{--b:calc(var(--bh)*1.18);--dx:calc(var(--b)*.95);--dy:calc(var(--b)*.72);grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.cr{display:block;position:relative;width:calc(var(--b) + var(--dx));height:calc(var(--b) + var(--dy)*2);min-height:0;transform:translateY(-6px)}
 .cr #rotb,.cr [data-act="hard"],.cr #fire:not(.nof){position:absolute;width:var(--b);height:var(--b);min-height:0;margin:0;padding:0;border-radius:50%;box-sizing:border-box;gap:0;z-index:1}
 .cr #fire:not(.nof){left:0;top:0;right:auto;bottom:auto}
 .cr #rotb{right:0;left:auto;top:calc(50% - var(--b)/2);bottom:auto}
