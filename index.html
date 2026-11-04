@@ -30,7 +30,7 @@ body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
   overscroll-behavior:none;overflow:hidden}
-#app{height:calc(var(--appH,100%) - var(--adbox,0px));max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:10px;padding:10px 12px 18px;box-sizing:border-box}
+#app{height:calc(var(--appH,100%) - var(--adbox,0px));max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:4px;padding:4px 8px 8px;box-sizing:border-box}
 .hud{display:grid;grid-template-columns:1.5fr 1fr 1fr auto auto;gap:8px;align-items:center}
 .stat small{display:block;font-size:calc(var(--cs,20px)*.5);color:var(--mute)}
 .stat b{display:block;font-size:calc(var(--cs,20px)*.85);font-variant-numeric:tabular-nums;line-height:1.2}
@@ -42,8 +42,23 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #rnd{display:inline-flex;align-items:center;justify-content:center}
 #rnd .ric{position:relative;display:block;flex:none;width:24px;height:24px;margin-right:9px}
 #rnd .ric i{position:absolute;display:block;width:5px;height:5px;border-radius:1.5px;box-shadow:inset 0 -1.5px 0 rgba(0,0,0,.25);transition:left .4s cubic-bezier(.3,1.6,.5,1),top .4s cubic-bezier(.3,1.6,.5,1),background .4s}
-#adslot{box-sizing:border-box;width:calc(100% - 24px);max-width:496px;height:var(--adh,50px);margin:6px auto 6px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:linear-gradient(135deg,var(--well),var(--btn));font-size:16px;font-weight:800;letter-spacing:.08em;color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.12)}
+#adslot{box-sizing:border-box;width:calc(100% - 16px);max-width:504px;height:var(--adh,50px);margin:4px auto 2px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:linear-gradient(135deg,var(--well),var(--btn));position:relative;gap:8px;white-space:nowrap}
 #adslot[hidden]{display:none}
+/* House ad shown until a real ad arrives: the main-screen title, one line, same glass-drop letters. Only transform animations (cheap on phones). */
+#adslot .adt{display:inline-flex;align-items:center;font-size:clamp(20px,6.6vw,27px);font-weight:800;line-height:1;letter-spacing:.02em}
+#adslot .adt b{display:inline-block;padding:0 .015em;font-weight:800;background:linear-gradient(160deg,rgba(255,255,255,.95) 0,var(--c) 38%,var(--c2) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;-webkit-text-stroke:1px var(--glb);animation:adbob 2.8s ease-in-out infinite;animation-delay:calc(var(--i)*-.42s)}
+#adslot .adt i{display:inline-block;width:.4em}
+#adslot .ol{display:inline-flex;align-items:center;gap:4px;font-size:clamp(11px,3.4vw,14px);line-height:1;font-weight:800;font-style:italic;letter-spacing:.06em;transform:skewX(-8deg)}
+#adslot .ol em{font-style:italic;background:linear-gradient(90deg,#34e08f 0,#c4ffe6 45%,#34e08f 90%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:olshine 2.2s linear infinite}
+#adslot .sg{display:inline-flex;align-items:flex-end;gap:2px;height:12px}
+#adslot .sg u{display:block;width:3px;height:12px;border-radius:1.5px;background:#34e08f;box-shadow:0 0 5px rgba(52,224,143,.6);transform-origin:50% 100%;transform:scaleY(.33);animation:adbar 1s ease-in-out infinite;text-decoration:none}
+#adslot .sg u:nth-child(2){animation-delay:.18s}
+#adslot .sg u:nth-child(3){animation-delay:.36s}
+#adslot::after{content:"";position:absolute;top:0;bottom:0;left:0;width:38%;background:linear-gradient(100deg,rgba(255,255,255,0),rgba(255,255,255,.22),rgba(255,255,255,0));transform:translateX(-130%);animation:adsweep 4.6s ease-in-out infinite;pointer-events:none}
+@keyframes adbob{0%,100%{translate:0 0;transform:scale(1,1)}50%{translate:0 -3px;transform:scale(.96,1.07)}}
+@keyframes adbar{0%,100%{transform:scaleY(.33)}50%{transform:scaleY(1)}}
+@keyframes adsweep{0%,55%{transform:translateX(-130%)}100%{transform:translateX(330%)}}
+@media (prefers-reduced-motion:reduce){#adslot *,#adslot::after{animation:none!important}}
 .well{position:absolute;line-height:0}
 #side{position:absolute;display:flex;flex-direction:column;gap:6px;min-height:0}
 :root{--fs:64px}
@@ -143,7 +158,7 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 #code:focus{outline:3px solid var(--accent);outline-offset:2px}
 #opp{display:block;border-radius:8px;border:1px solid var(--line);background:var(--well)}
 #opp[hidden]{display:none}
-.ctl{--bh:clamp(46px,6.6vh,58px);padding-bottom:6px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
+.ctl{--bh:clamp(44px,5.8vh,52px);padding-bottom:2px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
 .cl{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,var(--bh));gap:16px 14px}
 .cl [data-act="down"]{grid-column:1/3;grid-row:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1}
 .cl [data-act="down"] .ar{font-size:20px;line-height:1}
@@ -370,7 +385,7 @@ input,select{-webkit-user-select:text;user-select:text}
 
 
 /* ===== Diamond pad: item (top), rotate (right), drop (bottom). Icons only, sits right next to the arrow keys. ===== */
-.ctl{--b:calc(var(--bh)*1.18);--dx:calc(var(--b)*.95);--dy:calc(var(--b)*.72);grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.ctl{--b:calc(var(--bh)*1.18);--dx:calc(var(--b)*.95);--dy:calc(var(--b)*.6);grid-template-columns:minmax(0,1fr) auto;align-items:center}
 .cr{display:block;position:relative;width:calc(var(--b) + var(--dx));height:calc(var(--b) + var(--dy)*2);min-height:0;transform:translateY(-6px)}
 .cr #rotb,.cr [data-act="hard"],.cr #fire:not(.nof){position:absolute;width:var(--b);height:var(--b);min-height:0;margin:0;padding:0;border-radius:50%;box-sizing:border-box;gap:0;z-index:1}
 .cr #fire:not(.nof){left:0;top:0;right:auto;bottom:auto}
@@ -382,7 +397,7 @@ input,select{-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
-<div id="adslot" aria-label="Game title">Brick Duel online</div>
+<div id="adslot" role="img" aria-label="Block Duel Online"><span class="adt" aria-hidden="true"><b style="--i:0;--c:#2fc4e6;--c2:#1b8fb0">B</b><b style="--i:1;--c:#4b6ff0;--c2:#2a43b8">L</b><b style="--i:2;--c:#a65bd8;--c2:#6f2fa0">O</b><b style="--i:3;--c:#ee5a5a;--c2:#b32b2b">C</b><b style="--i:4;--c:#f28b3a;--c2:#b85a10">K</b><i></i><b style="--i:5;--c:#4cc46a;--c2:#25883f">D</b><b style="--i:6;--c:#2fc4e6;--c2:#1b8fb0">U</b><b style="--i:7;--c:#f5b800;--c2:#b87d00">E</b><b style="--i:8;--c:#ee5a5a;--c2:#b32b2b">L</b></span><small class="ol" aria-hidden="true"><span class="sg"><u></u><u></u><u></u></span><em>online</em></small></div>
 <div id="app">
   <div id="stage">
     <div id="inv" hidden aria-label="Item queue"></div>
@@ -596,12 +611,11 @@ function applyAd(){
   var el=$('adslot');if(!el)return;
   el.hidden=!AD_H;
   document.documentElement.style.setProperty('--adh',AD_H+'px');
-  document.documentElement.style.setProperty('--adbox',(AD_H?AD_H+14:0)+'px');   /* banner height + its 6px margins + 2px border */
-  if(AD_H)el.textContent='Brick Duel online';
+  document.documentElement.style.setProperty('--adbox',(AD_H?AD_H+6:0)+'px');   /* banner height (border included) + its 4px top and 2px bottom margins */
 }
 function resize(){
   applyAd();
-  var st=$('stage'),w=st.clientWidth,rs=itemMode?42:0,h=st.clientHeight-rs,gap=10;
+  var st=$('stage'),w=st.clientWidth,rs=itemMode?42:0,h=st.clientHeight-rs,gap=8;
   cs=Math.max(8,Math.floor(Math.min(h/ROWS,(w-gap)/(COLS*1.5))));
   oc=cs/2;
   dpr=Math.min(window.devicePixelRatio||1,2);   /* 3x screens would draw 9x the pixels for no visible gain */
@@ -850,7 +864,7 @@ function applyBoard(cells){
     }
   }
   fall=[];fs=0;fv=0;acc=0;streak=0;showCombo();
-  if(cur){cur.y=0;if(hit(cur.m,cur.x,cur.y))over()}      /* the falling piece restarts at the top of the new stack */
+  if(cur){cur.y=0;lockReset();if(!topSpot())over()}      /* the falling piece restarts at the top of the new stack */
 }
 function swapFx(){toast('hit_swap');sfxHit();stamp('swap',ctr('board'),true);tone(320,.2,'sine',.05);tone(640,.22,'sine',.045,.14)}
 function fireSwap(){
@@ -1122,17 +1136,29 @@ function hit(m,x,y){
   return false;
 }
 
+/* Lock delay: a piece that touches the stack does not set at once. It rests for LOCK_MS and every successful move or turn
+   restarts that timer (at most LOCK_MAX times per row, so nobody can stall forever). Hard drop still sets immediately. */
+var LOCK_MS=500,LOCK_MAX=10,lockT=0,lockRs=0,lowY=-9;
+function lockReset(){lockT=0;lockRs=0;lowY=-9}
+function lockBump(){if(lockT>0&&lockRs<LOCK_MAX){lockRs++;lockT=0}}
+/* Put the current piece at the top. If the stack reaches the spawn rows, lift the piece up to two rows above the ceiling instead of
+   ending the game on the spot: the player can still slide or turn it into a gap. Setting a piece above the ceiling ends the game (see lock). */
+function topSpot(){
+  for(var dy=0;dy>=-2;dy--){if(!hit(cur.m,cur.x,dy)){cur.y=dy;return true}}
+  return false;
+}
 function spawn(){
   if(pend>0){addGarbage();if(state==='over'||state==='dying')return}
   if(resumeCur){cur=resumeCur;resumeCur=null;cur.y=0}
   else{cur=next||mk(pull());next=mk(pull())}
   drawNext();
-  if(hit(cur.m,cur.x,cur.y))over();
+  lockReset();
+  if(!topSpot())over();
 }
 function move(d){
   if(pt<revUntil)d=-d;
   if(state==='playing'&&!iblast&&!swapWait&&!hit(cur.m,cur.x+d,cur.y)){
-    cur.x+=d;kickT=wnow;
+    cur.x+=d;kickT=wnow;lockBump();
     // Sound is intentionally subtle; throttle rapid key-repeat movement.
     var now=performance.now();
     if(!move._lastSfx||now-move._lastSfx>85){sfxMove();move._lastSfx=now}
@@ -1141,16 +1167,18 @@ function move(d){
 function rotate(){
   if(state!=='playing'||iblast||swapWait)return;
   /* wall kicks (sideways) first, then floor kicks (upwards) so pieces can turn on the stack or on garbage */
-  var r=rot(cur.m),k=[[0,0],[-1,0],[1,0],[-2,0],[2,0],[0,-1],[-1,-1],[1,-1],[0,-2]],top=0;
+  var r=rot(cur.m),k=[[0,0],[-1,0],[1,0],[-2,0],[2,0],[0,-1],[-1,-1],[1,-1],[0,-2]],top=0,topNow=0;
   while(top<r.length&&!r[top].some(Boolean))top++;      /* first row of the rotated shape that holds blocks */
+  while(topNow<cur.m.length&&!cur.m[topNow].some(Boolean))topNow++;
+  var ceil=(cur.y+topNow<0)?-2:0;                       /* a piece lifted above the ceiling may still turn there, but never higher than 2 rows up */
   for(var i=0;i<k.length;i++){
-    if(cur.y+k[i][1]+top<0)continue;                    /* locking above the ceiling ends the game, so never kick up there */
-    if(!hit(r,cur.x+k[i][0],cur.y+k[i][1])){cur.m=r;cur.x+=k[i][0];cur.y+=k[i][1];kickT=wnow;sfxRotate();return}
+    if(cur.y+k[i][1]+top<ceil)continue;                 /* a normal piece never kicks above the ceiling */
+    if(!hit(r,cur.x+k[i][0],cur.y+k[i][1])){cur.m=r;cur.x+=k[i][0];cur.y+=k[i][1];kickT=wnow;lockBump();sfxRotate();return}
   }
 }
 function soft(){
   if(state!=='playing'||iblast||swapWait)return;
-  if(!hit(cur.m,cur.x,cur.y+1)){cur.y++;score+=1;acc=0;hud();tone(260,.035,'sine',.018)}else lock();
+  if(!hit(cur.m,cur.x,cur.y+1)){cur.y++;score+=1;acc=0;hud();tone(260,.035,'sine',.018)}
 }
 function hard(){
   if(state!=='playing'||iblast||swapWait)return;
@@ -1740,7 +1768,11 @@ function loop(t){
   if(state==='playing'&&!iblast&&!swapWait){
     acc+=dt;
     var iv=interval();
-    while(acc>=iv&&state==='playing'){acc-=iv;if(!hit(cur.m,cur.x,cur.y+1))cur.y++;else{lock();break}}
+    while(acc>=iv&&state==='playing'){acc-=iv;if(!hit(cur.m,cur.x,cur.y+1))cur.y++;else{acc=0;break}}   /* resting: the lock timer below sets it */
+    if(state==='playing'&&cur){
+      if(cur.y>lowY){lowY=cur.y;lockRs=0}
+      if(hit(cur.m,cur.x,cur.y+1)){lockT+=dt;if(lockT>=LOCK_MS)lock()}else lockT=0;
+    }
   }
   var still=(state==='paused'||state==='over');
   if(still){if(stillKey!==state){stillKey=state;draw()}}
