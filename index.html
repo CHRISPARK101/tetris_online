@@ -31,7 +31,23 @@ body{margin:0;height:100%;background:var(--bg);color:var(--ink);
   -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;
   overscroll-behavior:none;overflow:hidden}
 /* game-style font for the menu screens: Fredoka for Latin letters, Jua for Korean, rounded system fonts for other scripts */
-#ov,#rank{font-family:"Fredoka","Jua","Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Apple SD Gothic Neo","PingFang SC","PingFang TC","Noto Sans CJK JP","Noto Sans KR",system-ui,sans-serif;font-synthesis:none}
+#ov,#rank,#iguide{font-family:"Fredoka","Jua","Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Apple SD Gothic Neo","PingFang SC","PingFang TC","Noto Sans CJK JP","Noto Sans KR",system-ui,sans-serif;font-synthesis:none}
+/* Item guide: small "?" next to the Item mode switches opens a short list of what each item does */
+.swh{display:flex;align-items:center;justify-content:center;gap:8px}
+.ihelp{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--btn);color:var(--mute);font-size:13px;font-weight:700;line-height:1;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.ihelp::after{content:"";position:absolute;inset:-9px}
+.ihelp:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+#iguide{position:fixed;inset:0;z-index:40;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:16px}
+#iguide[hidden]{display:none}
+#iguide button{padding:10px 24px}
+#iguide .ig-intro{flex:0 0 auto;margin:0 0 8px;font-size:12.5px;line-height:1.4;color:var(--mute)}
+#iguide .ig-list{flex:1 1 auto;min-height:0;overflow:auto;text-align:left;-webkit-overflow-scrolling:touch}
+#iguide .ig-row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)}
+#iguide .ig-row .ico{width:28px;height:28px;flex:none;margin-top:1px}
+#iguide .ig-row b{display:block;font-size:14px;margin-bottom:1px}
+#iguide .ig-row span{display:block;font-size:12.5px;line-height:1.4;color:var(--mute)}
+#iguide .ig-sec{margin:10px 0 2px;font-size:12px;font-weight:700;color:var(--accent);text-align:center}
+html:lang(ko) #iguide{word-break:keep-all}
 #app{height:calc(var(--appH,100%) - var(--adbox,0px));max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:4px;padding:4px 8px 8px;box-sizing:border-box}
 .hud{display:grid;grid-template-columns:1.5fr 1fr 1fr auto auto;gap:8px;align-items:center}
 .stat small{display:block;font-size:calc(var(--cs,20px)*.5);color:var(--mute)}
@@ -81,7 +97,12 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #cc{max-width:150px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:14px}
 #lvbox{display:flex;flex-direction:column;align-items:center;gap:16px}
 #lvbox .lvr{display:flex;gap:6px}
-#lvbox .swr{display:flex;flex-direction:column;align-items:center;gap:2px}
+#lvbox .swr,#rcfg .swr{display:grid;grid-template-columns:auto auto;justify-content:center;align-items:center;column-gap:16px;row-gap:2px}   /* labels share one column and the switches sit in a straight vertical line, with the ? in its own column */
+.swr .swh{display:contents}
+.swr .sw{grid-column:1;justify-content:space-between}
+.swr .ihelp{grid-column:2}
+.swr>.sw:first-child,.swr>.swh:first-child .sw{grid-row:1}
+.swr>.sw:nth-child(2),.swr>.swh:nth-child(2) .sw,.swr>.swh:nth-child(2) .ihelp{grid-row:2}
 #rank .sw{flex:0 0 auto;justify-content:center;padding:0 0 10px}
 #lvbox[hidden]{display:none}
 #board{display:block;border-radius:10px;border:1px solid var(--line);background:var(--well);touch-action:none}
@@ -120,6 +141,7 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 @keyframes losedrop{0%{transform:translateY(-34px) scale(1.15);opacity:0}65%{transform:translateY(5px) scale(1);opacity:1}100%{transform:none}}
 @keyframes trophy{0%{transform:translateY(-70px) scale(.4);opacity:0}55%{transform:translateY(8px) scale(1.15);opacity:1}100%{transform:none}}
 @keyframes wob{0%{transform:translateY(-40px) rotate(0);opacity:0}45%{transform:translateY(0) rotate(-14deg);opacity:1}65%{transform:rotate(10deg)}85%{transform:rotate(-5deg)}100%{transform:none}}
+#os:empty{display:none!important}   /* main menu has no instruction line */
 #ov p{margin:0;font-size:14px;color:var(--mute);max-width:240px}
 #ot,#os{text-wrap:balance}
 html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:normal}
@@ -161,7 +183,7 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 #opp{display:block;border-radius:8px;border:1px solid var(--line);background:var(--well)}
 #opp[hidden]{display:none}
 .ctl{--bh:clamp(44px,5.8vh,52px);padding-bottom:2px;display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
-.cl{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,var(--bh));gap:16px 14px}
+.cl{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(2,var(--bh));gap:16px 14px;width:min(100%,var(--cw,100%));justify-self:start}   /* arrow pad is never wider than the play field (--cw is set in resize) */
 .cl [data-act="down"]{grid-column:1/3;grid-row:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1}
 .cl [data-act="down"] .ar{font-size:20px;line-height:1}
 .cl [data-act="down"]::after{content:"";position:absolute;left:10%;right:10%;bottom:5px;height:3px;border-radius:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;opacity:0;pointer-events:none}
@@ -198,7 +220,7 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 #fire .fb:empty{display:none}
 #fire .fb .ico{width:70%;height:70%}
 .ico{flex:none}
-#inv .sl .ico{width:24px;height:24px}
+#inv .sl .ico{width:20px;height:20px}
 #bf .ico{width:20px;height:20px;display:inline-block;vertical-align:middle;margin-right:2px}
 #bf b{font-size:14px;vertical-align:middle;margin-right:4px}
 .fly .ico{width:1em;height:1em;display:block}
@@ -213,10 +235,10 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 #rotb .dz svg{display:block;width:100%;height:100%}
 #fire:not(.nof){margin-top:auto}
 #fire:not(.nof){margin-bottom:6px}
-#inv{position:absolute;height:38px;display:flex;justify-content:center;align-items:center;gap:6px}
+#inv{position:absolute;height:32px;display:flex;justify-content:center;align-items:center;gap:5px}
 #inv[hidden]{display:none}
-#inv .sl{width:34px;height:34px;border-radius:10px;border:1px dashed var(--line);background:var(--well);display:flex;align-items:center;justify-content:center;font-size:20px;line-height:1;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif;box-sizing:border-box}
-#inv .sl.f{border:2px solid var(--fire,#ff9a3c);background:var(--btn);width:38px;height:38px;cursor:pointer}
+#inv .sl{width:28px;height:28px;border-radius:9px;border:1px dashed var(--line);background:var(--well);display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif;box-sizing:border-box}
+#inv .sl.f{border:2px solid var(--fire,#ff9a3c);background:var(--btn);width:32px;height:32px;cursor:pointer}
 #inv .sl.pop{animation:invpop .35s}
 @keyframes invpop{0%{transform:scale(.4)}70%{transform:scale(1.2)}100%{transform:scale(1)}}
 .sw.locked{cursor:default}
@@ -240,7 +262,7 @@ input,select{-webkit-user-select:text;user-select:text}
 #nick{width:150px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:16px;text-align:center}
 #rank{position:fixed;inset:0;z-index:30;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:16px}
 #rank[hidden]{display:none}
-#ver{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);text-align:center;font-size:10px;line-height:1;color:var(--mute);opacity:.65;pointer-events:none}
+#ver{position:fixed;left:calc(env(safe-area-inset-left,0px) + 6px);right:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);text-align:left;font-size:10px;line-height:1;color:var(--mute);opacity:.65;pointer-events:none}
 .rk-card{width:min(100%,420px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;overflow:hidden;background:var(--well);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center}
 .rk-card h2{flex:0 0 auto;margin:0 0 10px;font-size:22px}
 #rank button{padding:10px 24px}
@@ -351,13 +373,14 @@ input,select{-webkit-user-select:text;user-select:text}
   overflow:hidden;
   border-radius:30px !important;
   color:#fff;
-  background:linear-gradient(180deg,#71829a 0%,#52647d 54%,#34445d 100%);
-  border:2px solid #26364d;
+  background:linear-gradient(180deg,#6a88c2 0%,#4b6aa3 54%,#34507f 100%);   /* soft blue: same family as rotate/drop, a little quieter */
+  border:2px solid #22385a;
+  text-shadow:0 1px 2px rgba(10,24,52,.5);
   box-shadow:
-    0 6px 0 #1c293b,
+    0 6px 0 #1a2c48,
     0 10px 12px rgba(0,0,0,.25),
-    inset 0 3px 5px rgba(255,255,255,.48),
-    inset 0 -5px 8px rgba(10,22,42,.28);
+    inset 0 3px 5px rgba(255,255,255,.4),
+    inset 0 -5px 8px rgba(10,22,48,.28);
   transition:transform .06s,box-shadow .06s,filter .06s;
 }
 .cl > button::before{
@@ -375,10 +398,10 @@ input,select{-webkit-user-select:text;user-select:text}
 .cl > button.on{
   transform:translateY(5px);
   box-shadow:
-    0 1px 0 #1c293b,
+    0 1px 0 #1a2c48,
     0 2px 4px rgba(0,0,0,.22),
-    inset 0 2px 4px rgba(255,255,255,.28),
-    inset 0 -3px 6px rgba(10,22,42,.22);
+    inset 0 2px 4px rgba(255,255,255,.26),
+    inset 0 -3px 6px rgba(10,22,48,.24);
   filter:brightness(.97);
 }
 .cl > button[data-act="down"]{
@@ -422,8 +445,8 @@ input,select{-webkit-user-select:text;user-select:text}
         <p id="ob"></p>
         <div id="rcfg" hidden>
           <p id="rcfgtitle">Match settings</p>
-          <label id="rgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="rgvc" role="switch"><i></i></label>
-          <label id="rit" class="sw"><span>Item mode</span><input type="checkbox" id="ritc" role="switch"><i></i></label>
+          <div class="swr"><label id="rgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="rgvc" role="switch"><i></i></label>
+          <div class="swh"><label id="rit" class="sw"><span>Item mode</span><input type="checkbox" id="ritc" role="switch"><i></i></label><span class="ihelp" role="button" tabindex="0">?</span></div></div>
           <p id="rcfgnote"></p>
         </div>
         <div id="nbox" hidden><input id="nick" maxlength="12" placeholder="Nickname" autocomplete="off" aria-label="Nickname"><button id="nsave">Save</button><button id="nskip">Skip</button></div>
@@ -447,7 +470,7 @@ input,select{-webkit-user-select:text;user-select:text}
         <button id="cpub">Vs CPU</button>
         <button id="rk">👑 Ranking</button>
         <div id="netbox" hidden><input id="code" inputmode="numeric" maxlength="6" placeholder="000000" aria-label="Room code"><div class="nrow"><button id="mk">Create room</button><button id="join">Join room</button></div><button id="back">Back</button></div>
-        <div id="lvbox" hidden><div class="swr"><label id="cgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="cgvc" role="switch"><i></i></label><label id="cit" class="sw"><span>Item mode</span><input type="checkbox" id="citc" role="switch"><i></i></label></div><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
+        <div id="lvbox" hidden><div class="swr"><label id="cgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="cgvc" role="switch"><i></i></label><div class="swh"><label id="cit" class="sw"><span>Item mode</span><input type="checkbox" id="citc" role="switch"><i></i></label><span class="ihelp" role="button" tabindex="0">?</span></div></div><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
       </div>
     </div>
     <div id="side">
@@ -473,6 +496,7 @@ input,select{-webkit-user-select:text;user-select:text}
   </div>
 </div>
 <div id="ver" aria-hidden="true">v0.7.1</div>
+<div id="iguide" hidden role="dialog" aria-modal="true"><div class="rk-card"><h2></h2><p class="ig-intro"></p><div class="ig-list"></div><div class="rk-actions"><button id="igclose">Close</button></div></div></div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 20</h2><div class="rk-tabs"><button id="rktn" class="on">Classic</button><button id="rkti">Item mode</button></div><label id="kgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="kgvc" role="switch"><i></i></label><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
 <script src="supabase.js"></script>
@@ -630,8 +654,8 @@ function resize(){
   var wl=document.querySelector('.well'),sd=$('side'),vs=mode!=='solo';
   document.documentElement.style.setProperty('--cs',cs+'px');
   wl.style.left=x0+'px';wl.style.top=y0+'px';
-  var cb=document.querySelector('.ctl');if(cb){cb.style.width=(W+gap+SW)+'px';cb.style.marginLeft=x0+'px';cb.style.setProperty('--lift',rs+'px')}
-  var ivb=$('inv');if(ivb){ivb.style.left=x0+'px';ivb.style.width=W+'px';ivb.style.top=Math.max(0,y0-42)+'px'}
+  var cb=document.querySelector('.ctl');if(cb){cb.style.width=(W+gap+SW)+'px';cb.style.marginLeft=x0+'px';cb.style.setProperty('--lift',rs+'px');cb.style.setProperty('--cw',W+'px')}
+  var ivb=$('inv');if(ivb){ivb.style.left=x0+'px';ivb.style.width=W+'px';ivb.style.top=Math.max(0,y0-36)+'px'}
   sd.style.left=(x0+W+gap)+'px';sd.style.top=(y0-rs)+'px';   /* with items on, the pause / next / opponent stack starts level with the item bar */sd.style.width=SW+'px';sd.style.height=H+'px';
   bc.style.width=W+'px';bc.style.height=H+'px';
   bc.width=Math.round(W*dpr);bc.height=Math.round(H*dpr);
@@ -2753,7 +2777,7 @@ $('join').addEventListener('click',function(){
 });
 $('back').addEventListener('click',function(){
   forgetRoom();joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';pendingScore=null;clearBoard();resize();
-  overlay('tetris','drag','start',true);
+  overlay('tetris','','start',true);
 });
 function gvLabel(){syncModeUI();$('ghvc').checked=ghostPreview;$('sndc').checked=soundOn;$('musicvolc').value=musicVolume;$('musicvolvalue').textContent=musicVolume+'%'}
 $('settings').addEventListener('click',function(){
@@ -2932,6 +2956,18 @@ var I18N={
   "rlines": "{n} lines",
   "items": "Item mode",
   "itemhelp": "Some blocks carry one item cell. Clear the line containing it to collect the item. Bomb, laser, slow and shield fire at once. Attack items, Swap and Clear all wait in the queue until you press Fire.",
+  "itemguide": "Item guide",
+  "ig_vs": "Battle modes only",
+  "d_bomb": "Blows up a 5×5 area around the item block. Fires as soon as you clear its line.",
+  "d_laser": "Wipes out the whole column of the item block. Fires as soon as you clear its line.",
+  "d_nuke": "Clears your entire board. Waits in the queue until you press Fire.",
+  "d_slow": "Your pieces fall slower for 8 seconds. Fires at once.",
+  "d_shield": "Blocks the next attack against you. Fires at once and can be stacked.",
+  "d_junk": "Sends 3 junk lines to your opponent. Waits for Fire.",
+  "d_speed": "Your opponent’s pieces fall faster for 8 seconds. Waits for Fire.",
+  "d_fog": "Hides your opponent’s stack for 7 seconds. Waits for Fire.",
+  "d_rev": "Reverses your opponent’s left and right controls for 8 seconds. Waits for Fire.",
+  "d_swap": "Trades your whole board with your opponent’s. Waits for Fire.",
   "fire": "Fire",
   "got": "{n} collected",
   "itemqueue": "Item queue",
@@ -3067,6 +3103,18 @@ var I18N={
   "rlines": "{n} rijen",
   "items": "Itemmodus",
   "itemhelp": "Soms valt er een blok met één itemvakje. Wis de rij waar het in zit om het item te krijgen. Bom, laser, vertraging en schild werken meteen. Aanvalsitems, Wisselen en Alles wissen wachten in de rij tot je op Vuur drukt.",
+  "itemguide": "Itemgids",
+  "ig_vs": "Alleen in gevechten",
+  "d_bomb": "Laat een gebied van 5×5 rond het itemblok ontploffen. Werkt meteen zodra je de rij wist.",
+  "d_laser": "Wist de hele kolom van het itemblok. Werkt meteen zodra je de rij wist.",
+  "d_nuke": "Wist je hele bord. Wacht in de rij tot je op de vuurknop drukt.",
+  "d_slow": "Je blokken vallen 8 seconden langzamer. Werkt meteen.",
+  "d_shield": "Blokkeert de volgende aanval op jou. Werkt meteen en kan worden gestapeld.",
+  "d_junk": "Stuurt 3 afvalrijen naar je tegenstander. Wacht op de vuurknop.",
+  "d_speed": "De blokken van je tegenstander vallen 8 seconden sneller. Wacht op de vuurknop.",
+  "d_fog": "Verbergt de stapel van je tegenstander 7 seconden. Wacht op de vuurknop.",
+  "d_rev": "Draait links en rechts van je tegenstander 8 seconden om. Wacht op de vuurknop.",
+  "d_swap": "Wisselt je hele bord met dat van je tegenstander. Wacht op de vuurknop.",
   "fire": "Vuur",
   "got": "{n} verzameld",
   "itemqueue": "Itemrij",
@@ -3202,6 +3250,18 @@ var I18N={
   "rlines": "{n}줄",
   "items": "아이템전",
   "itemhelp": "가끔 아이템이 박힌 블록 칸이 내려옵니다. 그 칸이 있는 줄을 지우면 아이템을 얻습니다. 폭탄·레이저·감속·방어는 즉시 발동하고, 공격 아이템·화면 교체·전체 삭제는 대기열에 쌓였다가 발사 버튼을 누르면 나갑니다.",
+  "itemguide": "아이템 안내",
+  "ig_vs": "대전에서만 나와요",
+  "d_bomb": "아이템 칸 주변 5×5 범위를 폭파해요. 그 줄을 지우면 바로 발동해요.",
+  "d_laser": "아이템 칸이 있는 세로줄 전체를 지워요. 그 줄을 지우면 바로 발동해요.",
+  "d_nuke": "내 판 전체를 지워요. 대기열에 쌓였다가 발사 버튼을 누르면 나가요.",
+  "d_slow": "8초 동안 내 블록이 느리게 떨어져요. 바로 발동해요.",
+  "d_shield": "다음 공격 한 번을 막아줘요. 바로 발동하고 여러 개 쌓을 수 있어요.",
+  "d_junk": "상대 판에 방해 줄 3줄을 보내요. 발사 버튼을 누르면 나가요.",
+  "d_speed": "8초 동안 상대 블록이 빠르게 떨어져요. 발사 버튼을 누르면 나가요.",
+  "d_fog": "7초 동안 상대 판이 안개로 가려져요. 발사 버튼을 누르면 나가요.",
+  "d_rev": "8초 동안 상대의 좌우 조작이 뒤바뀌어요. 발사 버튼을 누르면 나가요.",
+  "d_swap": "나와 상대의 판을 통째로 맞바꿔요. 발사 버튼을 누르면 나가요.",
   "fire": "발사",
   "got": "{n} 획득",
   "itemqueue": "아이템 대기열",
@@ -3337,6 +3397,18 @@ var I18N={
   "rlines": "{n}ライン",
   "items": "アイテム戦",
   "itemhelp": "ときどきアイテム付きのマスを持つブロックが降ってきます。そのマスを含む行を消すとアイテムを獲得します。爆弾・レーザー・スロー・シールドはすぐに発動し、攻撃アイテム・盤面入れ替え・全消しは待機列に並び、発射ボタンで使えます。",
+  "itemguide": "アイテムガイド",
+  "ig_vs": "対戦モードのみ",
+  "d_bomb": "アイテムマスの周囲5×5を爆破します。その行を消すとすぐ発動します。",
+  "d_laser": "アイテムマスがある列を丸ごと消去します。その行を消すとすぐ発動します。",
+  "d_nuke": "自分の盤面をすべて消去します。待機列に並び、発射ボタンで使えます。",
+  "d_slow": "8秒間、自分のブロックの落下が遅くなります。すぐ発動します。",
+  "d_shield": "次の攻撃を1回防ぎます。すぐ発動し、重ねられます。",
+  "d_junk": "相手におじゃま行を3行送ります。発射ボタンで使えます。",
+  "d_speed": "8秒間、相手のブロックが速く落ちます。発射ボタンで使えます。",
+  "d_fog": "7秒間、相手の盤面を霧で隠します。発射ボタンで使えます。",
+  "d_rev": "8秒間、相手の左右操作を逆にします。発射ボタンで使えます。",
+  "d_swap": "自分と相手の盤面をそっくり入れ替えます。発射ボタンで使えます。",
   "fire": "発射",
   "got": "{n}を獲得",
   "itemqueue": "アイテム待機列",
@@ -3472,6 +3544,18 @@ var I18N={
   "rlines": "{n} 行",
   "items": "道具战",
   "itemhelp": "偶尔会出现带有道具的方块格。消除包含它的那一行即可获得道具。炸弹、激光、减速和护盾会立即发动；攻击道具、交换画面和全屏清除会进入队列，按发射键才会使用。",
+  "itemguide": "道具说明",
+  "ig_vs": "仅对战模式",
+  "d_bomb": "炸毁道具格周围5×5的范围。消除它所在的行后立即发动。",
+  "d_laser": "清除道具格所在的整列。消除它所在的行后立即发动。",
+  "d_nuke": "清空你自己的整个画面。进入队列，按发射键才会使用。",
+  "d_slow": "8秒内你的方块下落变慢。立即发动。",
+  "d_shield": "抵挡下一次攻击。立即发动，可叠加。",
+  "d_junk": "向对手发送3行垃圾行。按发射键使用。",
+  "d_speed": "8秒内对手的方块下落变快。按发射键使用。",
+  "d_fog": "7秒内用迷雾遮住对手的画面。按发射键使用。",
+  "d_rev": "8秒内让对手的左右操作颠倒。按发射键使用。",
+  "d_swap": "与对手整个交换画面。按发射键使用。",
   "fire": "发射",
   "got": "获得{n}",
   "itemqueue": "道具队列",
@@ -3607,6 +3691,18 @@ var I18N={
   "rlines": "{n} 行",
   "items": "道具戰",
   "itemhelp": "偶爾會出現帶有道具的方塊格。消除包含它的那一行即可獲得道具。炸彈、雷射、減速和護盾會立即發動；攻擊道具、交換畫面和全螢幕清除會進入佇列，按發射鍵才會使用。",
+  "itemguide": "道具說明",
+  "ig_vs": "僅限對戰模式",
+  "d_bomb": "炸毀道具格周圍5×5的範圍。消除它所在的行後立即發動。",
+  "d_laser": "清除道具格所在的整列。消除它所在的行後立即發動。",
+  "d_nuke": "清空你自己的整個畫面。進入佇列，按發射鍵才會使用。",
+  "d_slow": "8秒內你的方塊下落變慢。立即發動。",
+  "d_shield": "抵擋下一次攻擊。立即發動，可疊加。",
+  "d_junk": "向對手送出3行垃圾行。按發射鍵使用。",
+  "d_speed": "8秒內對手的方塊下落變快。按發射鍵使用。",
+  "d_fog": "7秒內用迷霧遮住對手的畫面。按發射鍵使用。",
+  "d_rev": "8秒內讓對手的左右操作顛倒。按發射鍵使用。",
+  "d_swap": "與對手整個交換畫面。按發射鍵使用。",
   "fire": "發射",
   "got": "獲得{n}",
   "itemqueue": "道具佇列",
@@ -3742,6 +3838,18 @@ var I18N={
   "rlines": "{n} líneas",
   "items": "Modo objetos",
   "itemhelp": "A veces cae un bloque con una casilla de objeto. Al completar la línea que la contiene, consigues el objeto. Bomba, láser, ralentizar y escudo se activan al instante; los de ataque, Intercambio y Borrar todo esperan en la cola hasta que pulses Lanzar.",
+  "itemguide": "Guía de objetos",
+  "ig_vs": "Solo en partidas contra rivales",
+  "d_bomb": "Destruye un área de 5×5 alrededor de la casilla de objeto. Se activa al completar su línea.",
+  "d_laser": "Borra toda la columna de la casilla de objeto. Se activa al completar su línea.",
+  "d_nuke": "Borra todo tu tablero. Espera en la cola hasta que pulses el botón de disparo.",
+  "d_slow": "Tus piezas caen más despacio durante 8 segundos. Se activa al instante.",
+  "d_shield": "Bloquea el siguiente ataque. Se activa al instante y se puede acumular.",
+  "d_junk": "Envía 3 líneas de basura a tu rival. Espera al botón de disparo.",
+  "d_speed": "Las piezas de tu rival caen más rápido durante 8 segundos. Espera al botón de disparo.",
+  "d_fog": "Oculta el montón de tu rival durante 7 segundos. Espera al botón de disparo.",
+  "d_rev": "Invierte izquierda y derecha de tu rival durante 8 segundos. Espera al botón de disparo.",
+  "d_swap": "Intercambia todo tu tablero con el de tu rival. Espera al botón de disparo.",
   "fire": "Lanzar",
   "got": "{n} obtenido",
   "itemqueue": "Cola de objetos",
@@ -3877,6 +3985,18 @@ var I18N={
   "rlines": "{n} linhas",
   "items": "Modo itens",
   "itemhelp": "Às vezes cai um bloco com uma célula de item. Ao limpar a linha que a contém, você ganha o item. Bomba, laser, lentidão e escudo são ativados na hora; os de ataque, Troca e Limpar tudo esperam na fila até você tocar em Lançar.",
+  "itemguide": "Guia de itens",
+  "ig_vs": "Só em partidas contra oponentes",
+  "d_bomb": "Explode uma área de 5×5 ao redor da célula do item. Ativa ao limpar a linha dela.",
+  "d_laser": "Apaga a coluna inteira da célula do item. Ativa ao limpar a linha dela.",
+  "d_nuke": "Apaga todo o seu tabuleiro. Fica na fila até você apertar o botão de disparo.",
+  "d_slow": "Suas peças caem mais devagar por 8 segundos. Ativa na hora.",
+  "d_shield": "Bloqueia o próximo ataque. Ativa na hora e pode ser acumulado.",
+  "d_junk": "Envia 3 linhas de lixo ao oponente. Espera o botão de disparo.",
+  "d_speed": "As peças do oponente caem mais rápido por 8 segundos. Espera o botão de disparo.",
+  "d_fog": "Esconde a pilha do oponente por 7 segundos. Espera o botão de disparo.",
+  "d_rev": "Inverte esquerda e direita do oponente por 8 segundos. Espera o botão de disparo.",
+  "d_swap": "Troca todo o seu tabuleiro com o do oponente. Espera o botão de disparo.",
   "fire": "Lançar",
   "got": "{n} obtido",
   "itemqueue": "Fila de itens",
@@ -4012,6 +4132,18 @@ var I18N={
   "rlines": "{n} lignes",
   "items": "Mode objets",
   "itemhelp": "Certains blocs portent une case objet. Complétez la ligne qui la contient pour obtenir l’objet. Bombe, laser, ralentissement et bouclier se déclenchent aussitôt ; les objets d’attaque, Échange et Tout effacer attendent dans la file jusqu’à ce que vous appuyiez sur Tirer.",
+  "itemguide": "Guide des objets",
+  "ig_vs": "Uniquement en duel",
+  "d_bomb": "Fait exploser une zone de 5×5 autour de la case objet. Se déclenche dès que sa ligne est complétée.",
+  "d_laser": "Efface toute la colonne de la case objet. Se déclenche dès que sa ligne est complétée.",
+  "d_nuke": "Efface tout votre plateau. Attend dans la file jusqu’à l’appui sur le bouton de tir.",
+  "d_slow": "Vos pièces tombent plus lentement pendant 8 secondes. Se déclenche aussitôt.",
+  "d_shield": "Bloque la prochaine attaque. Se déclenche aussitôt et peut s’empiler.",
+  "d_junk": "Envoie 3 lignes parasites à l’adversaire. Attend le bouton de tir.",
+  "d_speed": "Les pièces de l’adversaire tombent plus vite pendant 8 secondes. Attend le bouton de tir.",
+  "d_fog": "Cache la pile de l’adversaire pendant 7 secondes. Attend le bouton de tir.",
+  "d_rev": "Inverse la gauche et la droite de l’adversaire pendant 8 secondes. Attend le bouton de tir.",
+  "d_swap": "Échange tout votre plateau avec celui de l’adversaire. Attend le bouton de tir.",
   "fire": "Tirer",
   "got": "{n} obtenu",
   "itemqueue": "File d’objets",
@@ -4056,7 +4188,7 @@ function applyLanguage(){
  var vol=$('musicvol');if(vol&&vol.querySelector('label span'))vol.querySelector('label span').textContent=tr('music');
  var opts=document.querySelectorAll('#lvbox button[data-l]');if(opts.length>=3){opts[0].textContent=tr('easy');opts[1].textContent=tr('normal');opts[2].textContent=tr('hard')}
  var ctl=document.querySelector('[data-act="rot"]');if(ctl)ctl.setAttribute('aria-label',tr('rotate'));txt('rotLabel','rotate');txt('dropLabel','drop');aria(document.querySelector('[data-act="hard"]'),'drop');
- var fl=$('firel');if(fl)fl.textContent=tr('fire');aria($('fire'),'fire');aria($('inv'),'itemqueue');
+ var fl=$('firel');if(fl)fl.textContent=tr('fire');aria($('fire'),'fire');aria($('inv'),'itemqueue');Array.prototype.forEach.call(document.querySelectorAll('.ihelp'),function(e){e.setAttribute('aria-label',tr('itemguide'));e.title=tr('itemguide')});
  aria(document.querySelector('[data-act="left"]'),'left');aria(document.querySelector('[data-act="right"]'),'right');aria(document.querySelector('[data-act="down"]'),'down');
  var st=$('settings');if(st){st.setAttribute('aria-label',tr('settings'));st.title=tr('settings')}
  aria($('pause'),'pause');aria($('next'),'nextpiece');aria($('musicvolc'),'musicaria');aria($('mf'),'country');
@@ -4068,11 +4200,35 @@ function applyLanguage(){
  olabel();
  renderOverlay();
 }
+/* ===== Item guide popup ===== */
+var GUIDE_ALL=['bomb','laser','nuke','slow'],GUIDE_VS=['shield','junk','speed','fog','rev','swap'];
+function guideRow(k){return '<div class="ig-row">'+iconSVG(k)+'<div><b>'+itemName(k)+'</b><span>'+tr('d_'+k)+'</span></div></div>'}
+function openGuide(){
+  var g=$('iguide');if(!g)return;
+  g.querySelector('h2').textContent=tr('itemguide');
+  g.querySelector('.ig-intro').textContent=tr('itemhelp');
+  g.querySelector('.ig-list').innerHTML=GUIDE_ALL.map(guideRow).join('')+'<div class="ig-sec">'+tr('ig_vs')+'</div>'+GUIDE_VS.map(guideRow).join('');
+  $('igclose').textContent=tr('close');
+  g.setAttribute('aria-label',tr('itemguide'));
+  g.hidden=false;
+}
+function closeGuide(){var g=$('iguide');if(g)g.hidden=true}
+document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest?e.target.closest('.ihelp'):null;
+  if(t){e.preventDefault();e.stopPropagation();openGuide();return}
+  if(e.target&&e.target.id==='iguide')closeGuide();
+});
+document.addEventListener('keydown',function(e){
+  var t=e.target;
+  if((e.key==='Enter'||e.key===' ')&&t&&t.classList&&t.classList.contains('ihelp')){e.preventDefault();openGuide();return}
+  if(e.key==='Escape'&&$('iguide')&&!$('iguide').hidden){e.preventDefault();e.stopPropagation();closeGuide()}
+},true);
+$('igclose').addEventListener('click',closeGuide);
 $('languageSelect').addEventListener('change',function(){LANG_PREF=this.value;try{localStorage.setItem('tetris-language',LANG_PREF)}catch(e){}applyLanguage();});
 applyLanguage();
 
 grid=emptyGrid();
-overlay('tetris','drag','start',true);
+overlay('tetris','','start',true);
 resize();hud();if(musicVolume>0)playMusic();
 requestAnimationFrame(function(t){last=t;loop(t)});
 try{new MutationObserver(fitOvSoon).observe($('ov'),{subtree:true,childList:true,attributes:true,attributeFilter:['hidden','class']})}catch(e){}
