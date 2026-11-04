@@ -42,7 +42,7 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #rnd{display:inline-flex;align-items:center;justify-content:center}
 #rnd .ric{position:relative;display:block;flex:none;width:24px;height:24px;margin-right:9px}
 #rnd .ric i{position:absolute;display:block;width:5px;height:5px;border-radius:1.5px;box-shadow:inset 0 -1.5px 0 rgba(0,0,0,.25);transition:left .4s cubic-bezier(.3,1.6,.5,1),top .4s cubic-bezier(.3,1.6,.5,1),background .4s}
-#adslot{box-sizing:border-box;width:calc(100% - 24px);max-width:496px;height:var(--adh,0px);margin:6px auto 6px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:8px;border:1px dashed var(--line);font-size:11px;color:var(--mute)}
+#adslot{box-sizing:border-box;width:calc(100% - 24px);max-width:496px;height:var(--adh,50px);margin:6px auto 6px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:linear-gradient(135deg,var(--well),var(--btn));font-size:16px;font-weight:800;letter-spacing:.08em;color:var(--ink);text-shadow:0 1px 0 rgba(255,255,255,.12)}
 #adslot[hidden]{display:none}
 .well{position:absolute;line-height:0}
 #side{position:absolute;display:flex;flex-direction:column;gap:6px;min-height:0}
@@ -382,7 +382,7 @@ input,select{-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
-<div id="adslot" hidden aria-label="Advertisement"></div>
+<div id="adslot" aria-label="Game title">Brick Duel online</div>
 <div id="app">
   <div id="stage">
     <div id="inv" hidden aria-label="Item queue"></div>
@@ -570,8 +570,8 @@ function theme(){
   TH.well=s.getPropertyValue('--well').trim()||TH.well;
   TH.grid=s.getPropertyValue('--grid').trim()||TH.grid;
 }
-/* Banner height in px (50 = standard mobile banner, 0 = none). Open the game with ?ad=1 to preview the layout with a placeholder. */
-var AD_H=/[?&]ad=1(&|$)/.test(location.search)?50:0;
+/* Game title banner: enabled by default. */
+var AD_H=50;
 /* Random Match button icon: four little blocks that keep morphing into a random piece shape and colour. */
 var RND_SHAPES=[[[0,1],[1,1],[2,1],[3,1]],[[1,1],[2,1],[1,2],[2,2]],[[0,1],[1,1],[2,1],[1,2]],[[1,1],[2,1],[0,2],[1,2]],[[0,1],[1,1],[1,2],[2,2]],[[0,1],[1,1],[2,1],[2,2]],[[0,1],[1,1],[2,1],[0,2]]];
 var RND_COL=['#ff5a5f','#ffb703','#4cc9f0','#7bd88f','#b388ff','#ffe14d','#ff8fab'],rndI=-1,rndTimer=null;
@@ -597,7 +597,7 @@ function applyAd(){
   el.hidden=!AD_H;
   document.documentElement.style.setProperty('--adh',AD_H+'px');
   document.documentElement.style.setProperty('--adbox',(AD_H?AD_H+14:0)+'px');   /* banner height + its 6px margins + 2px border */
-  if(AD_H&&!el.firstChild)el.textContent='AD 320×50';
+  if(AD_H)el.textContent='Brick Duel online';
 }
 function resize(){
   applyAd();
