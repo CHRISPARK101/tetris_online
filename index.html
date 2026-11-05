@@ -261,6 +261,8 @@ input,select{-webkit-user-select:text;user-select:text}
 #rk,#nbox button{padding:8px 14px;font-size:14px}
 #nbox{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 #nbox[hidden]{display:none}
+#nbox #nsave{background:linear-gradient(180deg,#ffe27a 0%,#ffc933 55%,#f2a600 100%);color:#3b2a00;border:2px solid #b07a00;font-weight:800;box-shadow:0 4px 0 #8f5f00,0 8px 10px rgba(0,0,0,.2),inset 0 2px 3px rgba(255,255,255,.55)}
+#nbox #nsave:active{transform:translateY(3px);box-shadow:0 1px 0 #8f5f00,inset 0 2px 3px rgba(255,255,255,.4)}
 #nick{width:150px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:16px;text-align:center}
 #rank{position:fixed;inset:0;z-index:30;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:16px}
 #rank[hidden]{display:none}
@@ -1507,6 +1509,8 @@ function endMenu(){
   $('settingsbox').hidden=true;
   $('go').style.display='';$('qt').style.display='';
 }
+/* While the ranking is being checked, and while the nickname box is open, the Play again and Main menu buttons stay hidden so a quick tap cannot skip the save. */
+function holdEnd(){$('go').style.display='none';$('qt').style.display='none'}
 function over(){
   state='over';endItems();
   if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});unlockCfg();endSub=fm('scorelines',{s:score,l:lines});overlay('youlose',endSub,'rematch',false);endMenu();endFx('lose');return}
@@ -1514,6 +1518,7 @@ function over(){
   if(itemMode){if(score>bestItems){bestItems=score;try{localStorage.setItem('tetris-best-items',String(bestItems))}catch(e){}}}
   else if(score>best){best=score;try{localStorage.setItem('tetris-best',String(best))}catch(e){}}
   overlay('gameover',fm('scorelines',{s:score,l:lines}),'playagain',true);endMenu();endFx(newBest?'best':'cool');
+  if(score>0)holdEnd();      /* no Play again / Main menu until we know whether there is a score to save */
   rankCheck(score,lines,level);
 }
 function enterPaused(){
@@ -2433,7 +2438,7 @@ function rankCheck(sc,ln,lv){
     setOS(fm('savescore',{s:sc}));
     var inp=$('nick');
     try{inp.value=localStorage.getItem('tetris-nick')||''}catch(e){inp.value=''}
-    menuBtns(false);
+    menuBtns(false);holdEnd();
     $('nbox').hidden=false;
     try{inp.focus({preventScroll:true})}catch(e){try{inp.focus()}catch(err){}}
   }
@@ -2441,6 +2446,7 @@ function rankCheck(sc,ln,lv){
     if(settled||tok!==rankTok)return;
     settled=true;clearTimeout(timer);
     setOS(function(){return fmt('scorelines',{s:sc,l:ln})+' · '+fmt('rankmiss',{s:cut})});
+    endMenu();
   }
   timer=setTimeout(ask,3000);      /* a slow or failing network must not block saving: just ask */
   loadBoard(items).then(function(bd){
