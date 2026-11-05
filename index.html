@@ -262,7 +262,7 @@ input,select{-webkit-user-select:text;user-select:text}
 #nick{width:150px;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:16px;text-align:center}
 #rank{position:fixed;inset:0;z-index:30;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:16px}
 #rank[hidden]{display:none}
-#ver{position:fixed;left:calc(env(safe-area-inset-left,0px) + 6px);right:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);text-align:left;font-size:10px;line-height:1;color:var(--mute);opacity:.65;pointer-events:none}
+#ver{position:fixed;right:calc(env(safe-area-inset-right,0px) + 6px);left:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 2px);text-align:right;font-size:10px;line-height:1;color:var(--mute);opacity:.65;pointer-events:none}
 .rk-card{width:min(100%,420px);max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);display:flex;flex-direction:column;overflow:hidden;background:var(--well);border:1px solid var(--line);border-radius:16px;padding:18px;text-align:center}
 .rk-card h2{flex:0 0 auto;margin:0 0 10px;font-size:22px}
 #rank button{padding:10px 24px}
@@ -495,7 +495,7 @@ input,select{-webkit-user-select:text;user-select:text}
     </div>
   </div>
 </div>
-<div id="ver" aria-hidden="true">v0.7.1</div>
+<div id="ver" aria-hidden="true">v0.7.2</div>
 <div id="iguide" hidden role="dialog" aria-modal="true"><div class="rk-card"><h2></h2><p class="ig-intro"></p><div class="ig-list"></div><div class="rk-actions"><button id="igclose">Close</button></div></div></div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 20</h2><div class="rk-tabs"><button id="rktn" class="on">Classic</button><button id="rkti">Item mode</button></div><label id="kgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="kgvc" role="switch"><i></i></label><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
@@ -517,6 +517,7 @@ var SH={
 };
 var COL={I:'#3ad4ff',O:'#ffd84a',T:'#b07cff',S:'#3ee0a0',Z:'#ff6f91',J:'#4f8cff',L:'#ffa05a',G:'#9bb0c8'};   /* fresh aqua palette */
 var KEYS=Object.keys(SH);
+var SCORE_CAP=100000000;   /* same limit as the ranking table; the score simply stops here */
 var grid,cur,next,bag=[],score=0,lines=0,level=1,state='ready',acc=0,last=0,best=0;
 try{best=+localStorage.getItem('tetris-best')||0}catch(e){}
 var bestItems=0;try{bestItems=+localStorage.getItem('tetris-best-items')||0}catch(e){}
@@ -1409,7 +1410,7 @@ function finishFall(){
 function interval(){var v=820-(level-1)*70;if(v<90)v=Math.max(40,90-(level-12)*5);   /* up to level 12 as before (90 ms); after that it keeps getting faster by 5 ms per level down to 40 ms */
   if(pt<fastUntil)v=Math.min(v,Math.max(55,v*.3));if(pt<slowUntil)v*=2.5;return v}
 
-function hud(){$('sc').textContent=score;$('lv').textContent=level;$('ln').textContent=lines}
+function hud(){if(score>SCORE_CAP)score=SCORE_CAP;$('sc').textContent=score;$('lv').textContent=level;$('ln').textContent=lines}
 
 /* Overlay text is stored as translation keys (or functions that build a string) so that it can be
    re-rendered in another language without losing the current state. */
@@ -2324,6 +2325,7 @@ function saveLocalEntry(e){
   return false;
 }
 function normalizeScoreEntry(e){
+  if(e&&Number.isFinite(Number(e.score))&&Number(e.score)>SCORE_CAP)e=Object.assign({},e,{score:SCORE_CAP});   /* never reject a record just for being too high */
   if(!e||!Number.isSafeInteger(Number(e.score))||Number(e.score)<0||Number(e.score)>100000000||!Number.isSafeInteger(Number(e.lines))||Number(e.lines)<0||Number(e.lines)>100000||!Number.isSafeInteger(Number(e.level))||Number(e.level)<1||Number(e.level)>10000)return null;
   return {nick:cleanNick(e.nick),score:Number(e.score),lines:Number(e.lines),level:Number(e.level),cc:okc(e.cc)?e.cc:'',items:!!e.items};
 }
@@ -2347,17 +2349,56 @@ function loadBoard(items){
   }
   return Promise.resolve({rows:localBoard(items),remote:false});
 }
+/* One insert, shared by the normal save and by the retry queue. */
+function sendScore(e){
+  var ins=function(row){return getClient().from('scores').insert(row).then(function(r){if(r.error)throw r.error;return true})};
+  var row={nick:e.nick,score:e.score,lines:e.lines,level:e.level,cc:e.cc||null,items:!!e.items};
+  return ins(row).catch(function(err){
+    console.warn('Ranking save failed:',err);
+    if(!e.items){delete row.items;return ins(row)}      /* database without the "items" column: classic score still goes global */
+    throw err;
+  });
+}
+/* Scores that could not reach the global ranking wait in this device's storage and are sent again at the next start, when the
+   connection comes back, or after the next successful save. A score the server keeps refusing is dropped after 3 tries. */
+var PEND_KEY='tetris-pending',pendBusy=false;
+function pendLoad(){try{var a=JSON.parse(localStorage.getItem(PEND_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function pendSave(a){try{if(a.length)localStorage.setItem(PEND_KEY,JSON.stringify(a.slice(-10)));else localStorage.removeItem(PEND_KEY)}catch(e){}}
+function pendAdd(e){var a=pendLoad();a.push({e:e,tries:0});pendSave(a)}
+function errMsg(err){return String((err&&err.message)||'')}
+function isDup(err){return /duplicate score/i.test(errMsg(err))}
+function isRate(err){return /rate limit/i.test(errMsg(err))}
+function isPerm(err){var c=err&&err.code,st=err&&err.status;return c==='23514'||c==='42501'||c==='22003'||c==='23502'||c==='22P02'||st===400||st===401||st===403||st===422}
+function pendFlush(){
+  if(pendBusy||!supabaseReady()||navigator.onLine===false)return;
+  var a=pendLoad();if(!a.length)return;
+  pendBusy=true;
+  (function next(i,keep){
+    if(i>=a.length){pendSave(keep);pendBusy=false;return}
+    var it=a[i],e=normalizeScoreEntry(it&&it.e);
+    if(!e){next(i+1,keep);return}
+    var p;try{p=sendScore(e)}catch(err){p=Promise.reject(err)}
+    p.then(function(){next(i+1,keep)},function(err){
+      if(isDup(err)){next(i+1,keep);return}                                      /* it is already in the table */
+      if(isRate(err)){pendSave(keep.concat(a.slice(i).filter(Boolean)));pendBusy=false;return}   /* too fast: try again later */
+      it.tries=(it.tries||0)+(isPerm(err)?1:.1);
+      if(it.tries<3)keep.push(it);
+      next(i+1,keep);
+    });
+  })(0,[]);
+}
+setTimeout(pendFlush,2500);
+window.addEventListener('online',function(){setTimeout(pendFlush,800)});
+/* Resolves true (saved globally), 'queued' (saved here, will be re-sent) or false (saved here only). */
 function submitScore(e){
   e=normalizeScoreEntry(e);if(!e)return Promise.resolve(false);
   if(supabaseReady()){
     try{
-      var ins=function(row){return getClient().from('scores').insert(row).then(function(r){if(r.error)throw r.error;return true})};
-      var row={nick:e.nick,score:e.score,lines:e.lines,level:e.level,cc:e.cc||null,items:!!e.items};
-      return ins(row).catch(function(err){
+      return sendScore(e).then(function(){setTimeout(pendFlush,600);return true}).catch(function(err){
         console.warn('Ranking save failed:',err);
-        if(!e.items){delete row.items;return ins(row)}      /* database without the "items" column: classic score still goes global */
-        throw err;
-      }).catch(function(err){console.warn('Ranking save failed:',err);return saveLocalEntry(e)});
+        if(isDup(err))return true;                      /* the same score is already on the board */
+        saveLocalEntry(e);pendAdd(e);return 'queued';
+      });
     }catch(err){}
   }
   return Promise.resolve(saveLocalEntry(e));
@@ -2372,6 +2413,7 @@ function rankCheck(sc,ln,lv){
   rankTok++;
   var tok=rankTok,settled=false,timer=null;
   pendingScore=null;
+  sc=Math.min(sc,SCORE_CAP);
   if(!(sc>0))return;
   var items=!!itemMode;
   function ask(){
@@ -2447,7 +2489,7 @@ $('nsave').addEventListener('click',function(){
   $('nbox').hidden=true;endMenu();
   setOS('saving');
   submitScore(e).then(function(remote){
-    setOS(remote?'savedglobal':'savedlocal');
+    setOS(remote===true?'savedglobal':remote==='queued'?'savedqueued':'savedlocal');
     showRank(e);
   });
 });
@@ -2951,6 +2993,7 @@ var I18N={
   "invalidscore": "Invalid score data; score was not saved.",
   "savedglobal": "Saved to the global ranking!",
   "savedlocal": "Saved on this device (global ranking unavailable).",
+  "savedqueued": "Saved on this device. It will be sent to the global ranking automatically later.",
   "globalrank": "Global ranking",
   "localrank": "Showing scores saved on this device",
   "rlines": "{n} lines",
@@ -3098,6 +3141,7 @@ var I18N={
   "invalidscore": "Ongeldige scoregegevens; score niet opgeslagen.",
   "savedglobal": "Opgeslagen in de wereldranglijst!",
   "savedlocal": "Opgeslagen op dit apparaat (wereldranglijst niet beschikbaar).",
+  "savedqueued": "Opgeslagen op dit apparaat. Het wordt later automatisch naar de wereldwijde ranglijst gestuurd.",
   "globalrank": "Wereldranglijst",
   "localrank": "Op dit apparaat opgeslagen scores",
   "rlines": "{n} rijen",
@@ -3245,6 +3289,7 @@ var I18N={
   "invalidscore": "점수 데이터가 올바르지 않아 저장하지 않았습니다.",
   "savedglobal": "전체 랭킹에 저장했습니다!",
   "savedlocal": "이 기기에 저장했습니다 (전체 랭킹을 사용할 수 없음).",
+  "savedqueued": "이 기기에 저장했어요. 나중에 전체 랭킹에 자동으로 다시 올릴게요.",
   "globalrank": "전체 랭킹",
   "localrank": "이 기기에 저장된 점수를 표시 중",
   "rlines": "{n}줄",
@@ -3392,6 +3437,7 @@ var I18N={
   "invalidscore": "スコアデータが無効なため保存されませんでした。",
   "savedglobal": "グローバルランキングに保存しました！",
   "savedlocal": "この端末に保存しました（グローバルランキングは利用できません）。",
+  "savedqueued": "この端末に保存しました。あとで自動的に全体ランキングへ再送信します。",
   "globalrank": "グローバルランキング",
   "localrank": "この端末に保存されたスコアを表示中",
   "rlines": "{n}ライン",
@@ -3539,6 +3585,7 @@ var I18N={
   "invalidscore": "成绩数据无效，未保存。",
   "savedglobal": "已保存到全球排行榜！",
   "savedlocal": "已保存到本设备（全球排行榜不可用）。",
+  "savedqueued": "已保存在本设备。稍后会自动重新提交到全球排行榜。",
   "globalrank": "全球排行榜",
   "localrank": "正在显示保存在本设备的成绩",
   "rlines": "{n} 行",
@@ -3686,6 +3733,7 @@ var I18N={
   "invalidscore": "成績資料無效，未儲存。",
   "savedglobal": "已儲存到全球排行榜！",
   "savedlocal": "已儲存到本裝置（全球排行榜無法使用）。",
+  "savedqueued": "已儲存在本裝置。稍後會自動重新送出到全球排行榜。",
   "globalrank": "全球排行榜",
   "localrank": "正在顯示儲存在本裝置的成績",
   "rlines": "{n} 行",
@@ -3833,6 +3881,7 @@ var I18N={
   "invalidscore": "Datos de puntuación no válidos; no se guardó.",
   "savedglobal": "¡Guardado en la clasificación mundial!",
   "savedlocal": "Guardado en este dispositivo (clasificación mundial no disponible).",
+  "savedqueued": "Guardado en este dispositivo. Se enviará automáticamente al ranking global más tarde.",
   "globalrank": "Clasificación mundial",
   "localrank": "Mostrando puntuaciones guardadas en este dispositivo",
   "rlines": "{n} líneas",
@@ -3980,6 +4029,7 @@ var I18N={
   "invalidscore": "Dados de pontuação inválidos; não foi salvo.",
   "savedglobal": "Salvo no ranking global!",
   "savedlocal": "Salvo neste dispositivo (ranking global indisponível).",
+  "savedqueued": "Salvo neste dispositivo. Será enviado automaticamente ao ranking global mais tarde.",
   "globalrank": "Ranking global",
   "localrank": "Mostrando pontuações salvas neste dispositivo",
   "rlines": "{n} linhas",
@@ -4127,6 +4177,7 @@ var I18N={
   "invalidscore": "Données de score invalides ; score non enregistré.",
   "savedglobal": "Enregistré dans le classement mondial !",
   "savedlocal": "Enregistré sur cet appareil (classement mondial indisponible).",
+  "savedqueued": "Enregistré sur cet appareil. Il sera envoyé automatiquement au classement mondial plus tard.",
   "globalrank": "Classement mondial",
   "localrank": "Scores enregistrés sur cet appareil",
   "rlines": "{n} lignes",
@@ -4273,6 +4324,7 @@ var I18N={
   "invalidscore": "Dữ liệu điểm không hợp lệ; điểm chưa được lưu.",
   "savedglobal": "Đã lưu vào bảng xếp hạng toàn cầu!",
   "savedlocal": "Đã lưu trên thiết bị này (không dùng được bảng xếp hạng toàn cầu).",
+  "savedqueued": "Đã lưu trên thiết bị này. Sau đó sẽ tự động gửi lại lên bảng xếp hạng toàn cầu.",
   "globalrank": "Bảng xếp hạng toàn cầu",
   "localrank": "Đang hiển thị điểm lưu trên thiết bị này",
   "rlines": "{n} hàng",
