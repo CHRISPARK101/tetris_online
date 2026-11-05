@@ -34,7 +34,7 @@ body{margin:0;height:100%;background:var(--bg);color:var(--ink);
 #ov,#rank,#iguide{font-family:"Fredoka","Jua","Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Apple SD Gothic Neo","PingFang SC","PingFang TC","Noto Sans CJK JP","Noto Sans KR",system-ui,sans-serif;font-synthesis:none}
 /* Item guide: small "?" next to the Item mode switches opens a short list of what each item does */
 .swh{display:flex;align-items:center;justify-content:center;gap:8px}
-.ihelp{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--btn);color:var(--mute);font-size:13px;font-weight:700;line-height:1;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.ihelp{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;box-sizing:border-box;width:24px;height:24px;min-width:24px;min-height:24px;margin:0 3px;padding:0;overflow:visible;border-radius:50%;border:1px solid var(--line);background:var(--btn);color:var(--mute);font-size:13px;font-weight:700;line-height:1;cursor:pointer;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .ihelp::after{content:"";position:absolute;inset:-9px}
 .ihelp:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 #iguide{position:fixed;inset:0;z-index:40;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -97,7 +97,7 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #cc{max-width:150px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:14px}
 #lvbox{display:flex;flex-direction:column;align-items:center;gap:16px}
 #lvbox .lvr{display:flex;gap:6px}
-#lvbox .swr,#rcfg .swr{display:grid;grid-template-columns:auto auto;justify-content:center;align-items:center;column-gap:16px;row-gap:2px}   /* labels share one column and the switches sit in a straight vertical line, with the ? in its own column */
+#lvbox .swr,#rcfg .swr{display:grid;grid-template-columns:auto auto;justify-content:center;align-items:center;column-gap:14px;row-gap:2px;padding:0 6px;max-width:100%;box-sizing:border-box}   /* labels share one column and the switches sit in a straight vertical line, with the ? in its own column */
 .swr .swh{display:contents}
 .swr .sw{grid-column:1;justify-content:space-between}
 .swr .ihelp{grid-column:2}
@@ -177,7 +177,7 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 #netbox .nrow{display:flex;gap:10px;width:100%;max-width:300px}
 #ov.att #netbox .nrow button,#netbox .nrow button{flex:1 1 0;min-width:0;box-sizing:border-box;min-height:48px;padding:8px 6px;font-size:clamp(12px,3.7vw,15px);line-height:1.2;white-space:normal;overflow-wrap:break-word;text-wrap:balance;text-align:center;display:flex;align-items:center;justify-content:center}
 #netbox[hidden]{display:none}
-#code{width:100%;max-width:240px;box-sizing:border-box;padding:12px 10px;border-radius:20px;border:2px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:30px;font-weight:700;letter-spacing:.32em;text-indent:.32em;text-align:center}
+#code{width:100%;max-width:240px;min-width:0;box-sizing:border-box;padding:12px 4px;min-height:58px;border-radius:20px;border:2px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:clamp(20px,7vw,28px);line-height:1.25;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.2em;text-indent:.2em;text-align:center;overflow:visible}   /* 6 digits must fit on any phone width, with room above and below the glyphs */
 #code::placeholder{color:var(--mute);opacity:.5}
 #code:focus{outline:3px solid var(--accent);outline-offset:2px}
 #opp{display:block;border-radius:8px;border:1px solid var(--line);background:var(--well)}
@@ -225,6 +225,8 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 #bf b{font-size:14px;vertical-align:middle;margin-right:4px}
 .fly .ico{width:1em;height:1em;display:block}
 #fire.empty{opacity:.4;filter:grayscale(.6)}
+#fire.dis{opacity:.3;filter:grayscale(1);pointer-events:none}   /* item mode off: same layout, button inactive */
+#inv.off,#oinv.off{opacity:.3;filter:grayscale(1)}
 .ctl.noitem #fire{display:none}
 #rotb{flex:none;align-self:center;position:relative;margin-top:0;margin-bottom:8px;width:var(--fs);height:var(--fs);padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;line-height:1;border:1px solid #1d4fb8;
   background:radial-gradient(circle at 35% 26%,#cfe3ff 0,#7db4ff 24%,#3d86f0 60%,#2564d1 100%);
@@ -429,7 +431,7 @@ input,select{-webkit-user-select:text;user-select:text}
 <div id="adslot" role="img" aria-label="Block Duel Online"><span class="adt" aria-hidden="true"><b style="--i:0;--c:#2fc4e6;--c2:#1b8fb0">B</b><b style="--i:1;--c:#4b6ff0;--c2:#2a43b8">L</b><b style="--i:2;--c:#a65bd8;--c2:#6f2fa0">O</b><b style="--i:3;--c:#ee5a5a;--c2:#b32b2b">C</b><b style="--i:4;--c:#f28b3a;--c2:#b85a10">K</b><i></i><b style="--i:5;--c:#4cc46a;--c2:#25883f">D</b><b style="--i:6;--c:#2fc4e6;--c2:#1b8fb0">U</b><b style="--i:7;--c:#f5b800;--c2:#b87d00">E</b><b style="--i:8;--c:#ee5a5a;--c2:#b32b2b">L</b></span><small class="ol" aria-hidden="true"><span class="sg"><u></u><u></u><u></u></span><em>online</em></small></div>
 <div id="app">
   <div id="stage">
-    <div id="inv" hidden aria-label="Item queue"></div>
+    <div id="inv" aria-label="Item queue"></div>
     <div class="well">
       <canvas id="board"></canvas>
       <div id="cpop" aria-hidden="true"></div>
@@ -482,7 +484,7 @@ input,select{-webkit-user-select:text;user-select:text}
       <canvas id="opp" hidden></canvas>
     </div>
   </div>
-  <div class="ctl noitem">
+  <div class="ctl">
     <div class="cl">
       <button data-act="left" aria-label="Left">◀</button>
       <button data-act="right" aria-label="Right">▶</button>
@@ -646,7 +648,7 @@ function applyAd(){
 }
 function resize(){
   applyAd();
-  var st=$('stage'),w=st.clientWidth,rs=itemMode?42:0,h=st.clientHeight-rs,gap=8;
+  var st=$('stage'),w=st.clientWidth,rs=42,h=st.clientHeight-rs,gap=8;
   cs=Math.max(8,Math.floor(Math.min(h/ROWS,(w-gap)/(COLS*1.5))));
   oc=cs/2;
   dpr=Math.min(window.devicePixelRatio||1,2);   /* 3x screens would draw 9x the pixels for no visible gain */
@@ -664,7 +666,7 @@ function resize(){
   nc.width=Math.round(SW*dpr);nc.height=Math.round(cs*4*dpr);
   /* with items on, the opponent's board is drawn a little smaller so the fire button fits under it */
   op.hidden=!vs;$('ol').hidden=!vs;
-  var fsz=Math.min(Math.round(SW*.9),Math.round(cs*(itemMode?2.4:3.1)))+'px';
+  var fsz=Math.min(Math.round(SW*.9),Math.round(cs*2.4))+'px';
   document.documentElement.style.setProperty('--fs',fsz);
   if(vs){
     /* fit the opponent's board into whatever height is left in the side column, so the flag label and item slots never get squeezed or covered */
@@ -727,7 +729,7 @@ var ATTACKS=['junk','speed','fog','rev'];
 var POOL_SOLO=[['bomb',40],['laser',32],['nuke',8],['slow',20]];
 var POOL_FULL=[['bomb',16],['laser',13],['nuke',4],['slow',9],['shield',11],['junk',17],['speed',11],['fog',9],['rev',10],['swap',7]];
 var ITEM_P=.10,ITEM_GAP=5,sinceItem=0,irnd=Math.random;
-var inv=[],INV_MAX=5,fireAt=0,resumeCur=null,invKey='',invShown=null,swapWait=null,swapIn=null,seenSw=0,swapSeq=0;
+var inv=[],INV_MAX=5,fireAt=0,resumeCur=null,invKey='',invShown=null,invOn=null,swapWait=null,swapIn=null,seenSw=0,swapSeq=0;
 /* Only these wait in the queue for the fire button. Bomb, laser, slow and shield depend on where the item cell was, so they fire at once. */
 var STORE=['junk','speed','fog','rev','swap','nuke'];
 var pendHeavy=[];   /* bombs, lasers and nukes from cleared lines, waiting for the stack to settle */
@@ -826,11 +828,17 @@ function stash(k){
 }
 function renderInv(pop){
   var want=!!itemMode,box=$('inv'),ctl=document.querySelector('.ctl'),key=want+'|'+inv.join(',');
-  if(want!==invShown){
-    invShown=want;box.hidden=!want;
-    if(ctl)ctl.classList.toggle('noitem',!want);
-    var fbn=$('fire');if(fbn)fbn.classList.toggle('nof',!want);
+  /* The item layout (queue bar + fire button) is always on screen so the board never jumps between modes;
+     with items switched off the bar and the button are just dimmed and inactive. */
+  if(!invShown){
+    invShown=true;box.hidden=false;
+    if(ctl)ctl.classList.remove('noitem');
+    var fbn=$('fire');if(fbn)fbn.classList.remove('nof');
     if(typeof resize==='function')resize();
+  }
+  if(want!==invOn){
+    invOn=want;box.classList.toggle('off',!want);
+    var fbd=$('fire');if(fbd){fbd.classList.toggle('dis',!want);fbd.setAttribute('aria-disabled',want?'false':'true')}
   }
   if(key===invKey&&!pop)return;
   invKey=key;
@@ -1772,7 +1780,7 @@ function loop(t){
   if(swapAnim){swapAnim.t+=dt;if(swapAnim.t>=swapAnim.d)swapAnim=null}
   if((itemMode||bfLast)&&t-buffRenderAt>=150){buffRenderAt=t;renderBuffs()}
   if(mode==='vs')vsPauseTick();else if(vsPz!==0)vsPz=0;
-  if(!!itemMode!==invShown)renderInv();
+  if(!!itemMode!==invOn||!invShown)renderInv();
   if(state==='playing'||state==='anim'||state==='clear'){
     pt+=dt;
     if(mode==='vs'){var vl=1+Math.floor(pt/25000);if(vl!==level){level=vl;hud()}}   /* same speed for both players, whatever their scores */
@@ -1915,13 +1923,15 @@ function checkOppAlive(){
 var oiKey='';
 function setOppInv(){
   var box=$('oinv');if(!box)return;
-  var show=(mode==='vs'||mode==='cpu')&&!!itemMode;
+  var show=(mode==='vs'||mode==='cpu');      /* always shown in battles so the layout stays the same; dimmed when items are off */
   box.hidden=!show;
   if(!show){oiKey='';return}
+  box.classList.toggle('off',!itemMode);
   var str='';
-  if(mode==='cpu')str=cpu&&Array.isArray(cpu.inv)?cpu.inv.join(','):'';
+  if(!itemMode)str='';
+  else if(mode==='cpu')str=cpu&&Array.isArray(cpu.inv)?cpu.inv.join(','):'';
   else{var P=opp&&opp.presence;str=(P&&P.gs===gs&&typeof P.oi==='string')?P.oi:''}
-  var key=mode+'|'+str;
+  var key=mode+'|'+(itemMode?1:0)+'|'+str;
   if(key===oiKey&&box.childNodes.length)return;
   oiKey=key;
   var a=str?str.split(','):[],h='';
@@ -2476,7 +2486,7 @@ $('rkti').addEventListener('click',function(){showRank(null,true)});
 $('rk').addEventListener('click',function(){showRank(null)});
 $('rstart').addEventListener('click',function(){
   rankViewTok++;$('rank').hidden=true;
-  if(itemPref!==rankItems){itemPref=rankItems;try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(err){}syncModeUI()}   /* play the mode of the board you are looking at */
+  if(itemPref!==rankItems){itemPref=rankItems;try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(err){}if(mode!=='vs'){itemMode=itemPref;renderInv()}syncModeUI()}   /* play the mode of the board you are looking at */
   joinToken++;$('join').disabled=false;leaveRoom();mode='solo';resize();start();
 });
 $('rclose').addEventListener('click',function(){rankViewTok++;$('rank').hidden=true});
@@ -2843,7 +2853,7 @@ function setGravityPref(v){
 function setItemPref(v){
   itemPref=!!v;
   try{localStorage.setItem('tetris-items',itemPref?'1':'0')}catch(e){}
-  if(mode!=='vs'){itemMode=itemPref;renderOverlay()}
+  if(mode!=='vs'){itemMode=itemPref;renderOverlay();renderInv()}
   syncModeUI();
 }
 $('cgvc').addEventListener('change',function(){setGravityPref(this.checked)});
