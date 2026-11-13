@@ -324,16 +324,17 @@ input,select{-webkit-user-select:text;user-select:text}
 #bf{position:absolute;left:8px;top:8px;font-size:18px;line-height:1.1;letter-spacing:2px;pointer-events:none;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif}
 #bf[hidden]{display:none}
 #bf .bfm{filter:grayscale(1) contrast(1.15);opacity:.8}
-.fly{position:fixed;left:0;top:0;z-index:80;pointer-events:none;line-height:1;white-space:nowrap;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif;will-change:transform,opacity;filter:drop-shadow(0 0 8px rgba(255,255,255,.9))}
+.fly{position:fixed;left:0;top:0;z-index:80;pointer-events:none;line-height:1;white-space:nowrap;font-family:"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif;will-change:transform,opacity;filter:drop-shadow(0 0 6px rgba(255,255,255,.95)) drop-shadow(0 0 16px rgba(255,214,102,.85)) drop-shadow(0 0 30px rgba(255,150,60,.6))}
 @keyframes shk{0%,100%{transform:translate(0,0)}15%{transform:translate(-7px,2px)}30%{transform:translate(6px,-3px)}45%{transform:translate(-5px,3px)}60%{transform:translate(4px,-2px)}80%{transform:translate(-2px,1px)}}
 .well.shake{animation:shk .45s}
 @keyframes jlt{0%,100%{transform:translate(0,0)}30%{transform:translate(0,3px)}60%{transform:translate(0,-1px)}}
 .well.jolt{animation:jlt .22s}
-@keyframes pop1{0%{transform:scale(1)}30%{transform:scale(1.025)}100%{transform:scale(1)}}
-@keyframes pop2{0%{transform:scale(1)}30%{transform:scale(1.045)}100%{transform:scale(1)}}
+@keyframes pop1{0%{transform:scale(1);filter:brightness(1.35) saturate(1.2)}30%{transform:scale(1.025)}100%{transform:scale(1);filter:none}}
+@keyframes pop2{0%{transform:scale(1);filter:brightness(1.9) saturate(1.3)}30%{transform:scale(1.045)}100%{transform:scale(1);filter:none}}
 .well.pop{animation:pop1 .2s ease-out}
 .well.pop2{animation:pop2 .26s ease-out}
 @keyframes oblk{0%{box-shadow:0 0 0 0 rgba(74,123,255,.95);filter:brightness(1.7)}100%{box-shadow:0 0 22px 10px rgba(74,123,255,0);filter:none}}
+#opp.shd{box-shadow:0 0 0 2px #4a7bff,0 0 10px 2px rgba(74,123,255,.55)}
 #opp.blk{animation:oblk .7s}
 @keyframes bblk{0%{box-shadow:inset 0 0 46px 12px rgba(74,123,255,.75)}100%{box-shadow:inset 0 0 0 0 rgba(74,123,255,0)}}
 #board.blk{animation:bblk .7s}
@@ -763,7 +764,9 @@ function toast(key,vars){
   var e=$('tt');e.textContent=fmt(key,vars);e.hidden=false;
   clearTimeout(ttTimer);ttTimer=setTimeout(function(){e.hidden=true},1800);
 }
+var shSent=0;
 function renderBuffs(){
+  if(mode==='vs'&&room&&shSent!==shield){shSent=shield;push({sh:shield})}   /* let the opponent see my shield */
   /* my own boosts (shield, slow) stay in colour; effects the opponent put on me (speed, fog, reverse) are grey */
   var mine='',theirs='';
   if(shield>0)mine+=iconSVG('shield')+(shield>1?'<b>×'+shield+'</b>':'');
@@ -999,6 +1002,86 @@ function blastImpact(k){
   else if(k==='laser'){tone(1800,.07,'sawtooth',.025);tone(700,.16,'sawtooth',.03,.04);tone(90,.12,'sine',.06)}
   else tone(45,.5,'sine',.14);
   try{if(!reduceMotion&&navigator.vibrate)navigator.vibrate(k==='laser'?[16]:k==='nuke'?[40,30,70]:[35,20,45])}catch(e){}
+}
+/* ===== Glow / bloom: soft additive light on top of the existing effects (skipped when the OS asks for reduced motion) ===== */
+var glowSpr={};
+function glowSprite(col){
+  var c=glowSpr[col];if(c)return c;
+  c=document.createElement('canvas');c.width=c.height=64;
+  var g=c.getContext('2d');g.fillStyle=col;g.fillRect(0,0,64,64);
+  g.globalCompositeOperation='destination-in';
+  var gr=g.createRadialGradient(32,32,0,32,32,32);
+  gr.addColorStop(0,'rgba(0,0,0,1)');gr.addColorStop(.35,'rgba(0,0,0,.5)');gr.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=gr;g.fillRect(0,0,64,64);
+  return glowSpr[col]=c;
+}
+/* soft round light; draw it with globalCompositeOperation 'lighter' */
+function glowAt(x,y,r,col,a){if(a<=.01||r<=0)return;bx.globalAlpha=Math.min(1,a);bx.drawImage(glowSprite(col),x-r,y-r,r*2,r*2)}
+/* soft horizontal light band centred on a row range */
+function glowBand(y0,y1,spread,a,col){
+  var W=cs*COLS,g=bx.createLinearGradient(0,y0-spread,0,y1+spread),c=col||'255,255,255';
+  g.addColorStop(0,'rgba('+c+',0)');g.addColorStop(.5,'rgba('+c+','+Math.min(1,a)+')');g.addColorStop(1,'rgba('+c+',0)');
+  bx.fillStyle=g;bx.fillRect(0,y0-spread,W,y1-y0+spread*2);
+}
+/* line clear: white-hot flash, then a spreading bloom with glowing sparks */
+function drawClearGlow(){
+  var W=cs*COLS,n=fx.rows.length,boost=1+.25*(Math.min(n,4)-1);
+  bx.save();bx.globalCompositeOperation='lighter';
+  if(fx.t<fx.fl){
+    var fk=Math.min(1,fx.t/Math.max(1,fx.fl));
+    fx.rows.forEach(function(y){glowBand(y*cs,(y+1)*cs,cs*(1.1+1.4*fk),.7*boost,'255,244,214')});
+  }else{
+    var tt=fx.t-fx.fl,k=Math.min(1,tt/(fx.d-fx.fl));
+    fx.rows.forEach(function(y){glowBand(y*cs,(y+1)*cs,cs*(1.4+2.2*k),.6*boost*(1-k),'255,236,190')});
+    var step=fx.parts.length>90?2:1;
+    for(var i=0;i<fx.parts.length;i+=step){
+      var p=fx.parts[i],px=(p.x+p.vx*tt)*cs+cs*.25,py=(p.y+p.vy*tt+.00002*tt*tt)*cs+cs*.25;
+      glowAt(px,py,cs*(p.sz>.4?1.15:.7)*(1-k*.5),p.col,.7*(1-k));
+    }
+  }
+  bx.restore();bx.globalAlpha=1;
+}
+/* item blast build-up (before the blocks vanish) */
+function drawBlastGlow(){
+  var H=cs*ROWS,W=cs*COLS,p=Math.min(1,iblast.t/iblast.d);
+  bx.save();bx.globalCompositeOperation='lighter';
+  iblast.list.forEach(function(h){
+    var px=(h.cx+.5)*cs,py=(h.cy+.5)*cs;
+    if(h.k==='bomb'){glowAt(px,py,cs*(1.5+3.2*p),'#ff7a00',.55+.3*p);glowAt(px,py,cs*(.8+1.6*p),'#fff1c2',.5*p)}
+    else if(h.k==='laser'){
+      var len=Math.min(1,p*1.7),top=py*(1-len),bot=py+(H-py)*len;
+      bx.globalAlpha=.6;bx.drawImage(glowSprite('#ffe14d'),px-cs*2.2,top,cs*4.4,Math.max(1,bot-top));
+      glowAt(px,py,cs*(1.2+1.4*p),'#ffffff',.8);
+    }else{glowAt(W/2,H/2,Math.max(W,H)*(.3+.9*p),'#ffffff',.35+.6*p*p)}
+  });
+  bx.restore();bx.globalAlpha=1;
+}
+/* the flash and the shockwaves/sparks when an item goes off */
+function drawBlastFxGlow(){
+  var H=cs*ROWS;
+  bx.save();bx.globalCompositeOperation='lighter';
+  blastFxs.forEach(function(e){
+    var k=Math.min(1,e.t/e.d);
+    if(e.type==='ring'){
+      var R=cs*(.6+(e.big?7:3.4)*(1-Math.pow(1-k,3)));
+      glowAt(e.x*cs,e.y*cs,R*(e.big?1.5:1.35),e.big?'#ffffff':'#ff9f1c',.5*(1-k));
+      bx.globalAlpha=.4*(1-k);bx.strokeStyle='#ffb347';bx.lineWidth=Math.max(2,cs*1.1*(1-k));
+      bx.beginPath();bx.arc(e.x*cs,e.y*cs,R,0,6.2832);bx.stroke();
+    }else if(e.type==='zap'){
+      bx.globalAlpha=.7*(1-k);bx.drawImage(glowSprite('#ffe14d'),e.x*cs-cs*(2+2*k),0,cs*(4+4*k),H);
+    }else{
+      var step=e.parts.length>80?2:1;
+      for(var i=0;i<e.parts.length;i+=step){
+        var q=e.parts[i],t=e.t;
+        glowAt((q.x+q.vx*t)*cs,(q.y+q.vy*t+.00002*t*t)*cs,cs*.85*(1-k*.6),q.col,.65*(1-k));
+      }
+    }
+  });
+  if(boom){
+    var bk=1-boom.t/boom.d;
+    glowAt((boom.x+boom.w/2)*cs,(boom.y+boom.h/2)*cs,Math.max(boom.w,boom.h)*cs*.9,boom.col,.7*bk);
+  }
+  bx.restore();bx.globalAlpha=1;
 }
 function drawBlastFx(){
   var H=cs*ROWS;
@@ -1744,12 +1827,13 @@ function draw(){
       bx.globalAlpha=1;
     }
   }
+  if(fx&&!reduceMotion)drawClearGlow();
   for(var q=0;q<fall.length;q++){var f=fall[q],fy=Math.min(f.y0+fs,f.to)*cs;cell(bx,f.c*cs,fy,cs,COL[f.t]);if(f.it)icon(bx,f.c*cs,fy,cs,f.it)}
-  if(iblast)drawBlast();
+  if(iblast){drawBlast();if(!reduceMotion)drawBlastGlow()}
   var fogOn=itemMode&&pt<fogUntil;
   if(fogOn){bx.globalAlpha=.9;bx.fillStyle=TH.well;bx.fillRect(0,0,W,H);bx.globalAlpha=1}
   if(boom){bx.globalAlpha=Math.max(0,.75*(1-boom.t/boom.d));bx.fillStyle=boom.col;bx.fillRect(boom.x*cs,boom.y*cs,boom.w*cs,boom.h*cs);bx.globalAlpha=1}
-  if(blastFxs.length)drawBlastFx();
+  if(blastFxs.length||boom){if(blastFxs.length)drawBlastFx();if(!reduceMotion)drawBlastFxGlow()}
   if(pend>0){var ph=Math.min(pend,ROWS)*cs,pf=Math.max(0,1-(wnow-pendFlashT)/700);bx.fillStyle='#e5484d';bx.fillRect(0,H-ph,4+10*pf,ph);if(pf>0){bx.globalAlpha=.25*pf;bx.fillRect(0,H-ph,W,ph);bx.globalAlpha=1}}
   if(cur&&state!=='over'){
     var gy=cur.y;
@@ -1896,6 +1980,7 @@ function push(p){
     return false;
   });
 }
+var CPU_ITEM_MUL=[.5,.75,1];   /* CPU item chance vs the player's: easy 50%, normal 75%, hard 100% */
 var cpu=null,cpuLvl=1,cpuT=0,pt=0,lsec=-1,lastOppAliveCheck=0,CPU_MS=[1500,1000,650],CPU_ERR=[.35,.12,0];
 var CC='AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GT GU GW GY HK HN HR HT HU ID IE IL IM IN IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SI SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' '),myCC='',DN=null;
 function initDN(lang){try{DN=new Intl.DisplayNames([lang||'en'],{type:'region'})}catch(e){try{DN=new Intl.DisplayNames(['en'],{type:'region'})}catch(e2){DN=null}}}
@@ -1959,7 +2044,7 @@ function olabel(){
 function cpuStart(l){
   cpuLvl=l;cpuT=0;
   var g=[];for(var r=0;r<ROWS;r++)g.push(new Array(COLS).fill(0));
-  cpu={g:g,bag:[],pend:0,score:0,dizzy:0,inv:[]};
+  cpu={g:g,bag:[],pend:0,score:0,dizzy:0,inv:[],since:0,carry:false};
 }
 function startCpu(l){mode='cpu';cpuStart(l);resize();start()}
 function cpuPull(){
@@ -2018,14 +2103,18 @@ function cpuStep(){
   var pick=Math.random()<cerr?list[Math.floor(Math.random()*Math.min(list.length,6))]:list[0];
   C.g=pick.g;
   var n=pick.n;
+  /* The CPU follows the same item rule as the player: an item cell shows up on a piece at most every ITEM_GAP pieces
+     with chance ITEM_P, and is collected only when a line clear happens. The player's pool also holds bombs, lasers,
+     shields... that the CPU cannot use, so those rolls are simply lost for the CPU (same attack share as the player). */
+  if(itemMode&&!C.carry&&++C.since>=ITEM_GAP&&Math.random()<ITEM_P*CPU_ITEM_MUL[cpuLvl]){C.carry=pickKind();C.since=0}
   if(n){
     C.score+=[0,100,300,500,800][Math.min(n,4)];
     var a=n>=4?4:Math.max(0,n-1);
     if(a>0&&C.pend>0){var cc=Math.min(a,C.pend);C.pend-=cc;a-=cc}
     if(a>0){pend+=a;warnIncoming()}
-    if(itemMode&&C.inv.length<INV_MAX&&Math.random()<[.10,.15,.20][cpuLvl]){
-      C.inv.push(ATTACKS[Math.floor(Math.random()*ATTACKS.length)]);
-      olabel();
+    if(itemMode&&C.carry){
+      if(ATTACKS.indexOf(C.carry)>=0&&C.inv.length<INV_MAX){C.inv.push(C.carry);olabel()}
+      C.carry=false;
     }
     olabel();
   }
@@ -2122,13 +2211,25 @@ function drawOpp(){
     g='';
     for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)g+=(cpu.g[r][c]||'.');
   }else if(opp){var P=opp.presence;if(P&&P.gs===gs&&typeof P.g==='string'&&P.g.length===COLS*ROWS)g=P.g}
-  var key=mode+'|'+W+'|'+H+'|'+dpr+'|'+TH.well+'|'+(g||'');
+  var sh=0;   /* the opponent's active shields (online battles only) */
+  if(mode==='vs'&&opp&&opp.presence){var P2=opp.presence;if(P2.gs===gs&&Number.isInteger(P2.sh)&&P2.sh>0)sh=Math.min(P2.sh,99)}
+  op.classList.toggle('shd',sh>0);
+  var key=mode+'|'+W+'|'+H+'|'+dpr+'|'+TH.well+'|'+(g||'')+'|'+sh;
   if(key===oppDrawKey)return;
   oppDrawKey=key;
   ox.setTransform(dpr,0,0,dpr,0,0);
   ox.clearRect(0,0,W,H);
   ox.fillStyle=TH.well;ox.fillRect(0,0,W,H);
   if(g)for(var i=0;i<g.length;i++){var ch=g[i];if(ch!=='.'&&COL[ch])cell(ox,(i%COLS)*oc,Math.floor(i/COLS)*oc,oc,COL[ch])}
+  if(sh>0){
+    var bs=Math.max(16,Math.min(W*.3,28));
+    ox.save();ox.translate(3,3);ox.scale(bs/32,bs/32);
+    ox.fillStyle='#4a7bff';ox.strokeStyle='#2a4fc4';ox.lineWidth=1.6;ox.lineJoin='round';
+    var sp=new Path2D('M16 2.5 L27 6.5 V16 C27 23 22 27 16 30 C10 27 5 23 5 16 V6.5 Z');ox.fill(sp);ox.stroke(sp);
+    ox.strokeStyle='#ffffff';ox.lineWidth=2.8;ox.lineCap='round';ox.stroke(new Path2D('M10.5 16 L14.5 20 L22 11.5'));
+    ox.restore();
+    if(sh>1){ox.fillStyle='#ffffff';ox.font='bold '+Math.round(bs*.6)+'px sans-serif';ox.textBaseline='middle';ox.fillText('\u00d7'+sh,3+bs+3,3+bs/2)}
+  }
 }
 function sendBoard(t){
   if(mode!=='vs'||!room||!(state==='playing'||state==='anim'||state==='clear')||t-lastSend<300)return;
@@ -2173,8 +2274,8 @@ function createSupabaseRoom(code,keepId){
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
-  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','pz','bk','cc','g','sc','sw','swn','sr','srn'];
-  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',pz:0,bk:0,cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0};
+  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','pz','bk','cc','g','sc','sw','swn','sr','srn','sh'];
+  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',pz:0,bk:0,cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0,sh:0};
   var remote={},seenKeys={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,hbTimer=null,flushTimer=null,lastFlush=0;
   var retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   function validValue(k,v){
@@ -2190,6 +2291,7 @@ function createSupabaseRoom(code,keepId){
     if(k==='ie')return Array.isArray(v)&&v.length<=32&&v.every(function(e){return e&&Number.isInteger(e.id)&&e.id>0&&typeof e.k==='string'&&ATTACKS.indexOf(e.k)>=0});
     if(k==='bk')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
     if(k==='pz')return v===0||v===1||v===2;
+    if(k==='sh')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=99;
     if(k==='oi')return typeof v==='string'&&v.length<=60&&(v===''||v.split(',').every(function(x){return STORE.indexOf(x)>=0}));
     if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
     if(k==='swn'||k==='srn')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=1000000;
@@ -2308,7 +2410,7 @@ function createSupabaseRoom(code,keepId){
       data=data||{};
       /* A new match resets the event stream; otherwise append each attack to a bounded
          replay window. The 150ms broadcast coalescer can no longer overwrite attacks. */
-      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.oi='';localState.bk=0;localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;}
+      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.oi='';localState.bk=0;localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;localState.sh=0;}
       if(Number.isInteger(data.iq)&&data.iq>localState.iq&&typeof data.ik==='string'&&ATTACKS.indexOf(data.ik)>=0){
         localState.iq=data.iq;localState.ik=data.ik;
         localState.ie.push({id:data.iq,k:data.ik});
