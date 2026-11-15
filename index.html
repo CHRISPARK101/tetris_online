@@ -99,6 +99,11 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #lvbox .lvr{display:flex;gap:6px}
 #lvbox .swr,#rcfg .swr{display:grid;grid-template-columns:auto auto;justify-content:center;align-items:center;column-gap:14px;row-gap:2px;padding:0 6px;max-width:100%;box-sizing:border-box}   /* labels share one column and the switches sit in a straight vertical line, with the ? in its own column */
 .swr .swh{display:contents}
+/* narrow Android screens: the label column may shrink and wrap, and the gaps are tighter, so the ? never gets pushed out of view */
+#lvbox .swr,#rcfg .swr{grid-template-columns:minmax(0,auto) auto;column-gap:8px}
+.swr .sw{min-width:0}
+.swr .sw>span{min-width:0;overflow-wrap:anywhere}
+.swr .ihelp{margin:0 2px}
 .swr .sw{grid-column:1;justify-content:space-between}
 .swr .ihelp{grid-column:2}
 .swr>.sw:first-child,.swr>.swh:first-child .sw{grid-row:1}
@@ -153,16 +158,18 @@ html:lang(ko) #ov h1,html:lang(ko) #ov p{word-break:keep-all;overflow-wrap:norma
 #settings{position:absolute;top:12px;right:12px;z-index:2;width:42px;height:42px;padding:0;border-radius:50%;font-size:23px;display:flex;align-items:center;justify-content:center;line-height:1}
 #settings:focus-visible{outline-offset:2px}
 #cpop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:30;line-height:1}
-#cpop .cp{display:flex;flex-direction:column;align-items:center;font-family:"Jua","Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Apple SD Gothic Neo","PingFang SC","PingFang TC","Noto Sans CJK SC","Noto Sans CJK TC","Noto Sans CJK JP",system-ui,sans-serif;font-weight:900;letter-spacing:.02em;will-change:transform,opacity;--fill:#ffd93d;--ext:#e07a00}
-#cpop .cp.t1{--fill:#ffa54a;--ext:#d44a00}
-#cpop .cp.t2{--fill:#ff74b8;--ext:#c2185b}
-#cpop .cp.t3{--fill:#8c6bff;--ext:#3b1fb8}
-#cpop .cp span{display:block;color:var(--fill);text-shadow:.06em 0 #fff,-.06em 0 #fff,0 .06em #fff,0 -.06em #fff,.045em .045em #fff,-.045em .045em #fff,.045em -.045em #fff,-.045em -.045em #fff,0 .13em 0 var(--ext),0 .17em .12em rgba(0,0,0,.25)}
-#cpop .ct{font-size:calc(var(--cs,24px)*1.35)}
-#cpop .cn{font-size:calc(var(--cs,24px)*3.6);margin-top:-.08em}
-#cpop .cn i{font-style:normal;font-size:.6em;margin-left:.04em}
-#cpop .csp{position:absolute;left:50%;top:50%;width:calc(var(--cs,24px)*.9);height:calc(var(--cs,24px)*.9);margin:calc(var(--cs,24px)*-.45) 0 0 calc(var(--cs,24px)*-.45);will-change:transform,opacity}
-#cpop .csp svg{width:100%;height:100%;display:block}
+#cpop .cp,#ocpop .cp{display:flex;flex-direction:column;align-items:center;font-family:"Jua","Arial Rounded MT Bold","Hiragino Maru Gothic ProN","Apple SD Gothic Neo","PingFang SC","PingFang TC","Noto Sans CJK SC","Noto Sans CJK TC","Noto Sans CJK JP",system-ui,sans-serif;font-weight:900;letter-spacing:.02em;will-change:transform,opacity;--fill:#ffd93d;--ext:#e07a00}
+#cpop .cp.t1,#ocpop .cp.t1{--fill:#ffa54a;--ext:#d44a00}
+#cpop .cp.t2,#ocpop .cp.t2{--fill:#ff74b8;--ext:#c2185b}
+#cpop .cp.t3,#ocpop .cp.t3{--fill:#8c6bff;--ext:#3b1fb8}
+#cpop .cp span,#ocpop .cp span{display:block;color:var(--fill);text-shadow:.06em 0 #fff,-.06em 0 #fff,0 .06em #fff,0 -.06em #fff,.045em .045em #fff,-.045em .045em #fff,.045em -.045em #fff,-.045em -.045em #fff,0 .13em 0 var(--ext),0 .17em .12em rgba(0,0,0,.25)}
+#cpop .ct,#ocpop .ct{font-size:calc(var(--cs,24px)*1.35)}
+#cpop .cn,#ocpop .cn{font-size:calc(var(--cs,24px)*3.6);margin-top:-.08em}
+#cpop .cn i,#ocpop .cn i{font-style:normal;font-size:.6em;margin-left:.04em}
+#cpop .csp,#ocpop .csp{position:absolute;left:50%;top:50%;width:calc(var(--cs,24px)*.9);height:calc(var(--cs,24px)*.9);margin:calc(var(--cs,24px)*-.45) 0 0 calc(var(--cs,24px)*-.45);will-change:transform,opacity}
+#cpop .csp svg,#ocpop .csp svg{width:100%;height:100%;display:block}
+/* the opponent's combo pop-up sits over their board (fixed, so no transformed parent can shift it) */
+#ocpop{position:fixed;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:60;line-height:1}
 #vs,#rnd,#cpub,#rs,#qt,#netbox button,#lvbox button{padding:8px 14px;font-size:14px}
 #lvbox .lvr button{padding:8px 10px}
 #lback{background:transparent}
@@ -334,7 +341,13 @@ input,select{-webkit-user-select:text;user-select:text}
 .well.pop{animation:pop1 .2s ease-out}
 .well.pop2{animation:pop2 .26s ease-out}
 @keyframes oblk{0%{box-shadow:0 0 0 0 rgba(74,123,255,.95);filter:brightness(1.7)}100%{box-shadow:0 0 22px 10px rgba(74,123,255,0);filter:none}}
-#opp.shd{box-shadow:0 0 0 2px #4a7bff,0 0 10px 2px rgba(74,123,255,.55)}
+/* Opponent has a shield: a bright, pulsing blue glow around their board so it is easy to notice */
+@keyframes shglow{
+  0%,100%{box-shadow:0 0 0 2px #6fa0ff,0 0 12px 3px rgba(74,123,255,.8),0 0 28px 8px rgba(74,123,255,.5),inset 0 0 12px 2px rgba(74,123,255,.35)}
+  50%{box-shadow:0 0 0 2px #b4ceff,0 0 20px 7px rgba(110,165,255,.98),0 0 44px 16px rgba(74,123,255,.65),inset 0 0 22px 6px rgba(90,150,255,.55)}
+}
+#opp.shd{position:relative;z-index:2;border-color:#8fb4ff;animation:shglow 1.5s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){#opp.shd{animation:none;box-shadow:0 0 0 2px #8fb4ff,0 0 22px 8px rgba(74,123,255,.8)}}
 #opp.blk{animation:oblk .7s}
 @keyframes bblk{0%{box-shadow:inset 0 0 46px 12px rgba(74,123,255,.75)}100%{box-shadow:inset 0 0 0 0 rgba(74,123,255,0)}}
 #board.blk{animation:bblk .7s}
@@ -502,6 +515,7 @@ input,select{-webkit-user-select:text;user-select:text}
 </div>
 <div id="ver" aria-hidden="true">v0.7.2</div>
 <div id="iguide" hidden role="dialog" aria-modal="true"><div class="rk-card"><h2></h2><p class="ig-intro"></p><div class="ig-list"></div><div class="rk-actions"><button id="igclose">Close</button></div></div></div>
+<div id="ocpop" aria-hidden="true"></div>
 <div id="rank" hidden role="dialog" aria-label="Ranking"><div class="rk-card"><h2>Top 20</h2><div class="rk-tabs"><button id="rktn" class="on">Classic</button><button id="rkti">Item mode</button></div><label id="kgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="kgvc" role="switch"><i></i></label><ol id="rlist"></ol><p id="rnote"></p><div class="rk-actions"><button id="rstart">Start Game</button><button id="rclose">Close</button></div></div></div>
 <audio id="bgmusic" loop preload="auto" src="music.mp3"></audio>
 <script src="supabase.js"></script>
@@ -782,7 +796,7 @@ function sfxItem(){tone(700,.09,'square',.035);tone(1050,.12,'square',.035,.07)}
 function sfxBoom(){tone(120,.25,'sawtooth',.07);tone(80,.3,'triangle',.07,.05)}
 function sfxHit(){tone(200,.18,'sawtooth',.05);tone(150,.2,'sawtooth',.05,.1)}
 function resetItemState(){
-  inv=[];fireAt=0;resumeCur=null;swapWait=null;swapIn=null;seenSw=0;swapSeq=0;renderInv();
+  inv=[];fireAt=0;resumeCur=null;swapWait=null;swapIn=null;seenSw=0;swapSeq=0;seenCb=0;cbSeq=0;deathNote='';renderInv();
   shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;bkN=0;seenBk=0;boom=null;blastFxs=[];swapAnim=null;iblast=null;pendHeavy=[];sinceItem=0;itemTok++;clearFlyers();
   clearTimeout(ttTimer);$('tt').hidden=true;renderBuffs();
 }
@@ -870,7 +884,7 @@ function fireStored(){
   if(now<fireAt)return;
   var k=inv[0];
   if(k==='swap'&&(mode==='solo'||(mode==='vs'&&(!room||!opp))))return;   /* nobody to swap with: keep the item */
-  fireAt=now+800;                                   /* short cooldown so several items cannot be dumped at once */
+  fireAt=ATTACKS.indexOf(k)>=0?0:now+800;           /* attack items can be fired back to back; nuke and swap keep a short cooldown */
   inv.shift();renderInv();
   var cx=aimCol(),py=Math.max(0,Math.min(ROWS-1,cur.y+1));
   if(k==='nuke'){
@@ -908,40 +922,66 @@ function applyBoard(cells){
     }
   }
   fall=[];fs=0;fv=0;acc=0;streak=0;showCombo();
-  if(cur){cur.y=0;lockReset();if(!topSpot())over()}      /* the falling piece restarts at the top of the new stack */
+  if(cur){cur.y=0;lockReset();if(!topSpot())swapBury()}      /* the falling piece restarts at the top of the new stack */
+}
+/* The swapped-in stack reaches the top: let the board flip finish and say why the game ends, instead of ending before the player sees anything. */
+var deathNote='';
+function swapBury(){
+  deathNote='swapdead';
+  state='dying';cur=null;fall=[];fx=null;
+  toast('swapdead');tone(55,.4,'sine',.12);
+  try{if(!reduceMotion&&navigator.vibrate)navigator.vibrate([60,40,90])}catch(e){}
+  setTimeout(function(){if(state==='dying')over()},(swapAnim?swapAnim.d:0)+650);
 }
 function swapFx(){toast('hit_swap');sfxHit();stamp('swap',ctr('board'),true);tone(320,.2,'sine',.05);tone(640,.22,'sine',.045,.14)}
+/* Replace my item queue with a received one (only valid stored items, at most INV_MAX). */
+function setInvFromStr(str){
+  var a=(typeof str==='string'&&str)?str.split(','):[];
+  inv=a.filter(function(k){return STORE.indexOf(k)>=0}).slice(0,INV_MAX);
+  renderInv(inv.length>0);
+}
 function fireSwap(){
   toast('used',{n:itemName('swap')});sfxItem();sfxWhoosh();
   if(mode==='cpu'&&cpu){
+    if(cpu.sh>0){cpu.sh--;oppBlocked();return}   /* same rule as online: a shield blocks the swap (the item is used up) */
     var mine=[],theirs=[],r,c;
     for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++){mine.push(grid[r][c]||0);theirs.push(cpu.g[r][c]||0)}
     for(r=0;r<ROWS;r++)cpu.g[r]=mine.slice(r*COLS,(r+1)*COLS);
+    cpu.it=cpuItGrid();   /* item cells never travel with a swapped board */
+    /* item queues trade too. The CPU can only fire attack items, so only those go to it; the rest stay with me. */
+    var give=[],keepI=[];
+    inv.forEach(function(k){(ATTACKS.indexOf(k)>=0?give:keepI).push(k)});
+    var theirInv=(cpu.inv||[]).slice();
+    cpu.inv=give;
+    inv=theirInv.concat(keepI).slice(0,INV_MAX);
+    renderInv(inv.length>0);olabel();
     stamp('swap',ctr('opp'),true);pulse($('opp'),'hit');
     swapFx();applyBoard(theirs);
     return;
   }
   /* online: send my stack and wait (frozen) for the opponent's stack; the opponent's shield can block it */
   swapSeq++;swapWait={n:swapSeq,t:performance.now()};
-  push({sw:boardStr(),swn:swapSeq});
+  push({sw:boardStr(),swn:swapSeq,swi:inv.join(',')});   /* my item queue goes along with my board */
   stamp('swap',ctr('opp'),true);pulse($('opp'),'hit');
 }
-function receiveSwap(b,n){
+function receiveSwap(b,n,i){
   if(!itemMode||swapWait||!okBoard(b)){push({sr:'',srn:n});return}
   if(shield>0){shield--;renderBuffs();toast('blocked');sfxItem();stamp('shield',ctr('board'),true);pulse($('board'),'blk');bkN++;push({sr:'',srn:n,bk:bkN});return}
-  swapIn={n:n,b:b};tryApplySwapIn();
+  swapIn={n:n,b:b,i:i};tryApplySwapIn();
 }
 function tryApplySwapIn(){
   if(!swapIn||state!=='playing'||iblast||swapWait)return;
   var s=swapIn;swapIn=null;
-  push({sr:boardStr(),srn:s.n});
+  push({sr:boardStr(),srn:s.n,sri:inv.join(',')});   /* my board and my item queue go back */
   swapFx();applyBoard(strCells(s.b));
+  if(typeof s.i==='string')setInvFromStr(s.i);
 }
-function finishSwap(sr){
+function finishSwap(sr,sri){
   swapWait=null;
   if(sr===''){toast('swapblocked');sfxItem();return}
   if(!okBoard(sr)||state!=='playing')return;
   swapFx();applyBoard(strCells(sr));
+  if(typeof sri==='string')setInvFromStr(sri);
 }
 var swept=[];
 function finishBlast(){
@@ -974,6 +1014,7 @@ function fireItem(k,cy,cx){
     if(mode==='vs'){iseq++;push({iq:iseq,ik:k})}
     fly(k,cellPt(cx,cy),to,680,function(){
       if(tok!==itemTok)return;
+      if(mode==='cpu'&&cpu&&cpu.sh>0){cpu.sh--;oppBlocked();return}   /* the CPU's shield stops it */
       stamp(k,to,false);pulse($('opp'),'hit');sfxHit();
       if(mode==='cpu')cpuReceive(k);
     });
@@ -1263,6 +1304,8 @@ function hit(m,x,y){
 /* Lock delay: a piece that touches the stack does not set at once. It rests for LOCK_MS and every successful move or turn
    restarts that timer (at most LOCK_MAX times per row, so nobody can stall forever). Hard drop still sets immediately. */
 var LOCK_MS=500,LOCK_MAX=10,lockT=0,lockRs=0,lowY=-9;
+/* From level 13 on the rest time before a landed piece sets also shrinks (25 ms per level, down to 150 ms), otherwise the top speed could never end a game */
+function lockMs(){return level<=12?LOCK_MS:Math.max(150,LOCK_MS-(level-12)*25)}
 function lockReset(){lockT=0;lockRs=0;lowY=-9}
 function lockBump(){if(lockT>0&&lockRs<LOCK_MAX){lockRs++;lockT=0}}
 /* Put the current piece at the top. If the stack reaches the spawn rows, lift the piece up to two rows above the ceiling instead of
@@ -1388,8 +1431,17 @@ function impact(n){
 }
 /* Big bouncy combo text in the middle of the board, with a burst of stars. */
 var STAR_SVG='<svg viewBox="0 0 32 32"><path d="M16 2 L20 12 L30 13 L22.5 20 L25 30 L16 24.5 L7 30 L9.5 20 L2 13 L12 12 Z" fill="#ffe14d" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>';
-function comboPop(n){
-  var host=$('cpop');
+var cbSeq=0,seenCb=0;
+function comboPop(n){comboPopTo($('cpop'),n,cs,true)}
+/* The opponent's combo: the same pop-up, smaller, over their board. */
+function oppComboPop(n){
+  var h=$('ocpop');if(!h||!op||op.hidden)return;
+  var r=op.getBoundingClientRect();if(!r.width)return;
+  h.style.left=r.left+'px';h.style.top=r.top+'px';h.style.width=r.width+'px';h.style.height=r.height+'px';
+  var z=Math.max(10,oc*1.05);h.style.setProperty('--cs',z+'px');
+  comboPopTo(h,n,z,false);
+}
+function comboPopTo(host,n,csz,mine){
   if(!host||n<2||!canAnimate())return;
   while(host.firstChild)host.removeChild(host.firstChild);
   var tier=n>=7?3:n>=5?2:n>=3?1:0,el=document.createElement('div'),i;
@@ -1411,7 +1463,7 @@ function comboPop(n){
   if(cn.animate)cn.animate([{transform:'translateY(0) scale(1)'},{transform:'translateY(-9%) scale(1.1)'},{transform:'translateY(0) scale(1)'}],{duration:320,iterations:3,easing:'ease-in-out'});
   var N=6+tier*2;
   for(i=0;i<N;i++){
-    var sp=document.createElement('span'),ang=Math.PI*2*i/N+Math.random()*.6,dist=cs*(2.8+Math.random()*2.2);
+    var sp=document.createElement('span'),ang=Math.PI*2*i/N+Math.random()*.6,dist=csz*(2.8+Math.random()*2.2);
     sp.className='csp';sp.innerHTML=STAR_SVG;host.appendChild(sp);
     (function(sp){
       sp.animate([
@@ -1420,7 +1472,7 @@ function comboPop(n){
       ],{duration:650+Math.random()*300,easing:'cubic-bezier(.1,.7,.3,1)',fill:'forwards'}).onfinish=function(){if(sp.parentNode)sp.parentNode.removeChild(sp)};
     })(sp);
   }
-  if(n>=4)pulse(document.querySelector('.well'),'pop2');
+  if(mine&&n>=4)pulse(document.querySelector('.well'),'pop2');
 }
 /* The top combo badge was removed: the big COMBO pop-up in the middle of the board shows it instead. */
 function showCombo(){}
@@ -1483,7 +1535,8 @@ function landFall(){
   var rows=fullRows();
   if(rows.length){
     var its=collectItems(rows);
-    streak++;sfxClear(rows.length);sfxCombo(streak);showCombo();comboPop(streak);award(rows.length,1);hud();attack(rows.length,true);
+    streak++;sfxClear(rows.length);sfxCombo(streak);showCombo();comboPop(streak);if(mode==='vs'&&room&&streak>=2){cbSeq++;push({cbv:Math.min(streak,99),cbn:cbSeq})}   /* the opponent sees my combo too */
+    award(rows.length,1);hud();attack(rows.length,true);
     beginClear(rows,function(){
       clearRows();
       applyItems(its,rows,function(){
@@ -1500,7 +1553,7 @@ function finishFall(){
   state='playing';acc=0;spawn();
   var comboRun=rankTok;setTimeout(function(){if(comboRun===rankTok&&state==='playing'&&!fall.length){streak=0;showCombo()}},1200);
 }
-function interval(){var v=820-(level-1)*70;if(v<90)v=Math.max(40,90-(level-12)*5);   /* up to level 12 as before (90 ms); after that it keeps getting faster by 5 ms per level down to 40 ms */
+function interval(){var v=820-(level-1)*70;if(v<90)v=Math.max(4,90*Math.pow(.85,Math.max(0,level-12)));   /* up to level 12 as before (90 ms); after that every level is 15% faster, down to 4 ms (practically instant) around level 31 */
   if(pt<fastUntil)v=Math.min(v,Math.max(55,v*.3));if(pt<slowUntil)v*=2.5;return v}
 
 function hud(){if(score>SCORE_CAP)score=SCORE_CAP;$('sc').textContent=score;$('lv').textContent=level;$('ln').textContent=lines}
@@ -1554,13 +1607,18 @@ function fitOvSoon(){if(fitRaf)return;fitRaf=requestAnimationFrame(function(){fi
 function fitOv(){
   var ov=$('ov');if(!ov||ov.hidden)return;
   ov.style.setProperty('--ovk','1');
-  var cs0=getComputedStyle(ov),pad=(parseFloat(cs0.paddingTop)||0)+(parseFloat(cs0.paddingBottom)||0);
-  var need=ov.scrollHeight,have=ov.clientHeight;
-  if(need<=have+1)return;
-  var k=Math.max(.55,(have-pad)/Math.max(1,need-pad)*.98);
+  var cs0=getComputedStyle(ov),pad=(parseFloat(cs0.paddingTop)||0)+(parseFloat(cs0.paddingBottom)||0),padX=(parseFloat(cs0.paddingLeft)||0)+(parseFloat(cs0.paddingRight)||0);
+  var need=ov.scrollHeight,have=ov.clientHeight,needW=ov.scrollWidth,haveW=ov.clientWidth;
+  if(need<=have+1&&needW<=haveW+1)return;
+  /* too tall or too wide (a narrow phone can cut off the right side, for example the ? next to a switch): scale everything down */
+  var k=1;
+  if(need>have+1)k=Math.min(k,Math.max(.55,(have-pad)/Math.max(1,need-pad)*.98));
+  if(needW>haveW+1)k=Math.min(k,Math.max(.55,(haveW-padX)/Math.max(1,needW-padX)*.98));
   ov.style.setProperty('--ovk',k.toFixed(3));
-  need=ov.scrollHeight;
-  if(need>ov.clientHeight+1){k=Math.max(.5,k*(ov.clientHeight-pad)/Math.max(1,need-pad)*.98);ov.style.setProperty('--ovk',k.toFixed(3))}
+  need=ov.scrollHeight;needW=ov.scrollWidth;
+  if(need>ov.clientHeight+1)k=Math.max(.5,k*(ov.clientHeight-pad)/Math.max(1,need-pad)*.98);
+  if(needW>ov.clientWidth+1)k=Math.max(.5,k*(ov.clientWidth-padX)/Math.max(1,needW-padX)*.98);
+  ov.style.setProperty('--ovk',k.toFixed(3));
 }
 function overlay(title,sub,btn,showBest){
   var wt=$('wait');if(wt)wt.hidden=true;
@@ -1596,7 +1654,7 @@ function endMenu(){
 function holdEnd(){$('go').style.display='none';$('qt').style.display='none'}
 function over(){
   state='over';endItems();
-  if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});unlockCfg();endSub=fm('scorelines',{s:score,l:lines});overlay('youlose',endSub,'rematch',false);endMenu();endFx('lose');return}
+  if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});unlockCfg();endSub=(deathNote?fm(deathNote)+' ':'')+fm('scorelines',{s:score,l:lines});deathNote='';overlay('youlose',endSub,'rematch',false);endMenu();endFx('lose');return}
   var newBest=score>0&&(itemMode?score>bestItems:score>best);
   if(itemMode){if(score>bestItems){bestItems=score;try{localStorage.setItem('tetris-best-items',String(bestItems))}catch(e){}}}
   else if(score>best){best=score;try{localStorage.setItem('tetris-best',String(best))}catch(e){}}
@@ -1900,7 +1958,7 @@ function loop(t){
     while(acc>=iv&&state==='playing'){acc-=iv;if(!hit(cur.m,cur.x,cur.y+1))cur.y++;else{acc=0;break}}   /* resting: the lock timer below sets it */
     if(state==='playing'&&cur){
       if(cur.y>lowY){lowY=cur.y;lockRs=0}
-      if(hit(cur.m,cur.x,cur.y+1)){lockT+=dt;if(lockT>=LOCK_MS)lock()}else lockT=0;
+      if(hit(cur.m,cur.x,cur.y+1)){lockT+=dt;if(lockT>=lockMs())lock()}else lockT=0;
     }
   }
   var still=(state==='paused'||state==='over');
@@ -2041,10 +2099,12 @@ function olabel(){
   $('mf').title=mode==='vs'?(myCC?cname(myCC):tr('notset')):'';
   $('mywho').textContent=mode==='vs'?tr('you'):tr('score');
 }
+/* Item cells on the CPU board (same shape as its board): the kind of item in that cell, or 0. */
+function cpuItGrid(){var a=[];for(var r=0;r<ROWS;r++)a.push(new Array(COLS).fill(0));return a}
 function cpuStart(l){
   cpuLvl=l;cpuT=0;
   var g=[];for(var r=0;r<ROWS;r++)g.push(new Array(COLS).fill(0));
-  cpu={g:g,bag:[],pend:0,score:0,dizzy:0,inv:[],since:0,carry:false};
+  cpu={g:g,it:cpuItGrid(),bag:[],pend:0,score:0,dizzy:0,inv:[],since:0,carry:false,sh:0};
 }
 function startCpu(l){mode='cpu';cpuStart(l);resize();start()}
 function cpuPull(){
@@ -2077,7 +2137,7 @@ function cpuEval(g,m,x,t){
     if(top>=0)for(r=top;r<ROWS;r++)if(!g2[r][c])holes++;
   }
   for(c=0;c<COLS-1;c++)bump+=Math.abs(h[c]-h[c+1]);
-  return{g:g2,n:n,s:-0.51*agg+0.76*n-0.36*holes-0.18*bump};
+  return{g:g2,n:n,s:-0.51*agg+0.76*n-0.36*holes-0.18*bump,x:x,y:y,m:m};
 }
 function cpuStep(){
   var C=cpu;
@@ -2087,7 +2147,7 @@ function cpuStep(){
     while(C.pend>0){
       C.pend--;
       if(C.g[0].some(Boolean)){win('beatcpu');return}
-      C.g.shift();
+      C.g.shift();C.it.shift();C.it.push(new Array(COLS).fill(0));
       var row=[];for(var c=0;c<COLS;c++)row.push(c===hole?0:'G');
       C.g.push(row);
     }
@@ -2101,28 +2161,48 @@ function cpuStep(){
   list.sort(function(a,b){return b.s-a.s});
   var cerr=pt<C.dizzy?Math.max(CPU_ERR[cpuLvl],.55):CPU_ERR[cpuLvl];
   var pick=Math.random()<cerr?list[Math.floor(Math.random()*Math.min(list.length,6))]:list[0];
-  C.g=pick.g;
-  var n=pick.n;
+  var n=pick.n,r,c,cells=[];
   /* The CPU follows the same item rule as the player: an item cell shows up on a piece at most every ITEM_GAP pieces
-     with chance ITEM_P, and is collected only when a line clear happens. The player's pool also holds bombs, lasers,
-     shields... that the CPU cannot use, so those rolls are simply lost for the CPU (same attack share as the player). */
-  if(itemMode&&!C.carry&&++C.since>=ITEM_GAP&&Math.random()<ITEM_P*CPU_ITEM_MUL[cpuLvl]){C.carry=pickKind();C.since=0}
+     with chance ITEM_P, and is collected when the line holding that cell is cleared. The player's pool also holds bombs, lasers,
+     nukes... that the CPU cannot use (it does use shields), so those rolls are simply lost for the CPU (same attack share as the player). */
+  var itg=C.it.map(function(q){return q.slice()}),hasIt=itg.some(function(q){return q.some(Boolean)}),newK=null;
+  if(itemMode&&!hasIt&&++C.since>=ITEM_GAP&&Math.random()<ITEM_P*CPU_ITEM_MUL[cpuLvl]){
+    C.since=0;var kk=pickKind();
+    if(ATTACKS.indexOf(kk)>=0||kk==='shield')newK=kk;
+  }
+  /* put the piece on a copy of the old board, mark one of its cells as the item cell, then clear the full rows while following the items */
+  var gold=C.g.map(function(q){return q.slice()});
+  for(r=0;r<pick.m.length;r++)for(c=0;c<pick.m[r].length;c++){
+    var yy=pick.y+r,xx=pick.x+c;
+    if(pick.m[r][c]&&yy>=0&&yy<ROWS&&xx>=0&&xx<COLS){gold[yy][xx]=t;cells.push([yy,xx])}
+  }
+  if(newK&&cells.length){var pk=cells[Math.floor(Math.random()*cells.length)];itg[pk[0]][pk[1]]=newK}
+  var got=[];
+  for(r=ROWS-1;r>=0;r--){
+    if(gold[r].every(Boolean)){
+      for(c=0;c<COLS;c++)if(itg[r][c])got.push(itg[r][c]);
+      gold.splice(r,1);gold.unshift(new Array(COLS).fill(0));
+      itg.splice(r,1);itg.unshift(new Array(COLS).fill(0));
+      r++;
+    }
+  }
+  C.g=pick.g;C.it=itg;
   if(n){
     C.score+=[0,100,300,500,800][Math.min(n,4)];
     var a=n>=4?4:Math.max(0,n-1);
     if(a>0&&C.pend>0){var cc=Math.min(a,C.pend);C.pend-=cc;a-=cc}
     if(a>0){pend+=a;warnIncoming()}
-    if(itemMode&&C.carry){
-      if(ATTACKS.indexOf(C.carry)>=0&&C.inv.length<INV_MAX){C.inv.push(C.carry);olabel()}
-      C.carry=false;
-    }
+    got.forEach(function(k){
+      if(ATTACKS.indexOf(k)>=0&&C.inv.length<INV_MAX)C.inv.push(k);
+      else if(k==='shield')C.sh=Math.min(99,(C.sh||0)+1);   /* like the player's shield: works at once and stacks */
+    });
     olabel();
   }
 }
 $('cpub').addEventListener('click',function(){
   syncModeUI();joinToken++;$('join').disabled=false;leaveRoom();mode='solo';state='ready';resize();
   overlay('cpuTitle','difficulty','',false);
-  ovui(false);$('lvbox').hidden=false;
+  ovui(false);$('lvbox').hidden=false;fitOvSoon();
 });
 Array.prototype.forEach.call(document.querySelectorAll('#lvbox [data-l]'),function(b){
   b.addEventListener('click',function(){startCpu(+b.getAttribute('data-l'))});
@@ -2206,21 +2286,33 @@ function win(msg){
 }
 function drawOpp(){
   if(mode==='solo')return;
-  var W=oc*COLS,H=oc*ROWS,g=null;
+  var W=oc*COLS,H=oc*ROWS,g=null,gi='';
   if(mode==='cpu'&&cpu){
-    g='';
-    for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++)g+=(cpu.g[r][c]||'.');
-  }else if(opp){var P=opp.presence;if(P&&P.gs===gs&&typeof P.g==='string'&&P.g.length===COLS*ROWS)g=P.g}
+    g='';var gl=[];
+    for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){g+=(cpu.g[r][c]||'.');if(cpu.it&&cpu.it[r][c]&&cpu.g[r][c])gl.push((r*COLS+c)+':'+cpu.it[r][c])}
+    gi=gl.join(',');
+  }else if(opp){var P=opp.presence;if(P&&P.gs===gs&&typeof P.g==='string'&&P.g.length===COLS*ROWS){g=P.g;if(typeof P.gi==='string')gi=P.gi}}
   var sh=0;   /* the opponent's active shields (online battles only) */
   if(mode==='vs'&&opp&&opp.presence){var P2=opp.presence;if(P2.gs===gs&&Number.isInteger(P2.sh)&&P2.sh>0)sh=Math.min(P2.sh,99)}
+  if(mode==='cpu'&&cpu&&cpu.sh>0)sh=Math.min(cpu.sh,99);
   op.classList.toggle('shd',sh>0);
-  var key=mode+'|'+W+'|'+H+'|'+dpr+'|'+TH.well+'|'+(g||'')+'|'+sh;
+  var key=mode+'|'+W+'|'+H+'|'+dpr+'|'+TH.well+'|'+(g||'')+'|'+gi+'|'+sh;
   if(key===oppDrawKey)return;
   oppDrawKey=key;
   ox.setTransform(dpr,0,0,dpr,0,0);
   ox.clearRect(0,0,W,H);
   ox.fillStyle=TH.well;ox.fillRect(0,0,W,H);
   if(g)for(var i=0;i<g.length;i++){var ch=g[i];if(ch!=='.'&&COL[ch])cell(ox,(i%COLS)*oc,Math.floor(i/COLS)*oc,oc,COL[ch])}
+  if(g&&gi&&itemMode){
+    var wait=false;
+    gi.split(',').forEach(function(e){
+      var q=e.split(':'),ix=+q[0],kd=q[1];
+      if(!(ix>=0&&ix<g.length)||g[ix]==='.'||!ITEMS[kd])return;
+      var im=iconImg(kd);if(!(im.complete&&im.naturalWidth))wait=true;
+      icon(ox,(ix%COLS)*oc,Math.floor(ix/COLS)*oc,oc,kd);
+    });
+    if(wait)oppDrawKey='';   /* an icon was still loading: draw again next frame */
+  }
   if(sh>0){
     var bs=Math.max(16,Math.min(W*.3,28));
     ox.save();ox.translate(3,3);ox.scale(bs/32,bs/32);
@@ -2239,8 +2331,14 @@ function sendBoard(t){
   if(cur)for(var i=0;i<cur.m.length;i++)for(var j=0;j<cur.m[i].length;j++){
     if(cur.m[i][j]){var y=cur.y+i,x=cur.x+j;if(y>=0&&y<ROWS&&x>=0&&x<COLS)a[y*COLS+x]=cur.t}
   }
-  var g=a.join('');
-  if(g!==sentG){sentG=g;push({g:g,sc:score})}
+  var g=a.join(''),gl=[];
+  for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++)if(itm[r][c]&&grid[r][c])gl.push((r*COLS+c)+':'+itm[r][c]);
+  if(cur&&cur.ik)for(var i2=0;i2<cur.m.length;i2++)for(var j2=0;j2<cur.m[i2].length;j2++){
+    if(cur.m[i2][j2]===2){var y2=cur.y+i2,x2=cur.x+j2;if(y2>=0&&y2<ROWS&&x2>=0&&x2<COLS)gl.push((y2*COLS+x2)+':'+cur.ik)}
+  }
+  var gi=itemMode?gl.slice(0,40).join(','):'';   /* where the item cells are, so the opponent can see them on my board */
+  var sig=g+'|'+gi;
+  if(sig!==sentG){sentG=sig;push({g:g,gi:gi,sc:score})}
 }
 var shareCode='',lobby=null,rndRoom=false;
 function leaveRoom(){vsPz=0;pzHide();shareCode='';leaveLobby();cfg={gv:1,it:0,sv:0};cfgLocked=false;clearTimeout(cfgNoteTimer);cfgNoteTimer=null;if(countTimer){clearInterval(countTimer);countTimer=null;}if(leftTimer){clearTimeout(leftTimer);leftTimer=null;}if(room){var oldRoom=room;room=null;oldRoom.leave().catch(function(){})}opp=null;meP=null;myRdy=false}
@@ -2274,8 +2372,8 @@ function createSupabaseRoom(code,keepId){
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
-  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','pz','bk','cc','g','sc','sw','swn','sr','srn','sh'];
-  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',pz:0,bk:0,cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0,sh:0};
+  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','pz','bk','cc','g','sc','sw','swn','sr','srn','sh','swi','sri','cbv','cbn','gi'];
+  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',pz:0,bk:0,cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0,sh:0,swi:'',sri:'',cbv:0,cbn:0,gi:''};
   var remote={},seenKeys={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,hbTimer=null,flushTimer=null,lastFlush=0;
   var retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   function validValue(k,v){
@@ -2291,8 +2389,11 @@ function createSupabaseRoom(code,keepId){
     if(k==='ie')return Array.isArray(v)&&v.length<=32&&v.every(function(e){return e&&Number.isInteger(e.id)&&e.id>0&&typeof e.k==='string'&&ATTACKS.indexOf(e.k)>=0});
     if(k==='bk')return typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<=1000000;
     if(k==='pz')return v===0||v===1||v===2;
+    if(k==='cbv')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=99;
+    if(k==='cbn')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=1000000;
+    if(k==='gi')return v===''||(typeof v==='string'&&v.length<=400&&/^\d{1,3}:[a-z]+(,\d{1,3}:[a-z]+)*$/.test(v));
     if(k==='sh')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=99;
-    if(k==='oi')return typeof v==='string'&&v.length<=60&&(v===''||v.split(',').every(function(x){return STORE.indexOf(x)>=0}));
+    if(k==='oi'||k==='swi'||k==='sri')return typeof v==='string'&&v.length<=60&&(v===''||v.split(',').every(function(x){return STORE.indexOf(x)>=0}));
     if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
     if(k==='swn'||k==='srn')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=1000000;
     if(k==='sw'||k==='sr')return v===''||(typeof v==='string'&&v.length===COLS*ROWS&&/^[.IOTSZJLG]+$/.test(v));
@@ -2410,7 +2511,7 @@ function createSupabaseRoom(code,keepId){
       data=data||{};
       /* A new match resets the event stream; otherwise append each attack to a bounded
          replay window. The 150ms broadcast coalescer can no longer overwrite attacks. */
-      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.oi='';localState.bk=0;localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;localState.sh=0;}
+      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.oi='';localState.bk=0;localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;localState.sh=0;localState.swi='';localState.sri='';localState.cbv=0;localState.cbn=0;localState.gi='';}
       if(Number.isInteger(data.iq)&&data.iq>localState.iq&&typeof data.ik==='string'&&ATTACKS.indexOf(data.ik)>=0){
         localState.iq=data.iq;localState.ik=data.ik;
         localState.ie.push({id:data.iq,k:data.ik});
@@ -2700,9 +2801,11 @@ function onPeersCore(ch){
         /* Advance to the sequence watermark even if an old client sent no queue. */
         seenIq=iqv;
       }
+      var cbn=Math.floor(Number(P.cbn)||0);
+      if(cbn>seenCb){seenCb=cbn;var cbv=Math.floor(Number(P.cbv)||0);if(cbv>=2&&cbv<=99)oppComboPop(cbv)}
       var swn=Math.floor(Number(P.swn)||0);
-      if(swn>seenSw){seenSw=swn;receiveSwap(typeof P.sw==='string'?P.sw:'',swn)}
-      if(swapWait&&Math.floor(Number(P.srn)||0)===swapWait.n)finishSwap(typeof P.sr==='string'?P.sr:'');
+      if(swn>seenSw){seenSw=swn;receiveSwap(typeof P.sw==='string'?P.sw:'',swn,typeof P.swi==='string'?P.swi:null)}
+      if(swapWait&&Math.floor(Number(P.srn)||0)===swapWait.n)finishSwap(typeof P.sr==='string'?P.sr:'',typeof P.sri==='string'?P.sri:null);
       if(P.dead===true)win('opptopped');
     }
     return;
@@ -3129,7 +3232,7 @@ var I18N={
   "d_speed": "Your opponent’s pieces fall faster for 8 seconds. Waits for Fire.",
   "d_fog": "Hides your opponent’s stack for 7 seconds. Waits for Fire.",
   "d_rev": "Reverses your opponent’s left and right controls for 8 seconds. Waits for Fire.",
-  "d_swap": "Trades your whole board with your opponent’s. Waits for Fire.",
+  "d_swap": "Trades your whole board and your item queue with your opponent’s. Waits for Fire.",
   "fire": "Fire",
   "got": "{n} collected",
   "itemqueue": "Item queue",
@@ -3145,6 +3248,7 @@ var I18N={
   "i_nuke": "Clear all",
   "i_swap": "Swap boards",
   "hit_swap": "Boards swapped!",
+  "swapdead": "The swapped board was already full, so the game is over.",
   "swapblocked": "The swap was blocked!",
   "i_slow": "Slow",
   "i_shield": "Shield",
@@ -3277,7 +3381,7 @@ var I18N={
   "d_speed": "De blokken van je tegenstander vallen 8 seconden sneller. Wacht op de vuurknop.",
   "d_fog": "Verbergt de stapel van je tegenstander 7 seconden. Wacht op de vuurknop.",
   "d_rev": "Draait links en rechts van je tegenstander 8 seconden om. Wacht op de vuurknop.",
-  "d_swap": "Wisselt je hele bord met dat van je tegenstander. Wacht op de vuurknop.",
+  "d_swap": "Wisselt je hele bord en je itemrij met die van je tegenstander. Wacht op de vuurknop.",
   "fire": "Vuur",
   "got": "{n} verzameld",
   "itemqueue": "Itemrij",
@@ -3293,6 +3397,7 @@ var I18N={
   "i_nuke": "Alles wissen",
   "i_swap": "Borden wisselen",
   "hit_swap": "Borden gewisseld!",
+  "swapdead": "Het geruilde bord zat al vol, dus het spel is afgelopen.",
   "swapblocked": "De wissel werd geblokkeerd!",
   "i_slow": "Vertragen",
   "i_shield": "Schild",
@@ -3425,7 +3530,7 @@ var I18N={
   "d_speed": "8초 동안 상대 블록이 빠르게 떨어져요. 발사 버튼을 누르면 나가요.",
   "d_fog": "7초 동안 상대 판이 안개로 가려져요. 발사 버튼을 누르면 나가요.",
   "d_rev": "8초 동안 상대의 좌우 조작이 뒤바뀌어요. 발사 버튼을 누르면 나가요.",
-  "d_swap": "나와 상대의 판을 통째로 맞바꿔요. 발사 버튼을 누르면 나가요.",
+  "d_swap": "나와 상대의 판과 아이템 대기열을 통째로 맞바꿔요. 발사 버튼을 누르면 나가요.",
   "fire": "발사",
   "got": "{n} 획득",
   "itemqueue": "아이템 대기열",
@@ -3441,6 +3546,7 @@ var I18N={
   "i_nuke": "전체 삭제",
   "i_swap": "화면 교체",
   "hit_swap": "화면이 서로 바뀌었습니다!",
+  "swapdead": "바뀐 판이 이미 가득 차 있어서 게임이 끝났어요.",
   "swapblocked": "화면 교체가 막혔습니다!",
   "i_slow": "슬로우",
   "i_shield": "방어막",
@@ -3573,7 +3679,7 @@ var I18N={
   "d_speed": "8秒間、相手のブロックが速く落ちます。発射ボタンで使えます。",
   "d_fog": "7秒間、相手の盤面を霧で隠します。発射ボタンで使えます。",
   "d_rev": "8秒間、相手の左右操作を逆にします。発射ボタンで使えます。",
-  "d_swap": "自分と相手の盤面をそっくり入れ替えます。発射ボタンで使えます。",
+  "d_swap": "自分と相手の盤面とアイテム待機列をそっくり入れ替えます。発射ボタンで使えます。",
   "fire": "発射",
   "got": "{n}を獲得",
   "itemqueue": "アイテム待機列",
@@ -3589,6 +3695,7 @@ var I18N={
   "i_nuke": "全消し",
   "i_swap": "盤面入れ替え",
   "hit_swap": "盤面が入れ替わりました！",
+  "swapdead": "入れ替わった盤面がすでに満杯だったため、ゲームオーバーです。",
   "swapblocked": "入れ替えが防がれました！",
   "i_slow": "スロー",
   "i_shield": "シールド",
@@ -3721,7 +3828,7 @@ var I18N={
   "d_speed": "8秒内对手的方块下落变快。按发射键使用。",
   "d_fog": "7秒内用迷雾遮住对手的画面。按发射键使用。",
   "d_rev": "8秒内让对手的左右操作颠倒。按发射键使用。",
-  "d_swap": "与对手整个交换画面。按发射键使用。",
+  "d_swap": "与对手整个交换画面和道具队列。按发射键使用。",
   "fire": "发射",
   "got": "获得{n}",
   "itemqueue": "道具队列",
@@ -3737,6 +3844,7 @@ var I18N={
   "i_nuke": "全屏清除",
   "i_swap": "交换画面",
   "hit_swap": "画面被交换了！",
+  "swapdead": "交换来的画面已经堆满，所以游戏结束了。",
   "swapblocked": "交换被挡下了！",
   "i_slow": "减速",
   "i_shield": "护盾",
@@ -3869,7 +3977,7 @@ var I18N={
   "d_speed": "8秒內對手的方塊下落變快。按發射鍵使用。",
   "d_fog": "7秒內用迷霧遮住對手的畫面。按發射鍵使用。",
   "d_rev": "8秒內讓對手的左右操作顛倒。按發射鍵使用。",
-  "d_swap": "與對手整個交換畫面。按發射鍵使用。",
+  "d_swap": "與對手整個交換畫面和道具佇列。按發射鍵使用。",
   "fire": "發射",
   "got": "獲得{n}",
   "itemqueue": "道具佇列",
@@ -3885,6 +3993,7 @@ var I18N={
   "i_nuke": "全螢幕清除",
   "i_swap": "交換畫面",
   "hit_swap": "畫面被交換了！",
+  "swapdead": "交換來的畫面已經堆滿，所以遊戲結束了。",
   "swapblocked": "交換被擋下了！",
   "i_slow": "減速",
   "i_shield": "護盾",
@@ -4017,7 +4126,7 @@ var I18N={
   "d_speed": "Las piezas de tu rival caen más rápido durante 8 segundos. Espera al botón de disparo.",
   "d_fog": "Oculta el montón de tu rival durante 7 segundos. Espera al botón de disparo.",
   "d_rev": "Invierte izquierda y derecha de tu rival durante 8 segundos. Espera al botón de disparo.",
-  "d_swap": "Intercambia todo tu tablero con el de tu rival. Espera al botón de disparo.",
+  "d_swap": "Intercambia todo tu tablero y tu cola de objetos con los de tu rival. Espera al botón de disparo.",
   "fire": "Lanzar",
   "got": "{n} obtenido",
   "itemqueue": "Cola de objetos",
@@ -4033,6 +4142,7 @@ var I18N={
   "i_nuke": "Borrar todo",
   "i_swap": "Intercambio",
   "hit_swap": "¡Tableros intercambiados!",
+  "swapdead": "El tablero intercambiado ya estaba lleno, así que la partida termina.",
   "swapblocked": "¡El intercambio fue bloqueado!",
   "i_slow": "Lento",
   "i_shield": "Escudo",
@@ -4165,7 +4275,7 @@ var I18N={
   "d_speed": "As peças do oponente caem mais rápido por 8 segundos. Espera o botão de disparo.",
   "d_fog": "Esconde a pilha do oponente por 7 segundos. Espera o botão de disparo.",
   "d_rev": "Inverte esquerda e direita do oponente por 8 segundos. Espera o botão de disparo.",
-  "d_swap": "Troca todo o seu tabuleiro com o do oponente. Espera o botão de disparo.",
+  "d_swap": "Troca todo o seu tabuleiro e a sua fila de itens com os do oponente. Espera o botão de disparo.",
   "fire": "Lançar",
   "got": "{n} obtido",
   "itemqueue": "Fila de itens",
@@ -4181,6 +4291,7 @@ var I18N={
   "i_nuke": "Limpar tudo",
   "i_swap": "Troca de telas",
   "hit_swap": "Tabuleiros trocados!",
+  "swapdead": "O tabuleiro trocado já estava cheio, então o jogo acabou.",
   "swapblocked": "A troca foi bloqueada!",
   "i_slow": "Lento",
   "i_shield": "Escudo",
@@ -4313,7 +4424,7 @@ var I18N={
   "d_speed": "Les pièces de l’adversaire tombent plus vite pendant 8 secondes. Attend le bouton de tir.",
   "d_fog": "Cache la pile de l’adversaire pendant 7 secondes. Attend le bouton de tir.",
   "d_rev": "Inverse la gauche et la droite de l’adversaire pendant 8 secondes. Attend le bouton de tir.",
-  "d_swap": "Échange tout votre plateau avec celui de l’adversaire. Attend le bouton de tir.",
+  "d_swap": "Échange tout votre plateau et votre file d’objets avec ceux de l’adversaire. Attend le bouton de tir.",
   "fire": "Tirer",
   "got": "{n} obtenu",
   "itemqueue": "File d’objets",
@@ -4329,6 +4440,7 @@ var I18N={
   "i_nuke": "Tout effacer",
   "i_swap": "Échange",
   "hit_swap": "Plateaux échangés !",
+  "swapdead": "Le plateau échangé était déjà plein, la partie est donc terminée.",
   "swapblocked": "L’échange a été bloqué !",
   "i_slow": "Ralenti",
   "i_shield": "Bouclier",
@@ -4460,7 +4572,7 @@ var I18N={
   "d_speed": "Khối của đối thủ rơi nhanh hơn trong 8 giây. Chờ nút Bắn.",
   "d_fog": "Che khuất chồng khối của đối thủ trong 7 giây. Chờ nút Bắn.",
   "d_rev": "Đảo ngược trái và phải của đối thủ trong 8 giây. Chờ nút Bắn.",
-  "d_swap": "Hoán đổi toàn bộ bảng của bạn với bảng của đối thủ. Chờ nút Bắn.",
+  "d_swap": "Hoán đổi toàn bộ bảng và hàng đợi vật phẩm của bạn với đối thủ. Chờ nút Bắn.",
   "fire": "Bắn",
   "got": "Đã nhận {n}",
   "itemqueue": "Hàng đợi vật phẩm",
@@ -4476,6 +4588,7 @@ var I18N={
   "i_nuke": "Xóa sạch",
   "i_swap": "Hoán đổi bảng",
   "hit_swap": "Đã hoán đổi bảng!",
+  "swapdead": "Bảng vừa hoán đổi đã đầy nên ván chơi kết thúc.",
   "swapblocked": "Việc hoán đổi đã bị chặn!",
   "i_slow": "Làm chậm",
   "i_shield": "Khiên",
