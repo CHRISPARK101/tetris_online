@@ -948,20 +948,14 @@ function fireSwap(){
     for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++){mine.push(grid[r][c]||0);theirs.push(cpu.g[r][c]||0)}
     for(r=0;r<ROWS;r++)cpu.g[r]=mine.slice(r*COLS,(r+1)*COLS);
     cpu.it=cpuItGrid();   /* item cells never travel with a swapped board */
-    /* item queues trade too. The CPU can only fire attack items, so only those go to it; the rest stay with me. */
-    var give=[],keepI=[];
-    inv.forEach(function(k){(ATTACKS.indexOf(k)>=0?give:keepI).push(k)});
-    var theirInv=(cpu.inv||[]).slice();
-    cpu.inv=give;
-    inv=theirInv.concat(keepI).slice(0,INV_MAX);
-    renderInv(inv.length>0);olabel();
+    /* only the boards trade: items each side already owns (the queue) stay with their owner */
     stamp('swap',ctr('opp'),true);pulse($('opp'),'hit');
     swapFx();applyBoard(theirs);
     return;
   }
   /* online: send my stack and wait (frozen) for the opponent's stack; the opponent's shield can block it */
   swapSeq++;swapWait={n:swapSeq,t:performance.now()};
-  push({sw:boardStr(),swn:swapSeq,swi:inv.join(',')});   /* my item queue goes along with my board */
+  push({sw:boardStr(),swn:swapSeq});   /* only the board travels; owned items stay */
   stamp('swap',ctr('opp'),true);pulse($('opp'),'hit');
 }
 function receiveSwap(b,n,i){
@@ -972,16 +966,14 @@ function receiveSwap(b,n,i){
 function tryApplySwapIn(){
   if(!swapIn||state!=='playing'||iblast||swapWait)return;
   var s=swapIn;swapIn=null;
-  push({sr:boardStr(),srn:s.n,sri:inv.join(',')});   /* my board and my item queue go back */
+  push({sr:boardStr(),srn:s.n});   /* only my board goes back */
   swapFx();applyBoard(strCells(s.b));
-  if(typeof s.i==='string')setInvFromStr(s.i);
 }
 function finishSwap(sr,sri){
   swapWait=null;
   if(sr===''){toast('swapblocked');sfxItem();return}
   if(!okBoard(sr)||state!=='playing')return;
   swapFx();applyBoard(strCells(sr));
-  if(typeof sri==='string')setInvFromStr(sri);
 }
 var swept=[];
 function finishBlast(){
@@ -1337,7 +1329,7 @@ function rotate(){
   var r=rot(cur.m),k=[[0,0],[-1,0],[1,0],[-2,0],[2,0],[0,-1],[-1,-1],[1,-1],[0,-2]],top=0,topNow=0;
   while(top<r.length&&!r[top].some(Boolean))top++;      /* first row of the rotated shape that holds blocks */
   while(topNow<cur.m.length&&!cur.m[topNow].some(Boolean))topNow++;
-  var ceil=(cur.y+topNow<0)?-2:0;                       /* a piece lifted above the ceiling may still turn there, but never higher than 2 rows up */
+  var ceil=-2;                                          /* near a full board there may be no room inside the field: let a turn reach up to 2 rows above the ceiling (locking there still ends the game) */
   for(var i=0;i<k.length;i++){
     if(cur.y+k[i][1]+top<ceil)continue;                 /* a normal piece never kicks above the ceiling */
     if(!hit(r,cur.x+k[i][0],cur.y+k[i][1])){cur.m=r;cur.x+=k[i][0];cur.y+=k[i][1];kickT=wnow;lockBump();sfxRotate();return}
@@ -3232,7 +3224,7 @@ var I18N={
   "d_speed": "Your opponent’s pieces fall faster for 8 seconds. Waits for Fire.",
   "d_fog": "Hides your opponent’s stack for 7 seconds. Waits for Fire.",
   "d_rev": "Reverses your opponent’s left and right controls for 8 seconds. Waits for Fire.",
-  "d_swap": "Trades your whole board and your item queue with your opponent’s. Waits for Fire.",
+  "d_swap": "Trades your whole board with your opponent’s. Items each of you already owns stay with you. Waits for Fire.",
   "fire": "Fire",
   "got": "{n} collected",
   "itemqueue": "Item queue",
@@ -3381,7 +3373,7 @@ var I18N={
   "d_speed": "De blokken van je tegenstander vallen 8 seconden sneller. Wacht op de vuurknop.",
   "d_fog": "Verbergt de stapel van je tegenstander 7 seconden. Wacht op de vuurknop.",
   "d_rev": "Draait links en rechts van je tegenstander 8 seconden om. Wacht op de vuurknop.",
-  "d_swap": "Wisselt je hele bord en je itemrij met die van je tegenstander. Wacht op de vuurknop.",
+  "d_swap": "Wisselt je hele bord met dat van je tegenstander. Items die je al bezit blijven van jou. Wacht op de vuurknop.",
   "fire": "Vuur",
   "got": "{n} verzameld",
   "itemqueue": "Itemrij",
@@ -3530,7 +3522,7 @@ var I18N={
   "d_speed": "8초 동안 상대 블록이 빠르게 떨어져요. 발사 버튼을 누르면 나가요.",
   "d_fog": "7초 동안 상대 판이 안개로 가려져요. 발사 버튼을 누르면 나가요.",
   "d_rev": "8초 동안 상대의 좌우 조작이 뒤바뀌어요. 발사 버튼을 누르면 나가요.",
-  "d_swap": "나와 상대의 판과 아이템 대기열을 통째로 맞바꿔요. 발사 버튼을 누르면 나가요.",
+  "d_swap": "나와 상대의 판을 통째로 맞바꿔요. 이미 갖고 있는 아이템은 그대로 유지돼요. 발사 버튼을 누르면 나가요.",
   "fire": "발사",
   "got": "{n} 획득",
   "itemqueue": "아이템 대기열",
@@ -3679,7 +3671,7 @@ var I18N={
   "d_speed": "8秒間、相手のブロックが速く落ちます。発射ボタンで使えます。",
   "d_fog": "7秒間、相手の盤面を霧で隠します。発射ボタンで使えます。",
   "d_rev": "8秒間、相手の左右操作を逆にします。発射ボタンで使えます。",
-  "d_swap": "自分と相手の盤面とアイテム待機列をそっくり入れ替えます。発射ボタンで使えます。",
+  "d_swap": "自分と相手の盤面をそっくり入れ替えます。すでに持っているアイテムはそのままです。発射ボタンで使えます。",
   "fire": "発射",
   "got": "{n}を獲得",
   "itemqueue": "アイテム待機列",
@@ -3828,7 +3820,7 @@ var I18N={
   "d_speed": "8秒内对手的方块下落变快。按发射键使用。",
   "d_fog": "7秒内用迷雾遮住对手的画面。按发射键使用。",
   "d_rev": "8秒内让对手的左右操作颠倒。按发射键使用。",
-  "d_swap": "与对手整个交换画面和道具队列。按发射键使用。",
+  "d_swap": "与对手整个交换画面。已持有的道具保持不变。按发射键使用。",
   "fire": "发射",
   "got": "获得{n}",
   "itemqueue": "道具队列",
@@ -3977,7 +3969,7 @@ var I18N={
   "d_speed": "8秒內對手的方塊下落變快。按發射鍵使用。",
   "d_fog": "7秒內用迷霧遮住對手的畫面。按發射鍵使用。",
   "d_rev": "8秒內讓對手的左右操作顛倒。按發射鍵使用。",
-  "d_swap": "與對手整個交換畫面和道具佇列。按發射鍵使用。",
+  "d_swap": "與對手整個交換畫面。已持有的道具保持不變。按發射鍵使用。",
   "fire": "發射",
   "got": "獲得{n}",
   "itemqueue": "道具佇列",
@@ -4126,7 +4118,7 @@ var I18N={
   "d_speed": "Las piezas de tu rival caen más rápido durante 8 segundos. Espera al botón de disparo.",
   "d_fog": "Oculta el montón de tu rival durante 7 segundos. Espera al botón de disparo.",
   "d_rev": "Invierte izquierda y derecha de tu rival durante 8 segundos. Espera al botón de disparo.",
-  "d_swap": "Intercambia todo tu tablero y tu cola de objetos con los de tu rival. Espera al botón de disparo.",
+  "d_swap": "Intercambia todo tu tablero con el de tu rival. Los objetos que ya tienes se quedan contigo. Espera al botón de disparo.",
   "fire": "Lanzar",
   "got": "{n} obtenido",
   "itemqueue": "Cola de objetos",
@@ -4275,7 +4267,7 @@ var I18N={
   "d_speed": "As peças do oponente caem mais rápido por 8 segundos. Espera o botão de disparo.",
   "d_fog": "Esconde a pilha do oponente por 7 segundos. Espera o botão de disparo.",
   "d_rev": "Inverte esquerda e direita do oponente por 8 segundos. Espera o botão de disparo.",
-  "d_swap": "Troca todo o seu tabuleiro e a sua fila de itens com os do oponente. Espera o botão de disparo.",
+  "d_swap": "Troca todo o seu tabuleiro com o do oponente. Os itens que você já tem continuam com você. Espera o botão de disparo.",
   "fire": "Lançar",
   "got": "{n} obtido",
   "itemqueue": "Fila de itens",
@@ -4424,7 +4416,7 @@ var I18N={
   "d_speed": "Les pièces de l’adversaire tombent plus vite pendant 8 secondes. Attend le bouton de tir.",
   "d_fog": "Cache la pile de l’adversaire pendant 7 secondes. Attend le bouton de tir.",
   "d_rev": "Inverse la gauche et la droite de l’adversaire pendant 8 secondes. Attend le bouton de tir.",
-  "d_swap": "Échange tout votre plateau et votre file d’objets avec ceux de l’adversaire. Attend le bouton de tir.",
+  "d_swap": "Échange tout votre plateau avec celui de l’adversaire. Les objets que vous possédez déjà restent à vous. Attend le bouton de tir.",
   "fire": "Tirer",
   "got": "{n} obtenu",
   "itemqueue": "File d’objets",
@@ -4572,7 +4564,7 @@ var I18N={
   "d_speed": "Khối của đối thủ rơi nhanh hơn trong 8 giây. Chờ nút Bắn.",
   "d_fog": "Che khuất chồng khối của đối thủ trong 7 giây. Chờ nút Bắn.",
   "d_rev": "Đảo ngược trái và phải của đối thủ trong 8 giây. Chờ nút Bắn.",
-  "d_swap": "Hoán đổi toàn bộ bảng và hàng đợi vật phẩm của bạn với đối thủ. Chờ nút Bắn.",
+  "d_swap": "Hoán đổi toàn bộ bảng của bạn với đối thủ. Vật phẩm đã sở hữu vẫn giữ nguyên. Chờ nút Bắn.",
   "fire": "Bắn",
   "got": "Đã nhận {n}",
   "itemqueue": "Hàng đợi vật phẩm",
