@@ -775,6 +775,7 @@ function icon(ctx,x,y,s,kind){
 }
 function itemName(k){return tr('i_'+k)}
 function toast(key,vars){
+  return;   /* top notification messages are switched off */
   var e=$('tt');e.textContent=fmt(key,vars);e.hidden=false;
   clearTimeout(ttTimer);ttTimer=setTimeout(function(){e.hidden=true},1800);
 }
@@ -832,7 +833,7 @@ function applyItems(list,rows,cb){
 function runHeavy(){
   if(!pendHeavy.length)return false;
   var heavy=pendHeavy;pendHeavy=[];
-  heavy.forEach(function(h){toast('used',{n:itemName(h.k)})});
+  
   sfxCharge();
   state='clear';cur=null;
   iblast={t:0,d:520,list:heavy,cb:function(){
@@ -888,7 +889,7 @@ function fireStored(){
   inv.shift();renderInv();
   var cx=aimCol(),py=Math.max(0,Math.min(ROWS-1,cur.y+1));
   if(k==='nuke'){
-    toast('used',{n:itemName(k)});sfxCharge();
+    sfxCharge();
     var keep=cur;
     iblast={t:0,d:520,list:[{k:k,cy:Math.floor(ROWS/2),cx:Math.floor(COLS/2)}],cb:function(){
       if(state!=='playing'||cur!==keep)return;
@@ -903,13 +904,24 @@ function fireStored(){
 /* ===== Board swap: both players trade their whole boards ===== */
 function boardStr(){var a=[],r,c;for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++)a.push(grid[r][c]||'.');return a.join('')}
 function okBoard(b){return typeof b==='string'&&b.length===COLS*ROWS&&/^[.IOTSZJLG]+$/.test(b)}
+/* Item cells that sit on a board travel with it as "index:kind" pairs; only cells that hold a block can carry one. */
+function itemStr(){var a=[],r,c;for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++)if(grid[r][c]&&itm[r][c])a.push((r*COLS+c)+':'+itm[r][c]);return a.join(',')}
+function strItems(str,b){
+  var out=[],r;for(r=0;r<ROWS;r++)out.push(new Array(COLS).fill(0));
+  if(typeof str!=='string'||!str||typeof b!=='string')return out;
+  str.split(',').slice(0,COLS*ROWS).forEach(function(e){
+    var q=e.split(':'),ix=+q[0],kd=q[1];
+    if(Number.isInteger(ix)&&ix>=0&&ix<COLS*ROWS&&b[ix]!=='.'&&ITEMS[kd])out[Math.floor(ix/COLS)][ix%COLS]=kd;
+  });
+  return out;
+}
 function strCells(b){var a=[];for(var i=0;i<b.length;i++)a.push(b[i]==='.'?0:b[i]);return a}
-/* Put a new stack on my board. Item cells on it are dropped; touching blocks of one colour become one piece for gravity. */
-function applyBoard(cells){
+/* Put a new stack on my board; its item cells (items) come along. Touching blocks of one colour become one piece for gravity. */
+function applyBoard(cells,items){
   var r,c;
-  swapAnim={t:0,d:760,old:grid.map(function(row){return row.slice()})};   /* the board flips: old stack turns edge-on, the new one turns back */
+  swapAnim={t:0,d:760,old:grid.map(function(row){return row.slice()}),oldI:itm.map(function(row){return row.slice()})};   /* the board flips: old stack turns edge-on, the new one turns back */
   grid=[];gid=[];itm=[];
-  for(r=0;r<ROWS;r++){grid.push(cells.slice(r*COLS,(r+1)*COLS));gid.push(new Array(COLS).fill(0));itm.push(new Array(COLS).fill(0))}
+  for(r=0;r<ROWS;r++){grid.push(cells.slice(r*COLS,(r+1)*COLS));gid.push(new Array(COLS).fill(0));itm.push(items&&items[r]?items[r].slice():new Array(COLS).fill(0))}
   for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++){
     if(!grid[r][c]||gid[r][c])continue;
     var id=++pidc,t=grid[r][c],st=[[r,c]];gid[r][c]=id;
@@ -941,21 +953,25 @@ function setInvFromStr(str){
   renderInv(inv.length>0);
 }
 function fireSwap(){
-  toast('used',{n:itemName('swap')});sfxItem();sfxWhoosh();
+  sfxItem();sfxWhoosh();
   if(mode==='cpu'&&cpu){
     if(cpu.sh>0){cpu.sh--;oppBlocked();return}   /* same rule as online: a shield blocks the swap (the item is used up) */
-    var mine=[],theirs=[],r,c;
-    for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++){mine.push(grid[r][c]||0);theirs.push(cpu.g[r][c]||0)}
+    var mine=[],theirs=[],r,c,myIt=[],theirIt=[];
+    for(r=0;r<ROWS;r++){
+      for(c=0;c<COLS;c++){mine.push(grid[r][c]||0);theirs.push(cpu.g[r][c]||0)}
+      myIt.push(itm[r].map(function(v,k){return grid[r][k]?v:0}));
+      theirIt.push((cpu.it&&cpu.it[r]?cpu.it[r]:new Array(COLS).fill(0)).map(function(v,k){return cpu.g[r][k]?v:0}));
+    }
     for(r=0;r<ROWS;r++)cpu.g[r]=mine.slice(r*COLS,(r+1)*COLS);
-    cpu.it=cpuItGrid();   /* item cells never travel with a swapped board */
+    cpu.it=myIt;   /* item cells travel with the boards */
     /* only the boards trade: items each side already owns (the queue) stay with their owner */
     stamp('swap',ctr('opp'),true);pulse($('opp'),'hit');
-    swapFx();applyBoard(theirs);
+    swapFx();applyBoard(theirs,theirIt);
     return;
   }
   /* online: send my stack and wait (frozen) for the opponent's stack; the opponent's shield can block it */
   swapSeq++;swapWait={n:swapSeq,t:performance.now()};
-  push({sw:boardStr(),swn:swapSeq});   /* only the board travels; owned items stay */
+  push({sw:boardStr(),swn:swapSeq,swt:itemStr()});   /* the board and the item cells on it travel; owned items stay */
   stamp('swap',ctr('opp'),true);pulse($('opp'),'hit');
 }
 function receiveSwap(b,n,i){
@@ -966,14 +982,14 @@ function receiveSwap(b,n,i){
 function tryApplySwapIn(){
   if(!swapIn||state!=='playing'||iblast||swapWait)return;
   var s=swapIn;swapIn=null;
-  push({sr:boardStr(),srn:s.n});   /* only my board goes back */
-  swapFx();applyBoard(strCells(s.b));
+  push({sr:boardStr(),srn:s.n,srt:itemStr()});   /* my board and its item cells go back */
+  swapFx();applyBoard(strCells(s.b),strItems(s.i,s.b));
 }
-function finishSwap(sr,sri){
+function finishSwap(sr,srt){
   swapWait=null;
   if(sr===''){toast('swapblocked');sfxItem();return}
   if(!okBoard(sr)||state!=='playing')return;
-  swapFx();applyBoard(strCells(sr));
+  swapFx();applyBoard(strCells(sr),strItems(srt,sr));
 }
 var swept=[];
 function finishBlast(){
@@ -991,7 +1007,7 @@ function finishBlast(){
   });
   swept=[];
   if(chain.length){
-    chain.forEach(function(h){toast('used',{n:itemName(h.k)})});
+    
     sfxCharge();
     iblast={t:0,d:520,list:chain,cb:ib.cb};
     return;
@@ -999,7 +1015,6 @@ function finishBlast(){
   ib.cb();
 }
 function fireItem(k,cy,cx){
-  toast('used',{n:itemName(k)});
   if(ATTACKS.indexOf(k)>=0){
     sfxItem();sfxWhoosh();
     var tok=itemTok,to=ctr('opp');
@@ -1845,7 +1860,7 @@ function draw(){
   if(swapAnim){var sxs=Math.max(.02,Math.abs(Math.cos(Math.PI*sk)));bx.translate(W/2,0);bx.scale(sxs,1);bx.translate(-W/2,0)}
   for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
     var g0=oldG?oldG[r][c]:grid[r][c];
-    if(g0&&!hide[r]){jellyAt(r,c,.032);cell(bx,c*cs,r*cs,cs,COL[g0],null,jsx,jsy);if(!oldG&&itm[r][c])icon(bx,c*cs,r*cs,cs,itm[r][c])}
+    if(g0&&!hide[r]){jellyAt(r,c,.032);cell(bx,c*cs,r*cs,cs,COL[g0],null,jsx,jsy);var it0=oldG?(swapAnim.oldI&&swapAnim.oldI[r][c]):itm[r][c];if(it0)icon(bx,c*cs,r*cs,cs,it0)}
   }
   bx.restore();
   if(swapAnim){   /* a soft light sweeps across while the stacks trade places */
@@ -2276,6 +2291,8 @@ function win(msg){
   state='over';endItems();fx=null;fall=[];cur=null;myRdy=false;push({rdy:false});
   unlockCfg();endSub=msg;overlay('victory',msg,'rematch',false);endMenu();endFx('win');
 }
+/* glow colour per item (r,g,b): turtle green, shield blue, junk orange ... */
+var GLOW={bomb:[255,50,50],laser:[255,212,0],nuke:[255,100,20],slow:[60,215,90],shield:[70,130,255],junk:[255,165,50],speed:[255,110,190],fog:[150,158,170],rev:[160,90,255],swap:[20,205,160]};
 function drawOpp(){
   if(mode==='solo')return;
   var W=oc*COLS,H=oc*ROWS,g=null,gi='';
@@ -2296,12 +2313,23 @@ function drawOpp(){
   ox.fillStyle=TH.well;ox.fillRect(0,0,W,H);
   if(g)for(var i=0;i<g.length;i++){var ch=g[i];if(ch!=='.'&&COL[ch])cell(ox,(i%COLS)*oc,Math.floor(i/COLS)*oc,oc,COL[ch])}
   if(g&&gi&&itemMode){
-    var wait=false;
+    var wait=false,ents=[];
     gi.split(',').forEach(function(e){
       var q=e.split(':'),ix=+q[0],kd=q[1];
       if(!(ix>=0&&ix<g.length)||g[ix]==='.'||!ITEMS[kd])return;
-      var im=iconImg(kd);if(!(im.complete&&im.naturalWidth))wait=true;
-      icon(ox,(ix%COLS)*oc,Math.floor(ix/COLS)*oc,oc,kd);
+      ents.push([ix,kd]);
+    });
+    /* glow first (it bleeds over the neighbouring blocks), then the icons on top, so the opponent's items stand out */
+    ents.forEach(function(t){
+      var cx=(t[0]%COLS)*oc+oc/2,cy=Math.floor(t[0]/COLS)*oc+oc/2,rad=oc*1.25;
+      var gr=ox.createRadialGradient(cx,cy,oc*.1,cx,cy,rad);
+      var rgb=GLOW[t[1]]||[255,230,120],lt=rgb.map(function(v){return Math.round(v+(255-v)*.55)});   /* each item glows in its own colour */
+      gr.addColorStop(0,'rgba('+lt+',.95)');gr.addColorStop(.38,'rgba('+rgb+',.72)');gr.addColorStop(1,'rgba('+rgb+',0)');
+      ox.save();ox.fillStyle=gr;ox.fillRect(cx-rad,cy-rad,rad*2,rad*2);ox.restore();
+    });
+    ents.forEach(function(t){
+      var im=iconImg(t[1]);if(!(im.complete&&im.naturalWidth))wait=true;
+      icon(ox,(t[0]%COLS)*oc,Math.floor(t[0]/COLS)*oc,oc,t[1]);
     });
     if(wait)oppDrawKey='';   /* an icon was still loading: draw again next frame */
   }
@@ -2796,8 +2824,8 @@ function onPeersCore(ch){
       var cbn=Math.floor(Number(P.cbn)||0);
       if(cbn>seenCb){seenCb=cbn;var cbv=Math.floor(Number(P.cbv)||0);if(cbv>=2&&cbv<=99)oppComboPop(cbv)}
       var swn=Math.floor(Number(P.swn)||0);
-      if(swn>seenSw){seenSw=swn;receiveSwap(typeof P.sw==='string'?P.sw:'',swn,typeof P.swi==='string'?P.swi:null)}
-      if(swapWait&&Math.floor(Number(P.srn)||0)===swapWait.n)finishSwap(typeof P.sr==='string'?P.sr:'',typeof P.sri==='string'?P.sri:null);
+      if(swn>seenSw){seenSw=swn;receiveSwap(typeof P.sw==='string'?P.sw:'',swn,typeof P.swt==='string'?P.swt:'')}
+      if(swapWait&&Math.floor(Number(P.srn)||0)===swapWait.n)finishSwap(typeof P.sr==='string'?P.sr:'',typeof P.srt==='string'?P.srt:'');
       if(P.dead===true)win('opptopped');
     }
     return;
