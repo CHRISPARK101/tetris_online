@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0f1224">
-<title>Block Duel Online</title>
+<title>Brick Duel Online</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Jua&family=Noto+Color+Emoji&display=swap" rel="stylesheet">
@@ -444,7 +444,7 @@ input,select{-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
-<div id="adslot" role="img" aria-label="Block Duel Online"><span class="adt" aria-hidden="true"><b style="--i:0;--c:#2fc4e6;--c2:#1b8fb0">B</b><b style="--i:1;--c:#4b6ff0;--c2:#2a43b8">L</b><b style="--i:2;--c:#a65bd8;--c2:#6f2fa0">O</b><b style="--i:3;--c:#ee5a5a;--c2:#b32b2b">C</b><b style="--i:4;--c:#f28b3a;--c2:#b85a10">K</b><i></i><b style="--i:5;--c:#4cc46a;--c2:#25883f">D</b><b style="--i:6;--c:#2fc4e6;--c2:#1b8fb0">U</b><b style="--i:7;--c:#f5b800;--c2:#b87d00">E</b><b style="--i:8;--c:#ee5a5a;--c2:#b32b2b">L</b></span><small class="ol" aria-hidden="true"><span class="sg"><u></u><u></u><u></u></span><em>online</em></small></div>
+<div id="adslot" role="img" aria-label="Brick Duel Online"><span class="adt" aria-hidden="true"><b style="--i:0;--c:#2fc4e6;--c2:#1b8fb0">B</b><b style="--i:1;--c:#4b6ff0;--c2:#2a43b8">R</b><b style="--i:2;--c:#a65bd8;--c2:#6f2fa0">I</b><b style="--i:3;--c:#ee5a5a;--c2:#b32b2b">C</b><b style="--i:4;--c:#f28b3a;--c2:#b85a10">K</b><i></i><b style="--i:5;--c:#4cc46a;--c2:#25883f">D</b><b style="--i:6;--c:#2fc4e6;--c2:#1b8fb0">U</b><b style="--i:7;--c:#f5b800;--c2:#b87d00">E</b><b style="--i:8;--c:#ee5a5a;--c2:#b32b2b">L</b></span><small class="ol" aria-hidden="true"><span class="sg"><u></u><u></u><u></u></span><em>online</em></small></div>
 <div id="app">
   <div id="stage">
     <div id="inv" aria-label="Item queue"></div>
@@ -458,7 +458,7 @@ input,select{-webkit-user-select:text;user-select:text}
         <div id="bubs" aria-hidden="true"></div>
         <div id="wait" hidden aria-hidden="true"><span class="rg"></span><span class="rg"></span><span class="rg"></span><span class="pc"><u></u><u></u><u></u><u></u></span></div>
         <div id="endem" hidden aria-hidden="true"></div>
-        <h1 id="ot">BLOCK DUEL</h1>
+        <h1 id="ot">BRICK DUEL</h1>
         <p id="os">Drag to move, tap to rotate, flick down to drop</p>
         <p id="ob"></p>
         <div id="rcfg" hidden>
@@ -487,7 +487,7 @@ input,select{-webkit-user-select:text;user-select:text}
         <button id="rnd">🎲 Random Match</button>
         <button id="cpub">Vs CPU</button>
         <button id="rk">👑 Ranking</button>
-        <div id="netbox" hidden><input id="code" inputmode="numeric" maxlength="6" placeholder="000000" aria-label="Room code"><div class="nrow"><button id="mk">Create room</button><button id="join">Join room</button></div><button id="back">Back</button></div>
+        <div id="netbox" hidden><input id="code" inputmode="numeric" maxlength="4" placeholder="0000" aria-label="Room code"><div class="nrow"><button id="mk">Create room</button><button id="join">Join room</button></div><button id="back">Back</button></div>
         <div id="lvbox" hidden><div class="swr"><label id="cgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="cgvc" role="switch"><i></i></label><div class="swh"><label id="cit" class="sw"><span>Item mode</span><input type="checkbox" id="citc" role="switch"><i></i></label><span class="ihelp" role="button" tabindex="0">?</span></div></div><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
       </div>
     </div>
@@ -1288,7 +1288,7 @@ function landItem(k){
 }
 function cpuReceive(k){
   if(!cpu)return;
-  if(k==='junk')cpu.pend+=3;else cpu.dizzy=pt+8000;   /* speed/fog/reverse: the CPU misplaces pieces for a while */
+  if(k==='junk'){cpu.pend+=3;cpuHurt(3)}else cpu.dizzy=pt+8000;   /* speed/fog/reverse: the CPU misplaces pieces for a while */
 }
 /* CPU attacks are kept in its own visible item queue, then fired on its next turn. */
 function cpuFireStored(i){
@@ -1378,6 +1378,10 @@ function lock(){
      silently dropping its upper cells creates impossible board states. */
   for(var tr=0;tr<cur.m.length;tr++)for(var tc=0;tc<cur.m[tr].length;tc++){
     if(cur.m[tr][tc]&&cur.y+tr<0){over();return;}
+  }
+  if((mode==='cpu'||mode==='solo')&&cur.t&&SH[cur.t]){   /* let the CPU watch where I put this piece (done a moment later so the game never stutters) */
+    var snap=grid.map(function(q){return q.slice()}),sm=cur.m.map(function(q){return q.slice()}),sx=cur.x,st=cur.t;
+    setTimeout(function(){try{styleObserve(snap,st,sm,sx)}catch(e){}},60);
   }
   sfxPlace();
   for(var r=0;r<cur.m.length;r++)for(var c=0;c<cur.m[r].length;c++){
@@ -1607,12 +1611,12 @@ function fillBubbles(){
 function renderOverlay(){
   fillBubbles();
   if(ovT==='tetris'){   /* main title is never translated; each letter is its own little drop */
-    var L1=[['B','#2fc4e6','#1b8fb0'],['L','#4b6ff0','#2a43b8'],['O','#a65bd8','#6f2fa0'],['C','#ee5a5a','#b32b2b'],['K','#f28b3a','#b85a10']];
+    var L1=[['B','#2fc4e6','#1b8fb0'],['R','#4b6ff0','#2a43b8'],['I','#a65bd8','#6f2fa0'],['C','#ee5a5a','#b32b2b'],['K','#f28b3a','#b85a10']];
     var L2=[['D','#4cc46a','#25883f'],['U','#2fc4e6','#1b8fb0'],['E','#f5b800','#b87d00'],['L','#ee5a5a','#b32b2b']];
     var lt=function(x,i){return '<span style="--i:'+i+';--c:'+x[1]+';--c2:'+x[2]+';--sh:'+x[1]+'66">'+x[0]+'</span>'};
     /* "online" is small and alive: signal bars that keep rising and falling next to a shimmering word */
     $('ot').innerHTML=L1.map(lt).join('')+'<br>'+L2.map(function(x,i){return lt(x,i+5)}).join('')+'<small class="ol" aria-hidden="true"><b class="sg"><i></i><i></i><i></i></b><em>online</em></small>';
-    $('ot').setAttribute('aria-label','Block Duel online');
+    $('ot').setAttribute('aria-label','Brick Duel online');
   }else{$('ot').textContent=txtOf(ovT);$('ot').removeAttribute('aria-label')}
   paintOS();
   $('go').textContent=txtOf(ovB);
@@ -1955,6 +1959,7 @@ function loop(t){
     if(mode==='cpu'&&cpu){
       cpuT+=dt;
       var cms=CPU_MS[cpuLvl]*Math.max(.45,1-pt/300000);
+      if(cpuLvl>=1){cms=Math.max(250,cms/(1+(cpuLvl>=2?1.2:.6)*Math.min(cpuRate(),1.5)))}   /* pressed hard = plays faster */
       if(cpuT>=cms){cpuT=0;cpuStep()}
     }
   }
@@ -2046,7 +2051,7 @@ document.addEventListener('keydown',function(e){
   e.preventDefault();
 });
 
-var endSub='',ROOM_LEN=6,cfg={gv:1,it:0,sv:0},cfgLocked=false,lastPeers=null,cfgNoteTimer=null,visAt=Date.now(),room=null,opp=null,meP=null,myRdy=false,mySeed=0,gs=0,pend=0,seen=0,atk=0,mode='solo',roomCode='',sentG='',lastSend=0,rnd=Math.random;
+var endSub='',ROOM_LEN=4,cfg={gv:1,it:0,sv:0},cfgLocked=false,lastPeers=null,cfgNoteTimer=null,visAt=Date.now(),room=null,opp=null,meP=null,myRdy=false,mySeed=0,gs=0,pend=0,seen=0,atk=0,mode='solo',roomCode='',sentG='',lastSend=0,rnd=Math.random;
 function rng(s){return function(){s|=0;s=s+0x6D2B79F5|0;var t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function push(p){
   if(!room)return Promise.resolve(false);
@@ -2123,7 +2128,8 @@ function cpuItGrid(){var a=[];for(var r=0;r<ROWS;r++)a.push(new Array(COLS).fill
 function cpuStart(l){
   cpuLvl=l;cpuT=0;
   var g=[];for(var r=0;r<ROWS;r++)g.push(new Array(COLS).fill(0));
-  cpu={g:g,it:cpuItGrid(),bag:[],pend:0,score:0,dizzy:0,inv:[],since:0,carry:false,sh:0,cool:0};
+  cpu={g:g,it:cpuItGrid(),bag:[],pend:0,score:0,dizzy:0,inv:[],since:0,carry:false,sh:0,cool:0,gl:[]};
+  styleApply();
 }
 function startCpu(l){mode='cpu';cpuStart(l);resize();start()}
 function cpuRefill(){var C=cpu;C.bag=KEYS.slice();for(var i=C.bag.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=C.bag[i];C.bag[i]=C.bag[j];C.bag[j]=t}}
@@ -2144,7 +2150,28 @@ function cpuFeat(g){
   for(r=0;r<ROWS;r++){var prev=1;for(c=0;c<COLS;c++){var f=g[r][c]?1:0;if(f!==prev)rowT++;prev=f}if(!prev)rowT++}
   for(c=0;c<COLS;c++){var pv=1;for(r=ROWS-1;r>=0;r--){var q=g[r][c]?1:0;if(q!==pv)colT++;pv=q}}
   for(c=0;c<COLS;c++){var lft=c?h[c-1]:99,rgt=c<COLS-1?h[c+1]:99,d=Math.min(lft,rgt)-h[c];if(d>0)wells+=d*(d+1)/2}
-  return{holes:holes,wells:wells,rowT:rowT,colT:colT};
+  var agg=0,bump=0;for(c=0;c<COLS;c++){agg+=h[c];if(c<COLS-1)bump+=Math.abs(h[c]-h[c+1])}
+  return{holes:holes,wells:wells,rowT:rowT,colT:colT,agg:agg,bump:bump};
+}
+/* ===== CPU style: the CPU learns how I place blocks (a softmax model over placement features) and plays partly in my style ===== */
+var CPU_BASE_W=[-4.5,-3.2,-9.3,-7.9,-3.4,6,0,0],STYLE_SC=[4.5,3.2,9.3,7.9,3.4,6,3,3],STYLE={d:[0,0,0,0,0,0,0,0],n:0},cpuWt=CPU_BASE_W.slice();
+try{var _st=JSON.parse(localStorage.getItem('bd-style')||'null');if(_st&&_st.d&&_st.d.length===8&&isFinite(_st.n)){STYLE={d:_st.d.map(function(v){return isFinite(v)?v:0}),n:_st.n}}}catch(e){}
+function styleSave(){try{localStorage.setItem('bd-style',JSON.stringify(STYLE))}catch(e){}}
+function styleApply(){   /* weights the CPU plays with: its own plus up to 60% of my learned style (more as it sees more of my moves) */
+  var conf=Math.min(1,STYLE.n/150)*.6;
+  cpuWt=CPU_BASE_W.map(function(b,i){return b+conf*STYLE.d[i]});
+}
+function styleObserve(g0,t,m,x){
+  var key=JSON.stringify(m.map(function(r){return r.map(function(v){return v?1:0})}));
+  var L=cpuCands(g0,t,null,true),ci=-1,i,j;
+  for(i=0;i<L.length;i++)if(L[i].x===x&&JSON.stringify(L[i].m)===key){ci=i;break}
+  if(ci<0||L.length<2)return;
+  var d=STYLE.d,w=CPU_BASE_W.map(function(b,k){return b+d[k]}),z=[],mx=-1e9,sum=0;
+  for(i=0;i<L.length;i++){var v=0;for(j=0;j<8;j++)v+=w[j]*L[i].f[j];v/=3;z.push(v);if(v>mx)mx=v}
+  var pr=z.map(function(v){var e=Math.exp(v-mx);sum+=e;return e}),ex=[0,0,0,0,0,0,0,0];
+  for(i=0;i<L.length;i++){var q=pr[i]/sum;for(j=0;j<8;j++)ex[j]+=q*L[i].f[j]}
+  for(j=0;j<8;j++){var nv=d[j]*.999+.15*(L[ci].f[j]-ex[j]),lim=.6*STYLE_SC[j];d[j]=Math.max(-lim,Math.min(lim,nv))}
+  STYLE.n++;if(STYLE.n%10===0)styleSave();
 }
 function cpuEval2(g,m,x,t){
   if(cpuHit(g,m,x,0))return null;
@@ -2155,8 +2182,9 @@ function cpuEval2(g,m,x,t){
   var n=0;
   for(r=ROWS-1;r>=0;r--){if(g2[r].every(Boolean)){g2.splice(r,1);g2.unshift(new Array(COLS).fill(0));n++;r++}}
   var f=cpuFeat(g2);
-  var s=-4.5*(ROWS-(y+m.length/2))-3.2*f.rowT-9.3*f.colT-7.9*f.holes-3.4*f.wells+6*n*Math.min(4,n);
-  return{g:g2,n:n,s:s,x:x,y:y,m:m};
+  var fv=[ROWS-(y+m.length/2),f.rowT,f.colT,f.holes,f.wells,n*Math.min(4,n),f.agg/10,f.bump/5],s=0,q;
+  for(q=0;q<8;q++)s+=cpuWt[q]*fv[q];
+  return{g:g2,n:n,s:s,x:x,y:y,m:m,f:fv};
 }
 /* every legal landing of piece t (each distinct rotation once); with nt it adds the best score the next piece could reach afterwards */
 function cpuCands(g,t,nt,smart){
@@ -2260,6 +2288,14 @@ function cpuPlan(){
   if(best<0)return;
   if(bv>=12||((bv>=T||full)&&(C.cool===0||panic))){if(cpuFireStored(best))C.cool=L>=2?2:3}
 }
+/* How hard I am pressing the CPU: garbage rows I sent it per second over the last 20 s. The CPU speeds up when pressed (a built-in difficulty adjuster). */
+function cpuHurt(n){if(cpu&&cpu.gl)cpu.gl.push([pt,n])}
+function cpuRate(){
+  var C=cpu,sum=0,i;if(!C||!C.gl)return 0;
+  while(C.gl.length&&pt-C.gl[0][0]>20000)C.gl.shift();
+  for(i=0;i<C.gl.length;i++)sum+=C.gl[i][1];
+  return sum/20;
+}
 function cpuStep(){
   var C=cpu;
   if(C.inv&&C.inv.length)cpuPlan();
@@ -2332,7 +2368,7 @@ function attack(n,casc){
   /* Chain reactions (combo) send more the longer the chain: combo 2 = +1 row, 3 = +2, ... up to +6, on top of the usual rows. */
   var a=(n>=4?4:Math.max(0,n-1))+(casc?Math.min(Math.max(streak-1,1),6):0);
   if(a>0&&pend>0){var c=Math.min(a,pend);pend-=c;a-=c}
-  if(a>0){if(mode==='cpu'){cpu.pend+=a}else{atk+=a;push({atk:atk})}}
+  if(a>0){if(mode==='cpu'){cpu.pend+=a;cpuHurt(a)}else{atk+=a;push({atk:atk})}}
 }
 function warnIncoming(){
   pendFlashT=wnow;tone(180,.08,'square',.03);tone(140,.1,'square',.03,.09);
@@ -3002,9 +3038,9 @@ function savedRoom(maxAge){
 function saveRoom(code,creator,pid,rnd){try{localStorage.setItem(ROOM_KEY,JSON.stringify({code:code,creator:!!creator,rnd:!!rnd,pid:pid||'',t:Date.now()}))}catch(e){}}
 function forgetRoom(){try{localStorage.removeItem(ROOM_KEY)}catch(e){}}
 function genCode(){
-  var lo=Math.pow(10,ROOM_LEN-1),range=9*lo,n;
+  var range=Math.pow(10,ROOM_LEN),n;   /* every code from 0000 to 9999 is allowed; the code is always handled as text, so a leading zero is safe */
   try{n=crypto.getRandomValues(new Uint32Array(1))[0]}catch(e){n=Math.floor(Math.random()*4294967296)}
-  return String(lo+n%range);
+  return String(n%range).padStart(ROOM_LEN,'0');
 }
 function createRoom(n){
   var r=n?null:savedRoom(30*60*1000);
@@ -3131,7 +3167,7 @@ $('mk').addEventListener('click',function(){createRoom(0)});
 /* Tapping the yellow room code shares it (share sheet on phones, clipboard otherwise). */
 function shareRoomCode(el){
   var c=(typeof roomCode==='string')?roomCode:'';if(!c||mode!=='vs'||!room)return;
-  var text='BLOCK DUEL: '+c,android=/Android/i.test(navigator.userAgent||'');
+  var text='BRICK DUEL: '+c,android=/Android/i.test(navigator.userAgent||'');
   function done(){if(!el)return;el.setAttribute('data-t',tr('copied'));el.classList.add('ok');setTimeout(function(){el.classList.remove('ok')},1500)}
   function copy(){
     function legacy(){
@@ -3145,7 +3181,7 @@ function shareRoomCode(el){
     try{location.href='intent:#Intent;action=android.intent.action.SEND;type=text/plain;S.android.intent.extra.TEXT='+encodeURIComponent(text)+';end'}catch(e){}
   }
   if(navigator.share){
-    var d={title:'Block Duel Online',text:text};if(/^https?:/.test(location.href))d.url=location.href;
+    var d={title:'Brick Duel Online',text:text};if(/^https?:/.test(location.href))d.url=location.href;
     navigator.share(d).catch(function(err){if(err&&err.name==='AbortError')return;if(android)viaIntent();else copy()});
   }else if(android)viaIntent();
   else copy();
@@ -3319,6 +3355,7 @@ var I18N={
   "rematch": "Rematch",
   "ready": "Ready",
   "beatcpu": "You beat the CPU",
+  "cpuTitle": "VS CPU",
   "oppleft": "Opponent left",
   "opptopped": "Opponent topped out",
   "connlost": "Connection lost",
@@ -3854,7 +3891,7 @@ var I18N={
   "main": "主菜单",
   "battle": "双人对战",
   "ranking": "👑 排位赛",
-  "cpu": "人机对战",
+  "cpu": "CPU对战",
   "join": "加入房间",
   "rnd": "随机匹配",
   "rndtitle": "随机匹配",
@@ -3894,7 +3931,7 @@ var I18N={
   "saving": "保存中...",
   "connecting": "正在连接...",
   "roomcode": "{n}位房间码",
-  "cpuTitle": "人机对战",
+  "cpuTitle": "CPU对战",
   "battleTitle": "双人对战",
   "level": "等级",
   "score": "得分",
@@ -3914,7 +3951,7 @@ var I18N={
   "playagain": "再玩一次",
   "rematch": "再战一局",
   "ready": "准备",
-  "beatcpu": "你击败了电脑",
+  "beatcpu": "你击败了CPU",
   "oppleft": "对手已离开",
   "opptopped": "对手已堆满",
   "connlost": "连接已断开",
@@ -4003,7 +4040,7 @@ var I18N={
   "main": "主選單",
   "battle": "雙人對戰",
   "ranking": "👑 排位賽",
-  "cpu": "人機對戰",
+  "cpu": "CPU對戰",
   "join": "加入房間",
   "rnd": "隨機配對",
   "rndtitle": "隨機配對",
@@ -4043,7 +4080,7 @@ var I18N={
   "saving": "儲存中...",
   "connecting": "正在連線...",
   "roomcode": "{n}位房間碼",
-  "cpuTitle": "人機對戰",
+  "cpuTitle": "CPU對戰",
   "battleTitle": "雙人對戰",
   "level": "等級",
   "score": "得分",
@@ -4063,7 +4100,7 @@ var I18N={
   "playagain": "再玩一次",
   "rematch": "再戰一局",
   "ready": "準備",
-  "beatcpu": "你擊敗了電腦",
+  "beatcpu": "你擊敗了CPU",
   "oppleft": "對手已離開",
   "opptopped": "對手已堆滿",
   "connlost": "連線已中斷",
@@ -4600,7 +4637,7 @@ var I18N={
   "battle": "Đấu 2 người",
   "battleTitle": "Đấu 2 người",
   "ranking": "👑 Bảng xếp hạng",
-  "cpu": "Đấu với máy",
+  "cpu": "Đấu với CPU",
   "join": "Vào phòng",
   "rnd": "Ghép trận ngẫu nhiên",
   "rndtitle": "Ghép trận ngẫu nhiên",
@@ -4658,7 +4695,8 @@ var I18N={
   "playagain": "Chơi lại",
   "rematch": "Đấu lại",
   "ready": "Sẵn sàng",
-  "beatcpu": "Bạn đã thắng máy",
+  "beatcpu": "Bạn đã thắng CPU",
+  "cpuTitle": "Đấu với CPU",
   "oppleft": "Đối thủ đã rời đi",
   "opptopped": "Đối thủ bị đầy màn hình",
   "connlost": "Mất kết nối",
