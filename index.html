@@ -750,7 +750,7 @@ var inv=[],INV_MAX=5,fireAt=0,resumeCur=null,invKey='',invShown=null,invOn=null,
 /* Only these wait in the queue for the fire button. Bomb, laser, slow and shield depend on where the item cell was, so they fire at once. */
 var STORE=['junk','speed','fog','rev','swap','nuke'];
 var pendHeavy=[];   /* bombs, lasers and nukes from cleared lines, waiting for the stack to settle */
-var iblast=null,shield=0,fastUntil=0,slowUntil=0,fogUntil=0,revUntil=0,iseq=0,seenIq=0,boom=null,ttTimer=null,bfLast='',buffRenderAt=0;
+var iblast=null,shield=0,fastUntil=0,fastN=0,slowUntil=0,fogUntil=0,revUntil=0,iseq=0,seenIq=0,boom=null,ttTimer=null,bfLast='',buffRenderAt=0;
 var EMOJI_FONT='"Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif';
 function pickKind(){
   var pool=mode==='solo'?POOL_SOLO:POOL_FULL,tot=0,i;
@@ -786,7 +786,7 @@ function renderBuffs(){
   var mine='',theirs='';
   if(shield>0)mine+=iconSVG('shield')+(shield>1?'<b>×'+shield+'</b>':'');
   if(pt<slowUntil)mine+=iconSVG('slow');
-  if(pt<fastUntil)theirs+=iconSVG('speed');
+  if(pt<fastUntil)theirs+=iconSVG('speed')+(fastN>1?'<b>×'+fastN+'</b>':'');
   if(pt<fogUntil)theirs+=iconSVG('fog');
   if(pt<revUntil)theirs+=iconSVG('rev');
   var t=mine+'|'+theirs;
@@ -798,10 +798,10 @@ function sfxBoom(){tone(120,.25,'sawtooth',.07);tone(80,.3,'triangle',.07,.05)}
 function sfxHit(){tone(200,.18,'sawtooth',.05);tone(150,.2,'sawtooth',.05,.1)}
 function resetItemState(){
   inv=[];fireAt=0;resumeCur=null;swapWait=null;swapIn=null;seenSw=0;swapSeq=0;seenCb=0;cbSeq=0;deathNote='';renderInv();
-  shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;iseq=0;seenIq=0;bkN=0;seenBk=0;boom=null;blastFxs=[];swapAnim=null;iblast=null;pendHeavy=[];sinceItem=0;itemTok++;clearFlyers();
+  shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;fastN=0;iseq=0;seenIq=0;bkN=0;seenBk=0;boom=null;blastFxs=[];swapAnim=null;iblast=null;pendHeavy=[];sinceItem=0;itemTok++;clearFlyers();
   clearTimeout(ttTimer);$('tt').hidden=true;renderBuffs();
 }
-function endItems(){inv=[];resumeCur=null;swapWait=null;swapIn=null;renderInv();iblast=null;pendHeavy=[];itemTok++;clearFlyers();shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;boom=null;blastFxs=[];swapAnim=null;renderBuffs();$('tt').hidden=true}
+function endItems(){inv=[];resumeCur=null;swapWait=null;swapIn=null;renderInv();iblast=null;pendHeavy=[];itemTok++;clearFlyers();shield=0;fastUntil=slowUntil=fogUntil=revUntil=0;fastN=0;boom=null;blastFxs=[];swapAnim=null;renderBuffs();$('tt').hidden=true}
 function topRow(){for(var r=0;r<ROWS;r++)if(grid[r].some(Boolean))return r;return ROWS}
 function wipe(r){grid[r].fill(0);gid[r].fill(0);itm[r].fill(0)}
 /* The item cell was part of a cleared line: collect it before the rows disappear ... */
@@ -952,21 +952,31 @@ function setInvFromStr(str){
   inv=a.filter(function(k){return STORE.indexOf(k)>=0}).slice(0,INV_MAX);
   renderInv(inv.length>0);
 }
+/* The CPU board and mine trade places (item cells travel along; owned items stay). Used when I swap and when the CPU swaps. */
+function swapWithCpu(){
+  var mine=[],theirs=[],r,c,myIt=[],theirIt=[];
+  for(r=0;r<ROWS;r++){
+    for(c=0;c<COLS;c++){mine.push(grid[r][c]||0);theirs.push(cpu.g[r][c]||0)}
+    myIt.push(itm[r].map(function(v,k){return grid[r][k]?v:0}));
+    theirIt.push((cpu.it&&cpu.it[r]?cpu.it[r]:new Array(COLS).fill(0)).map(function(v,k){return cpu.g[r][k]?v:0}));
+  }
+  for(r=0;r<ROWS;r++)cpu.g[r]=mine.slice(r*COLS,(r+1)*COLS);
+  cpu.it=myIt;   /* item cells travel with the boards */
+  /* only the boards trade: items each side already owns (the queue) stay with their owner */
+  swapFx();applyBoard(theirs,theirIt);
+}
+/* A swap the CPU sent lands: wait for a calm moment so it never cuts into a clear animation. */
+function landSwap(tok,tries){
+  if(tok!==itemTok||!cpu||mode!=='cpu')return;
+  if(state!=='playing'){if(tries<12&&(state==='anim'||state==='clear'))setTimeout(function(){landSwap(tok,tries+1)},250);return}
+  swapWithCpu();
+}
 function fireSwap(){
   sfxItem();sfxWhoosh();
   if(mode==='cpu'&&cpu){
     if(cpu.sh>0){cpu.sh--;oppBlocked();return}   /* same rule as online: a shield blocks the swap (the item is used up) */
-    var mine=[],theirs=[],r,c,myIt=[],theirIt=[];
-    for(r=0;r<ROWS;r++){
-      for(c=0;c<COLS;c++){mine.push(grid[r][c]||0);theirs.push(cpu.g[r][c]||0)}
-      myIt.push(itm[r].map(function(v,k){return grid[r][k]?v:0}));
-      theirIt.push((cpu.it&&cpu.it[r]?cpu.it[r]:new Array(COLS).fill(0)).map(function(v,k){return cpu.g[r][k]?v:0}));
-    }
-    for(r=0;r<ROWS;r++)cpu.g[r]=mine.slice(r*COLS,(r+1)*COLS);
-    cpu.it=myIt;   /* item cells travel with the boards */
-    /* only the boards trade: items each side already owns (the queue) stay with their owner */
     stamp('swap',ctr('opp'),true);pulse($('opp'),'hit');
-    swapFx();applyBoard(theirs,theirIt);
+    swapWithCpu();
     return;
   }
   /* online: send my stack and wait (frozen) for the opponent's stack; the opponent's shield can block it */
@@ -1028,7 +1038,7 @@ function fireItem(k,cy,cx){
     return;
   }
   if(k==='shield'){shield++;sfxItem();renderBuffs();return}
-  if(k==='slow'){slowUntil=pt+8000;sfxItem();renderBuffs();return}
+  if(k==='slow'){slowUntil=Math.min(Math.max(slowUntil,pt)+8000,pt+24000);sfxItem();renderBuffs();return}   /* each turtle adds 8 s on top of what is left, up to 24 s in total */
 }
 /* Bomb / laser / nuke feedback without shaking the screen: debris from the broken blocks, a shock ring or a zap line,
    a soft zoom punch, a low thud (or a crackle for the laser) and a short buzz on phones that support it. */
@@ -1268,8 +1278,9 @@ function receiveItem(k){
 function landItem(k){
   var c=ctr('board');
   if(shield>0){shield--;renderBuffs();toast('blocked');sfxItem();stamp('shield',c,true);pulse($('board'),'blk');if(mode==='vs'){bkN++;push({bk:bkN})}return}
+  if(k==='swap'){landSwap(itemTok,0);return}   /* the CPU swapped boards with me */
   if(k==='junk')pend=Math.min(pend+3,ROWS);
-  else if(k==='speed')fastUntil=pt+8000;
+  else if(k==='speed'){fastN=(pt<fastUntil)?Math.min(3,fastN+1):1;fastUntil=pt+8000}   /* rockets hit in a row stack: up to 3 times faster still */
   else if(k==='fog')fogUntil=pt+7000;
   else if(k==='rev')revUntil=pt+8000;
   toast('hit_'+k);sfxHit();renderBuffs();
@@ -1280,14 +1291,15 @@ function cpuReceive(k){
   if(k==='junk')cpu.pend+=3;else cpu.dizzy=pt+8000;   /* speed/fog/reverse: the CPU misplaces pieces for a while */
 }
 /* CPU attacks are kept in its own visible item queue, then fired on its next turn. */
-function cpuFireStored(){
-  if(!cpu||!itemMode||!cpu.inv||!cpu.inv.length||state!=='playing')return;
-  var k=cpu.inv.shift(),tok=itemTok;
+function cpuFireStored(i){
+  if(!cpu||!itemMode||!cpu.inv||!cpu.inv.length||state!=='playing')return false;
+  var k=cpu.inv.splice(i||0,1)[0],tok=itemTok;
   olabel();sfxWhoosh();
   fly(k,ctr('opp'),ctr('board'),720,function(){
     if(tok!==itemTok||(state!=='playing'&&state!=='anim'&&state!=='clear'))return;
     landItem(k);
   });
+  return true;
 }
 function pull(){
   if(!bag.length){
@@ -1561,7 +1573,7 @@ function finishFall(){
   var comboRun=rankTok;setTimeout(function(){if(comboRun===rankTok&&state==='playing'&&!fall.length){streak=0;showCombo()}},1200);
 }
 function interval(){var v=820-(level-1)*70;if(v<90)v=Math.max(4,90*Math.pow(.85,Math.max(0,level-12)));   /* up to level 12 as before (90 ms); after that every level is 15% faster, down to 4 ms (practically instant) around level 31 */
-  if(pt<fastUntil)v=Math.min(v,Math.max(55,v*.3));if(pt<slowUntil)v*=2.5;return v}
+  if(pt<fastUntil){var fn=Math.max(1,fastN);v=Math.min(v,Math.max(Math.max(25,67-12*fn),v*.3*Math.pow(.65,fn-1)))}   /* 1 rocket: 30% of the interval (min 55 ms); each further one: another 35% faster, min 43 / 31 ms */if(pt<slowUntil)v*=2.5;return v}
 
 function hud(){if(score>SCORE_CAP)score=SCORE_CAP;$('sc').textContent=score;$('lv').textContent=level;$('ln').textContent=lines}
 
@@ -1661,7 +1673,7 @@ function endMenu(){
 function holdEnd(){$('go').style.display='none';$('qt').style.display='none'}
 function over(){
   state='over';endItems();
-  if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});unlockCfg();endSub=(deathNote?fm(deathNote)+' ':'')+fm('scorelines',{s:score,l:lines});deathNote='';overlay('youlose',endSub,'rematch',false);endMenu();endFx('lose');return}
+  if(mode!=='solo'){myRdy=false;push({dead:true,rdy:false});unlockCfg();var dn=deathNote,fs0=score,fl0=lines;endSub=function(){return (dn?fmt(dn)+' ':'')+fmt('scorelines',{s:fs0,l:fl0})};deathNote='';   /* a function (not a string sum) so it is translated when drawn */overlay('youlose',endSub,'rematch',false);endMenu();endFx('lose');return}
   var newBest=score>0&&(itemMode?score>bestItems:score>best);
   if(itemMode){if(score>bestItems){bestItems=score;try{localStorage.setItem('tetris-best-items',String(bestItems))}catch(e){}}}
   else if(score>best){best=score;try{localStorage.setItem('tetris-best',String(best))}catch(e){}}
@@ -2046,7 +2058,7 @@ function push(p){
   });
 }
 var CPU_ITEM_MUL=[.5,.75,1];   /* CPU item chance vs the player's: easy 50%, normal 75%, hard 100% */
-var cpu=null,cpuLvl=1,cpuT=0,pt=0,lsec=-1,lastOppAliveCheck=0,CPU_MS=[1500,1000,650],CPU_ERR=[.35,.12,0];
+var cpu=null,cpuLvl=1,cpuT=0,pt=0,lsec=-1,lastOppAliveCheck=0,CPU_MS=[1500,1150,1000],CPU_ERR=[.35,.05,0];   /* tuned in a duel simulator: hard now beats a decent player-like bot ~95% of the time and a strong one ~half */
 var CC='AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GT GU GW GY HK HN HR HT HU ID IE IL IM IN IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SI SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' '),myCC='',DN=null;
 function initDN(lang){try{DN=new Intl.DisplayNames([lang||'en'],{type:'region'})}catch(e){try{DN=new Intl.DisplayNames(['en'],{type:'region'})}catch(e2){DN=null}}}
 initDN('en');
@@ -2111,13 +2123,61 @@ function cpuItGrid(){var a=[];for(var r=0;r<ROWS;r++)a.push(new Array(COLS).fill
 function cpuStart(l){
   cpuLvl=l;cpuT=0;
   var g=[];for(var r=0;r<ROWS;r++)g.push(new Array(COLS).fill(0));
-  cpu={g:g,it:cpuItGrid(),bag:[],pend:0,score:0,dizzy:0,inv:[],since:0,carry:false,sh:0};
+  cpu={g:g,it:cpuItGrid(),bag:[],pend:0,score:0,dizzy:0,inv:[],since:0,carry:false,sh:0,cool:0};
 }
 function startCpu(l){mode='cpu';cpuStart(l);resize();start()}
+function cpuRefill(){var C=cpu;C.bag=KEYS.slice();for(var i=C.bag.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=C.bag[i];C.bag[i]=C.bag[j];C.bag[j]=t}}
 function cpuPull(){
   var C=cpu;
-  if(!C.bag.length){C.bag=KEYS.slice();for(var i=C.bag.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=C.bag[i];C.bag[i]=C.bag[j];C.bag[j]=t}}
+  if(!C.bag.length)cpuRefill();
   return C.bag.pop();
+}
+function cpuPeek(){var C=cpu;if(!C.bag.length)cpuRefill();return C.bag[C.bag.length-1]}   /* the CPU sees its next piece, like the player's preview */
+/* ===== CPU placement brain (normal/hard): row/column transitions, holes, wells and landing height; hard also looks one piece ahead ===== */
+function cpuFeat(g){
+  var h=[],holes=0,wells=0,rowT=0,colT=0,r,c,top;
+  for(c=0;c<COLS;c++){
+    top=-1;for(r=0;r<ROWS;r++)if(g[r][c]){top=r;break}
+    h.push(top<0?0:ROWS-top);
+    if(top>=0)for(r=top;r<ROWS;r++)if(!g[r][c])holes++;
+  }
+  for(r=0;r<ROWS;r++){var prev=1;for(c=0;c<COLS;c++){var f=g[r][c]?1:0;if(f!==prev)rowT++;prev=f}if(!prev)rowT++}
+  for(c=0;c<COLS;c++){var pv=1;for(r=ROWS-1;r>=0;r--){var q=g[r][c]?1:0;if(q!==pv)colT++;pv=q}}
+  for(c=0;c<COLS;c++){var lft=c?h[c-1]:99,rgt=c<COLS-1?h[c+1]:99,d=Math.min(lft,rgt)-h[c];if(d>0)wells+=d*(d+1)/2}
+  return{holes:holes,wells:wells,rowT:rowT,colT:colT};
+}
+function cpuEval2(g,m,x,t){
+  if(cpuHit(g,m,x,0))return null;
+  var y=0,r,c;
+  while(!cpuHit(g,m,x,y+1))y++;
+  var g2=g.map(function(q){return q.slice()});
+  for(r=0;r<m.length;r++)for(c=0;c<m[r].length;c++){if(m[r][c]&&y+r>=0)g2[y+r][x+c]=t}
+  var n=0;
+  for(r=ROWS-1;r>=0;r--){if(g2[r].every(Boolean)){g2.splice(r,1);g2.unshift(new Array(COLS).fill(0));n++;r++}}
+  var f=cpuFeat(g2);
+  var s=-4.5*(ROWS-(y+m.length/2))-3.2*f.rowT-9.3*f.colT-7.9*f.holes-3.4*f.wells+6*n*Math.min(4,n);
+  return{g:g2,n:n,s:s,x:x,y:y,m:m};
+}
+/* every legal landing of piece t (each distinct rotation once); with nt it adds the best score the next piece could reach afterwards */
+function cpuCands(g,t,nt,smart){
+  var list=[],m0=SH[t].map(function(q){return q.slice()}),seen={},k,x,ev=smart?cpuEval2:cpuEval;
+  for(k=0;k<4;k++){
+    var key=JSON.stringify(m0);
+    if(!seen[key]){seen[key]=1;for(x=-2;x<COLS;x++){var e=ev(g,m0,x,t);if(e)list.push(e)}}
+    m0=rot(m0);
+  }
+  if(smart&&nt&&list.length){
+    list.forEach(function(e){
+      var b=-1e9,m1=SH[nt].map(function(q){return q.slice()}),seen2={},k2,x2;
+      for(k2=0;k2<4;k2++){
+        var key2=JSON.stringify(m1);
+        if(!seen2[key2]){seen2[key2]=1;for(x2=-2;x2<COLS;x2++){var e2=cpuEval2(e.g,m1,x2,nt);if(e2&&e2.s>b)b=e2.s}}
+        m1=rot(m1);
+      }
+      e.s+=(b>-1e8?b:-1000);   /* no spot left for the next piece = very bad */
+    });
+  }
+  return list;
 }
 function cpuHit(g,m,x,y){
   for(var r=0;r<m.length;r++)for(var c=0;c<m[r].length;c++){
@@ -2144,11 +2204,65 @@ function cpuEval(g,m,x,t){
     if(top>=0)for(r=top;r<ROWS;r++)if(!g2[r][c])holes++;
   }
   for(c=0;c<COLS-1;c++)bump+=Math.abs(h[c]-h[c+1]);
-  return{g:g2,n:n,s:-0.51*agg+0.76*n-0.36*holes-0.18*bump,x:x,y:y,m:m};
+  return{g:g2,n:n,s:-0.51*cpuW.agg*agg+0.76*cpuW.n*n-0.36*holes-0.18*bump,x:x,y:y,m:m};
+}
+/* ===== CPU strategy: it reads my board before it spends an item ===== */
+var cpuW={n:1,agg:1};
+function cpuInfo(g){
+  var h=[],holes=0,mx=0,bump=0,r,c,top;
+  for(c=0;c<COLS;c++){
+    top=-1;for(r=0;r<ROWS;r++)if(g[r][c]){top=r;break}
+    var ht=top<0?0:ROWS-top;h.push(ht);if(ht>mx)mx=ht;
+    if(top>=0)for(r=top;r<ROWS;r++)if(!g[r][c])holes++;
+  }
+  for(c=0;c<COLS-1;c++)bump+=Math.abs(h[c]-h[c+1]);
+  return{max:mx,holes:holes,bump:bump,danger:mx+holes*.6+bump*.12};
+}
+/* How much an attack is worth against my board right now (it bites harder the taller my stack is). */
+function cpuValue(k,me){
+  if(k==='junk'){
+    if(me.max+pend+3>=ROWS-1)return 12;                                    /* would bury me: finisher */
+    return .9+Math.max(0,me.max-6)*.35;
+  }
+  if(k==='speed')return(pt<fastUntil?(fastN>=3?.2:2.4):1.2)+Math.max(0,me.max-5)*.3;   /* stacking on a rocket that is already running is worth it */
+  if(k==='fog')return pt<fogUntil?.2:1+Math.max(0,me.max-5)*.35+Math.min(me.holes,6)*.1;
+  if(k==='rev')return pt<revUntil?.2:1+Math.max(0,me.max-5)*.35+me.bump*.04;
+  return 0;
+}
+function cpuPlan(){
+  var C=cpu,L=cpuLvl;
+  if(!C.inv.length||state!=='playing')return;
+  if(L===0){cpuFireStored(0);return}                          /* easy: fires whatever it has, at once */
+  C.cool=Math.max(0,(C.cool||0)-1);
+  var me=cpuInfo(grid),cp=cpuInfo(C.g),i,best=-1,bv=-1,v;
+  var panic=cp.max>=ROWS-6,full=C.inv.length>=INV_MAX-(L>=2?1:0);
+  /* hard: swap boards when mine is clearly in better shape than the CPU's (or the CPU is about to lose) */
+  if(L>=2&&shield===0&&C.cool===0){
+    i=C.inv.indexOf('swap');
+    if(i>=0&&me.max<ROWS-3){
+      var gain=cp.danger-me.danger;
+      if(gain>=6||(panic&&gain>=3)){if(cpuFireStored(i)){C.cool=2;return}}
+    }
+  }
+  /* an attack is only worth sending when my board makes it hurt */
+  var idx=[];C.inv.forEach(function(k,j){if(k!=='swap')idx.push(j)});
+  if(!idx.length)return;
+  if(L>=2&&shield>0){
+    /* my shield would eat it: burn the shield with the cheapest item, but only if something better is left afterwards */
+    if(C.cool>0||(C.inv.length<=shield&&!full))return;
+    var bw=function(j){return cpuValue(C.inv[j],me)+(C.inv[j]==='junk'?100:0)};   /* junk is the strongest attack: keep it for after the shield is gone */
+    idx.sort(function(a,b){return bw(a)-bw(b)});
+    if(cpuFireStored(idx[0]))C.cool=2;
+    return;
+  }
+  idx.forEach(function(j){v=cpuValue(C.inv[j],me);if(v>bv){bv=v;best=j}});
+  var T=panic?1:(L>=2?2.4:3.0);
+  if(best<0)return;
+  if(bv>=12||((bv>=T||full)&&(C.cool===0||panic))){if(cpuFireStored(best))C.cool=L>=2?2:3}
 }
 function cpuStep(){
   var C=cpu;
-  if(C.inv&&C.inv.length)cpuFireStored();
+  if(C.inv&&C.inv.length)cpuPlan();
   if(C.pend>0){
     var hole=Math.floor(Math.random()*COLS);
     while(C.pend>0){
@@ -2159,11 +2273,8 @@ function cpuStep(){
       C.g.push(row);
     }
   }
-  var t=cpuPull(),m0=SH[t].map(function(q){return q.slice()}),list=[];
-  for(var k=0;k<4;k++){
-    for(var x=-2;x<COLS;x++){var e=cpuEval(C.g,m0,x,t);if(e)list.push(e)}
-    m0=rot(m0);
-  }
+  /* easy keeps the old simple placement; normal uses the stronger evaluation, hard also looks at its next piece */
+  var t=cpuPull(),list=cpuCands(C.g,t,cpuLvl>=2?cpuPeek():null,cpuLvl>=1);
   if(!list.length){win('beatcpu');return}
   list.sort(function(a,b){return b.s-a.s});
   var cerr=pt<C.dizzy?Math.max(CPU_ERR[cpuLvl],.55):CPU_ERR[cpuLvl];
@@ -2175,7 +2286,7 @@ function cpuStep(){
   var itg=C.it.map(function(q){return q.slice()}),hasIt=itg.some(function(q){return q.some(Boolean)}),newK=null;
   if(itemMode&&!hasIt&&++C.since>=ITEM_GAP&&Math.random()<ITEM_P*CPU_ITEM_MUL[cpuLvl]){
     C.since=0;var kk=pickKind();
-    if(ATTACKS.indexOf(kk)>=0||kk==='shield')newK=kk;
+    if(ATTACKS.indexOf(kk)>=0||kk==='shield'||(kk==='swap'&&cpuLvl>=2))newK=kk;
   }
   /* put the piece on a copy of the old board, mark one of its cells as the item cell, then clear the full rows while following the items */
   var gold=C.g.map(function(q){return q.slice()});
@@ -2200,7 +2311,7 @@ function cpuStep(){
     if(a>0&&C.pend>0){var cc=Math.min(a,C.pend);C.pend-=cc;a-=cc}
     if(a>0){pend+=a;warnIncoming()}
     got.forEach(function(k){
-      if(ATTACKS.indexOf(k)>=0&&C.inv.length<INV_MAX)C.inv.push(k);
+      if((ATTACKS.indexOf(k)>=0||k==='swap')&&C.inv.length<INV_MAX)C.inv.push(k);
       else if(k==='shield')C.sh=Math.min(99,(C.sh||0)+1);   /* like the player's shield: works at once and stacks */
     });
     olabel();
