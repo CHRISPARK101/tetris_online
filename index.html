@@ -656,19 +656,25 @@ function tone(freq,dur,type,vol,delay){
 }
 /* ===== Combo voice (embedded in COMBO_VOICE_DATA above). My combo n plays line n (7 and up play line 7); a new combo cuts off the previous line.
    Combos start at 2, so line 1 is only used if COMBO_VOICE_MIN is lowered to 1. It follows the "Sound effects" switch. ===== */
-var COMBO_VOICE_MIN=2,COMBO_VOICE_MAX=7,comboVoices=null,comboVoiceCur=null,comboVoiceReady=false;
+var COMBO_VOICE_MIN=2,COMBO_VOICE_MAX=7,comboVoices=null,comboVoiceCur=null,comboVoiceReady=false,comboVoiceLang='';
+/* The voice follows the game language: voice/<lang>/combo_N.mp3 (nl, ko, ja, zh-CN, zh-TW, es, pt, fr, vi). English is built in, and it is also the fallback
+   whenever a language has no file for a line, so a missing file never means silence. */
 function loadComboVoices(){
-  if(comboVoices)return;
-  comboVoices=[];
+  if(comboVoices&&comboVoiceLang===LANG)return;
+  stopComboVoice();
+  comboVoices=[];comboVoiceLang=LANG;comboVoiceReady=false;   /* new audio elements must be unlocked again by the next tap */
   for(var n=1;n<=COMBO_VOICE_MAX;n++){
-    var a=new Audio((window.COMBO_VOICE_DATA&&window.COMBO_VOICE_DATA[n])||('voice/combo_'+n+'.mp3'));
+    var emb=(window.COMBO_VOICE_DATA&&window.COMBO_VOICE_DATA[n])||('voice/combo_'+n+'.mp3');
+    var a=new Audio(LANG==='en'?emb:'voice/'+LANG+'/combo_'+n+'.mp3');
     a.preload='auto';a.setAttribute('playsinline','');
-    comboVoices[n]=a;   /* a missing file simply stays silent */
+    if(LANG!=='en')a.addEventListener('error',(function(el,fb){return function(){if(el.getAttribute('data-fb'))return;el.setAttribute('data-fb','1');el.src=fb;try{el.load()}catch(e){}}})(a,emb));
+    comboVoices[n]=a;
   }
 }
 function unlockComboVoices(){   /* iOS lets an audio element play later only if it was started once during a tap */
+  loadComboVoices();
   if(comboVoiceReady)return;
-  comboVoiceReady=true;loadComboVoices();
+  comboVoiceReady=true;
   comboVoices.forEach(function(a){
     if(!a)return;
     try{
