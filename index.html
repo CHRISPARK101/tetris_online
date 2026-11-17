@@ -443,6 +443,30 @@ input,select{-webkit-user-select:text;user-select:text}
 .cr [data-act="hard"] svg,.cr #rotb .dz,.cr #rotb .dz svg,.cr #fire .fz{width:clamp(26px,7.6vw,33px);height:clamp(26px,7.6vw,33px)}
 .cr #fire .fz svg{width:100%;height:100%}
 .cr #fire .fb{top:-6px;right:-6px;width:22px;height:22px}
+
+/* ===== Controls v2 =====
+   Left pad: left / down / right in one row (down in the middle). The control area keeps its height, because the item/rotate/drop cluster on the right sets it.
+   Fire: dark round button with a yellow arrow that lights up when an item is queued. Rotate: brighter blue with a glow, a little larger. Drop: a bit smaller, farther from rotate. */
+.cl{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:calc(var(--bh)*1.45);gap:10px;align-self:center}
+.cl [data-act="left"]{grid-column:1;grid-row:1}
+.cl [data-act="down"]{grid-column:2;grid-row:1;width:auto;justify-self:stretch}
+.cl [data-act="right"]{grid-column:3;grid-row:1}
+.cl > button,.cl > button[data-act="down"]{border-radius:26px !important}
+.cl [data-act="down"] .ar{font-size:22px}
+#fire{--fire:#ffd23f;color:#ffd23f;border:2px solid #0b1424;background:radial-gradient(circle at 35% 24%,#34445f 0,#1f2d47 55%,#121c30 100%);box-shadow:0 6px 0 #080f1b,0 10px 12px rgba(0,0,0,.3),inset 0 2px 3px rgba(255,255,255,.2)}
+#fire.on,#fire:active{background:radial-gradient(circle at 35% 24%,#34445f 0,#1f2d47 55%,#121c30 100%);box-shadow:0 1px 0 #080f1b,0 3px 6px rgba(0,0,0,.28),inset 0 2px 3px rgba(255,255,255,.15)}
+#fire .fz{filter:drop-shadow(0 0 6px rgba(255,210,63,.75))}
+#fire .fz svg g{fill:#ffd23f;stroke:#ffd23f}
+#fire .fz svg path[stroke]{stroke:#ffd23f}
+#fire .fb{border-color:#ffd23f}
+#fire.empty{opacity:1;filter:none}
+#fire.empty .fz{filter:none;opacity:.5}
+#fire.empty .fz svg g{fill:#8a96ab;stroke:#8a96ab}
+#fire.empty .fz svg path[stroke]{stroke:#8a96ab}
+.ctl #rotb{background:radial-gradient(circle at 35% 24%,#a3dcff 0,#43a6ff 34%,#1f7bff 70%,#1560d8 100%);border:2px solid #0f4fb8;box-shadow:0 6px 0 #0d3f94,0 0 20px rgba(48,150,255,.65),0 10px 12px rgba(0,0,0,.25),inset 0 3px 5px rgba(255,255,255,.55)}
+.ctl #rotb:active,.ctl #rotb.on{box-shadow:0 1px 0 #0d3f94,0 0 14px rgba(48,150,255,.5),0 2px 4px rgba(0,0,0,.2),inset 0 2px 3px rgba(255,255,255,.35)}
+.cr #rotb{width:calc(var(--b)*1.1);height:calc(var(--b)*1.1);top:calc(50% - var(--b)*.55)}
+.cr [data-act="hard"]{width:calc(var(--b)*.92);height:calc(var(--b)*.92);left:calc(var(--b)*.04)}
 </style>
 </head>
 <body>
