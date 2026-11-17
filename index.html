@@ -57,7 +57,9 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #pause{flex:none;width:calc(var(--cs,20px)*2.2);height:calc(var(--cs,20px)*2.2);font-size:calc(var(--cs,20px)*.8);padding:0}
 #stage{position:relative;flex:1;min-height:0}
 /* Ad strip: reserved under the controls with a gap so the banner is never tapped by accident. Height 0 = no ad. */
-#rnd{display:inline-flex;align-items:center;justify-content:center}
+#rnd,#vs,#cpub,#rk{display:inline-flex;align-items:center;justify-content:center}
+.bic{display:block;flex:none;width:24px;height:24px;margin-right:9px}
+.bic svg{display:block;width:100%;height:100%}
 #rnd .ric{position:relative;display:block;flex:none;width:24px;height:24px;margin-right:9px}
 #rnd .ric i{position:absolute;display:block;width:5px;height:5px;border-radius:1.5px;box-shadow:inset 0 -1.5px 0 rgba(0,0,0,.25);transition:left .4s cubic-bezier(.3,1.6,.5,1),top .4s cubic-bezier(.3,1.6,.5,1),background .4s}
 #adslot{box-sizing:border-box;width:calc(100% - 16px);max-width:504px;height:var(--adh,50px);margin:4px auto 2px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;border:1px solid var(--line);background:linear-gradient(135deg,var(--well),var(--btn));position:relative;gap:8px;white-space:nowrap}
@@ -295,15 +297,15 @@ input,select{-webkit-user-select:text;user-select:text}
 #rank .rk-tabs button{padding:6px 16px;font-size:13px;border-radius:999px}
 #rank .rk-tabs button.on{background:var(--accent);border-color:var(--accent);color:var(--onaccent)}
 #ov.att{background:var(--veil2)}
-#ov.att h1{font-size:44px;letter-spacing:.02em;line-height:1.1}
-#ov.att h1 span{display:inline-block;padding:0 .015em;background:linear-gradient(160deg,rgba(255,255,255,.95) 0,var(--c) 38%,var(--c2) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;-webkit-text-stroke:1.5px var(--glb);filter:drop-shadow(0 4px 5px var(--sh));animation:dropbob 2.8s ease-in-out infinite;animation-delay:calc(var(--i)*-.42s)}
-#ov.att h1 .ol{display:inline-flex;align-items:center;gap:5px;margin-left:8px;vertical-align:baseline;font-size:15px;line-height:1;font-weight:800;font-style:italic;letter-spacing:.06em;transform:skewX(-8deg)}
-#ov.att h1 .ol em{font-style:italic;background:linear-gradient(90deg,#7df9c5 0,#ffffff 45%,#7df9c5 90%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;filter:drop-shadow(0 0 6px rgba(52,224,143,.55));animation:olshine 2.2s linear infinite}
-#ov.att h1 .sg{display:inline-flex;align-items:flex-end;gap:2px;height:13px}
-#ov.att h1 .sg i{display:block;width:3px;height:4px;border-radius:1.5px;background:#34e08f;box-shadow:0 0 6px rgba(52,224,143,.7);animation:olbar 1s ease-in-out infinite}
+#ov.att h1{font-size:clamp(46px,15vw,60px);letter-spacing:.01em;line-height:1.02}
+#ov.att h1 span{display:inline-block;padding:0 .01em;background:linear-gradient(172deg,#fff 0,rgba(255,255,255,.92) 9%,var(--c) 34%,var(--c) 58%,var(--c2) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;-webkit-text-stroke:2px var(--glb);paint-order:stroke fill;filter:drop-shadow(0 0 8px var(--sh)) drop-shadow(0 3px 3px rgba(0,0,0,.35));animation:dropbob 2.8s ease-in-out infinite;animation-delay:calc(var(--i)*-.42s)}
+#ov.att h1 .ol{display:flex;justify-content:center;align-items:center;gap:7px;margin:.3em 0 0;font-size:clamp(17px,5.4vw,22px);line-height:1;font-weight:800;font-style:italic;letter-spacing:.06em;transform:skewX(-8deg)}
+#ov.att h1 .ol em{font-style:italic;background:linear-gradient(90deg,#7df9c5 0,#ffffff 45%,#7df9c5 90%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;filter:drop-shadow(0 0 8px rgba(52,224,143,.7));animation:olshine 2.2s linear infinite}
+#ov.att h1 .sg{display:inline-flex;align-items:flex-end;gap:3px;height:18px}
+#ov.att h1 .sg i{display:block;width:4px;height:5px;border-radius:2px;background:#34e08f;box-shadow:0 0 7px rgba(52,224,143,.8);animation:olbar 1s ease-in-out infinite}
 #ov.att h1 .sg i:nth-child(2){animation-delay:.18s}
 #ov.att h1 .sg i:nth-child(3){animation-delay:.36s}
-@keyframes olbar{0%,100%{height:4px}50%{height:13px}}
+@keyframes olbar{0%,100%{height:5px}50%{height:17px}}
 @keyframes olshine{from{background-position:220% 0}to{background-position:-20% 0}}
 @keyframes dropbob{0%,100%{translate:0 0;transform:scale(1,1)}50%{translate:0 -8px;transform:scale(.96,1.07)}}
 #ov.att{background:linear-gradient(180deg,rgba(140,205,255,.2),rgba(255,255,255,0) 45%),var(--veil2)}
@@ -484,9 +486,9 @@ input,select{-webkit-user-select:text;user-select:text}
           <button id="settingsback">Back</button>
         </div>
         <button id="vs">2P Battle</button>
-        <button id="rnd">🎲 Random Match</button>
+        <button id="rnd">Random Match</button>
         <button id="cpub">Vs CPU</button>
-        <button id="rk">👑 Ranking</button>
+        <button id="rk">Ranking</button>
         <div id="netbox" hidden><input id="code" inputmode="numeric" maxlength="4" placeholder="0000" aria-label="Room code"><div class="nrow"><button id="mk">Create room</button><button id="join">Join room</button></div><button id="back">Back</button></div>
         <div id="lvbox" hidden><div class="swr"><label id="cgv" class="sw"><span>Gravity mode</span><input type="checkbox" id="cgvc" role="switch"><i></i></label><div class="swh"><label id="cit" class="sw"><span>Item mode</span><input type="checkbox" id="citc" role="switch"><i></i></label><span class="ihelp" role="button" tabindex="0">?</span></div></div><div class="lvr"><button data-l="0">Easy</button><button data-l="1">Normal</button><button data-l="2">Hard</button></div><button id="lback">Back</button></div>
       </div>
@@ -682,6 +684,17 @@ function theme(){
 }
 /* Game title banner: enabled by default. */
 var AD_H=50;
+/* Icons for 2P Battle, Vs CPU and Ranking (inline SVG, so they look the same on every phone). */
+var ICO_PEOPLE='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="7.4" r="3.5" fill="#8fd9ff"/><path d="M1.4 20.2c0-4 2.9-6.7 6.6-6.7s6.6 2.7 6.6 6.7z" fill="#8fd9ff"/><circle cx="16.9" cy="8.3" r="3.1" fill="#2f8cff"/><path d="M11 20.4c.3-3.5 2.7-5.8 5.9-5.8 3.3 0 5.7 2.3 5.8 5.8z" fill="#2f8cff"/></svg>';
+var ICO_ROBOT='<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="12" y1="3.2" x2="12" y2="6.8" stroke="#9fd6ff" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="2.9" r="1.8" fill="#ffd24a"/><rect x="3.6" y="6.8" width="16.8" height="13.4" rx="4.4" fill="#dff3ff"/><rect x="1.1" y="11" width="2.4" height="5.2" rx="1.2" fill="#7fb8ff"/><rect x="20.5" y="11" width="2.4" height="5.2" rx="1.2" fill="#7fb8ff"/><circle cx="8.8" cy="12.6" r="2" fill="#2a6fdb"/><circle cx="15.2" cy="12.6" r="2" fill="#2a6fdb"/><rect x="8.5" y="16.3" width="7" height="1.7" rx=".85" fill="#2a6fdb"/></svg>';
+var ICO_CROWN='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.2 8.4l5 4.3L12 4.8l4.8 7.9 5-4.3-1.9 11.2H4.1z" fill="#ffc933"/><path d="M4.1 19.2h15.8v2.1H4.1z" fill="#f0a500"/><circle cx="2.3" cy="8.2" r="1.7" fill="#ffe27a"/><circle cx="12" cy="4.4" r="1.8" fill="#ffe27a"/><circle cx="21.7" cy="8.2" r="1.7" fill="#ffe27a"/></svg>';
+function setIconBtn(id,key,svg){
+  var b=$(id);if(!b)return;
+  b.textContent='';
+  var ic=document.createElement('span');ic.className='bic';ic.setAttribute('aria-hidden','true');ic.innerHTML=svg;
+  var t=document.createElement('span');t.textContent=tr(key);
+  b.appendChild(ic);b.appendChild(t);
+}
 /* Random Match button icon: four little blocks that keep morphing into a random piece shape and colour. */
 var RND_SHAPES=[[[0,1],[1,1],[2,1],[3,1]],[[1,1],[2,1],[1,2],[2,2]],[[0,1],[1,1],[2,1],[1,2]],[[1,1],[2,1],[0,2],[1,2]],[[0,1],[1,1],[1,2],[2,2]],[[0,1],[1,1],[2,1],[2,2]],[[0,1],[1,1],[2,1],[0,2]]];
 var RND_COL=['#ff5a5f','#ffb703','#4cc9f0','#7bd88f','#b388ff','#ffe14d','#ff8fab'],rndI=-1,rndTimer=null;
@@ -1660,7 +1673,7 @@ function renderOverlay(){
   if(ovT==='tetris'){   /* main title is never translated; each letter is its own little drop */
     var L1=[['B','#2fc4e6','#1b8fb0'],['R','#4b6ff0','#2a43b8'],['I','#a65bd8','#6f2fa0'],['C','#ee5a5a','#b32b2b'],['K','#f28b3a','#b85a10']];
     var L2=[['D','#4cc46a','#25883f'],['U','#2fc4e6','#1b8fb0'],['E','#f5b800','#b87d00'],['L','#ee5a5a','#b32b2b']];
-    var lt=function(x,i){return '<span style="--i:'+i+';--c:'+x[1]+';--c2:'+x[2]+';--sh:'+x[1]+'66">'+x[0]+'</span>'};
+    var lt=function(x,i){return '<span style="--i:'+i+';--c:'+x[1]+';--c2:'+x[2]+';--sh:'+x[1]+'bb">'+x[0]+'</span>'};
     /* "online" is small and alive: signal bars that keep rising and falling next to a shimmering word */
     $('ot').innerHTML=L1.map(lt).join('')+'<br>'+L2.map(function(x,i){return lt(x,i+5)}).join('')+'<small class="ol" aria-hidden="true"><b class="sg"><i></i><i></i><i></i></b><em>online</em></small>';
     $('ot').setAttribute('aria-label','Brick Duel online');
@@ -3377,7 +3390,7 @@ var I18N={
   "main": "Main menu",
   "battle": "2P Battle",
   "battleTitle": "2P Battle",
-  "ranking": "👑 Ranking Battle",
+  "ranking": "Ranking Battle",
   "cpu": "Vs CPU",
   "join": "Join room",
   "rnd": "Random Match",
@@ -3525,7 +3538,7 @@ var I18N={
   "restart": "Opnieuw starten",
   "main": "Hoofdmenu",
   "battle": "2P-gevecht",
-  "ranking": "👑 Ranglijstwedstrijd",
+  "ranking": "Ranglijstwedstrijd",
   "cpu": "Tegen CPU",
   "join": "Kamer betreden",
   "rnd": "Willekeurige match",
@@ -3674,7 +3687,7 @@ var I18N={
   "restart": "다시 시작",
   "main": "메인 화면",
   "battle": "2인 대전",
-  "ranking": "👑 랭킹전",
+  "ranking": "랭킹전",
   "cpu": "CPU 대전",
   "join": "방 참가",
   "rnd": "랜덤 매칭",
@@ -3823,7 +3836,7 @@ var I18N={
   "restart": "再スタート",
   "main": "メインメニュー",
   "battle": "2人対戦",
-  "ranking": "👑 ランキング戦",
+  "ranking": "ランキング戦",
   "cpu": "CPU対戦",
   "join": "ルームに参加",
   "rnd": "ランダムマッチ",
@@ -3972,7 +3985,7 @@ var I18N={
   "restart": "重新开始",
   "main": "主菜单",
   "battle": "双人对战",
-  "ranking": "👑 排位赛",
+  "ranking": "排位赛",
   "cpu": "CPU对战",
   "join": "加入房间",
   "rnd": "随机匹配",
@@ -4121,7 +4134,7 @@ var I18N={
   "restart": "重新開始",
   "main": "主選單",
   "battle": "雙人對戰",
-  "ranking": "👑 排位賽",
+  "ranking": "排位賽",
   "cpu": "CPU對戰",
   "join": "加入房間",
   "rnd": "隨機配對",
@@ -4270,7 +4283,7 @@ var I18N={
   "restart": "Reiniciar",
   "main": "Menú principal",
   "battle": "Duelo 2P",
-  "ranking": "👑 Batalla de ranking",
+  "ranking": "Batalla de ranking",
   "cpu": "Vs CPU",
   "join": "Unirse a sala",
   "rnd": "Partida aleatoria",
@@ -4419,7 +4432,7 @@ var I18N={
   "restart": "Reiniciar",
   "main": "Menu principal",
   "battle": "Batalha 2P",
-  "ranking": "👑 Batalha de ranking",
+  "ranking": "Batalha de ranking",
   "cpu": "Vs CPU",
   "join": "Entrar na sala",
   "rnd": "Partida aleatória",
@@ -4568,7 +4581,7 @@ var I18N={
   "restart": "Recommencer",
   "main": "Menu principal",
   "battle": "Duel à 2",
-  "ranking": "👑 Combat classé",
+  "ranking": "Combat classé",
   "cpu": "Vs CPU",
   "join": "Rejoindre la salle",
   "rnd": "Match aléatoire",
@@ -4718,7 +4731,7 @@ var I18N={
   "main": "Menu chính",
   "battle": "Đấu 2 người",
   "battleTitle": "Đấu 2 người",
-  "ranking": "👑 Bảng xếp hạng",
+  "ranking": "Bảng xếp hạng",
   "cpu": "Đấu với CPU",
   "join": "Vào phòng",
   "rnd": "Ghép trận ngẫu nhiên",
@@ -4864,7 +4877,7 @@ function applyLanguage(){
  function aria(el,key){if(el)el.setAttribute('aria-label',tr(key))}
  txt('settingstitle','settings');txt('languageLabel','language');
  [['rktn','rkclassic'],['rkti','items'],['cgv','gravity'],['cit','items'],['kgv','gravity'],['rgv','gravity'],['rit','items'],['ghv','landing'],['snd','sound']].forEach(function(p){var el=$(p[0]),sp=el&&el.querySelector('span');if(sp)sp.textContent=tr(p[1])});
- txt('settingsback','back');txt('rs','restart');txt('qt','main');txt('vs','battle');txt('rk','ranking');txt('cpub','cpu');txt('dtcap','dtap');txt('join','join');txt('mk','mk');setRndBtn();txt('back','back');txt('lback','back');txt('nsave','save');txt('nskip','skip');txt('rstart','startgame');txt('rclose','close');
+ txt('settingsback','back');txt('rs','restart');txt('qt','main');setIconBtn('vs','battle',ICO_PEOPLE);setIconBtn('rk','ranking',ICO_CROWN);setIconBtn('cpub','cpu',ICO_ROBOT);txt('dtcap','dtap');txt('join','join');txt('mk','mk');setRndBtn();txt('back','back');txt('lback','back');txt('nsave','save');txt('nskip','skip');txt('rstart','startgame');txt('rclose','close');
  txt('lvl','level');txt('lnl','lines');
  var vol=$('musicvol');if(vol&&vol.querySelector('label span'))vol.querySelector('label span').textContent=tr('music');
  var opts=document.querySelectorAll('#lvbox button[data-l]');if(opts.length>=3){opts[0].textContent=tr('easy');opts[1].textContent=tr('normal');opts[2].textContent=tr('hard')}
