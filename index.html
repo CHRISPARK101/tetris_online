@@ -94,6 +94,7 @@ button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(
 #oinv .sl{aspect-ratio:1/1;min-width:0;border-radius:6px;border:1px dashed var(--line);background:var(--well);display:flex;align-items:center;justify-content:center;box-sizing:border-box;padding:2px}
 #oinv .sl.f{border:1.5px solid var(--fire,#ff9a3c);background:var(--btn)}
 #oinv .sl .ico{width:100%;height:100%}
+.fl.unk{opacity:.4}
 .fl{font-family:"Twemoji Country Flags","Apple Color Emoji","Noto Color Emoji","Segoe UI Emoji",sans-serif;font-weight:400}
 .ccr{display:flex;gap:8px;align-items:center;justify-content:center;width:100%}
 #cc{max-width:150px;padding:8px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--ink);font:inherit;font-size:14px}
@@ -2186,17 +2187,22 @@ function flagOf(c){return okc(c)?String.fromCodePoint(127397+c.charCodeAt(0),127
   }catch(e){}
 })();
 function cname(c){try{return(DN&&DN.of(c))||c}catch(e){return c}}
+/* Country guess for "Automatic": 1) the region written in the browser language (ko-KR -> KR), 2) the time zone, 3) the region that usually goes with the bare language (ko -> KR). */
+var TZ_CC={'Asia/Seoul':'KR','Asia/Tokyo':'JP','Asia/Shanghai':'CN','Asia/Chongqing':'CN','Asia/Urumqi':'CN','Asia/Hong_Kong':'HK','Asia/Taipei':'TW','Asia/Macau':'MO','Asia/Singapore':'SG','Asia/Bangkok':'TH','Asia/Ho_Chi_Minh':'VN','Asia/Saigon':'VN','Asia/Jakarta':'ID','Asia/Kuala_Lumpur':'MY','Asia/Manila':'PH','Asia/Kolkata':'IN','Asia/Calcutta':'IN','Asia/Dhaka':'BD','Asia/Karachi':'PK','Asia/Dubai':'AE','Asia/Riyadh':'SA','Asia/Tehran':'IR','Asia/Jerusalem':'IL','Europe/London':'GB','Europe/Dublin':'IE','Europe/Lisbon':'PT','Europe/Madrid':'ES','Europe/Paris':'FR','Europe/Brussels':'BE','Europe/Amsterdam':'NL','Europe/Berlin':'DE','Europe/Zurich':'CH','Europe/Vienna':'AT','Europe/Rome':'IT','Europe/Stockholm':'SE','Europe/Oslo':'NO','Europe/Copenhagen':'DK','Europe/Helsinki':'FI','Europe/Warsaw':'PL','Europe/Prague':'CZ','Europe/Budapest':'HU','Europe/Athens':'GR','Europe/Istanbul':'TR','Europe/Kiev':'UA','Europe/Kyiv':'UA','Europe/Moscow':'RU','America/New_York':'US','America/Chicago':'US','America/Denver':'US','America/Phoenix':'US','America/Los_Angeles':'US','America/Anchorage':'US','Pacific/Honolulu':'US','America/Toronto':'CA','America/Vancouver':'CA','America/Mexico_City':'MX','America/Sao_Paulo':'BR','America/Argentina/Buenos_Aires':'AR','America/Bogota':'CO','America/Lima':'PE','America/Santiago':'CL','Australia/Sydney':'AU','Australia/Melbourne':'AU','Australia/Brisbane':'AU','Australia/Perth':'AU','Pacific/Auckland':'NZ','Africa/Cairo':'EG','Africa/Johannesburg':'ZA','Africa/Lagos':'NG','Africa/Nairobi':'KE'};
 function guessCC(){
   var l=(navigator.languages&&navigator.languages[0])||navigator.language||'',m=/[-_]([A-Za-z]{2})$/.exec(l);
   if(m)return m[1].toUpperCase();
   var tz='';try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){}
-  return({'Asia/Seoul':'KR','Asia/Tokyo':'JP','Asia/Shanghai':'CN','Asia/Kolkata':'IN','Asia/Singapore':'SG','Europe/London':'GB','Europe/Paris':'FR','Europe/Berlin':'DE','America/New_York':'US','America/Chicago':'US','America/Los_Angeles':'US','America/Toronto':'CA','America/Sao_Paulo':'BR','Australia/Sydney':'AU'})[tz]||'';
+  if(TZ_CC[tz])return TZ_CC[tz];
+  try{var r=new Intl.Locale(l).maximize().region;if(r)return r}catch(e){}
+  return '';
 }
 /* The country (flag) is no longer picked separately: it follows the language chosen in Settings.
    "Automatic" uses the region of the browser language / time zone. */
 var LANG_CC={en:'US',ko:'KR',ja:'JP','zh-CN':'CN','zh-TW':'TW',es:'ES',pt:'BR',fr:'FR',nl:'NL',vi:'VN'};
 function syncCC(){
   var c=(LANG_PREF==='auto')?guessCC():(LANG_CC[LANG]||'');
+  if((!okc(c)||CC.indexOf(c)<0)&&LANG_PREF==='auto')c=LANG_CC[LANG]||'';   /* unknown country: fall back to the one that goes with the game language */
   if(!okc(c)||CC.indexOf(c)<0)c='';
   myCC=c;
   if(typeof room!=='undefined'&&room)push({cc:myCC});
@@ -2999,7 +3005,9 @@ function showRank(hl,items){
       if(mine&&!marked&&x.score===hl.score&&x.nick===hl.nick){li.className='me';marked=true}
       var n=document.createElement('span');n.className='rn';n.textContent=String(i+1);
       var nm=document.createElement('span');nm.className='nm';
-      if(okc(x.cc)){var f=document.createElement('span');f.className='fl';f.textContent=flagOf(x.cc)+' ';nm.appendChild(f)}
+      var f=document.createElement('span');
+      if(okc(x.cc)){f.className='fl';f.textContent=flagOf(x.cc)+' '}else{f.className='fl unk';f.textContent='\u{1F310} '}   /* country unknown (older records) */
+      nm.appendChild(f);
       nm.appendChild(document.createTextNode(String(x.nick||'Player').slice(0,12)));
       var sc=document.createElement('b');sc.textContent=(Number(x.score)||0).toLocaleString('en-US');
       var d=document.createElement('small');d.textContent=fmt('rlines',{n:Number(x.lines)||0});
