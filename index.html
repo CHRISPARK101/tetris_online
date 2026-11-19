@@ -1562,10 +1562,18 @@ function oppComboPop(n){
   h.style.left=r.left+'px';h.style.top=r.top+'px';h.style.width=r.width+'px';h.style.height=r.height+'px';
   var z=Math.max(11,oc*1.2);h.style.setProperty('--cs',z+'px');
   comboPopTo(h,n,z,false);
-  /* the opponent's board flashes in the combo colour so the pop-up is noticed from the corner of the eye */
+  /* the opponent's board border lights up in the combo colour (a solid ring plus a glow); higher combos glow wider and longer */
   try{
-    var tc=['#ffd23f','#ffa54a','#ff74b8','#8c6bff'][n>=7?3:n>=5?2:n>=3?1:0];
-    if(op.animate&&canAnimate())op.animate([{boxShadow:'0 0 0 0 '+tc+'00'},{boxShadow:'0 0 18px 5px '+tc,offset:.25},{boxShadow:'0 0 0 0 '+tc+'00'}],{duration:800,easing:'ease-out'});
+    var tier=n>=7?3:n>=5?2:n>=3?1:0,tc=['#ffd23f','#ffa54a','#ff74b8','#8c6bff'][tier];
+    if(op.animate&&canAnimate()){
+      var base=getComputedStyle(op).borderColor||'rgba(255,255,255,.2)',g=14+tier*7,sp=3+tier*2,none='0 0 0 0 '+tc+'00, 0 0 0 0 '+tc+'00';
+      op.animate([
+        {boxShadow:none,borderColor:base},
+        {boxShadow:'0 0 0 2px '+tc+', 0 0 '+g+'px '+sp+'px '+tc,borderColor:tc,offset:.18},
+        {boxShadow:'0 0 0 2px '+tc+'bb, 0 0 '+g+'px '+sp+'px '+tc+'99',borderColor:tc,offset:.62},
+        {boxShadow:none,borderColor:base}
+      ],{duration:1000+tier*300,easing:'ease-out'});
+    }
   }catch(e){}
 }
 function comboPopTo(host,n,csz,mine){
@@ -2705,8 +2713,8 @@ function createSupabaseRoom(code,keepId){
   /* Supabase allows only 5 Presence track()/untrack() calls per client per 30 seconds and shuts the channel
      down when that is exceeded. So Presence is used once per connection (who is here), and ALL game state
      (ready, seed, dead, attacks, board...) is sent as a full-state Broadcast, repeated as a heartbeat. */
-  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','pz','bk','cc','g','sc','sw','swn','sr','srn','sh','swi','sri','cbv','cbn','gi'];
-  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',pz:0,bk:0,cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,sr:'',srn:0,sh:0,swi:'',sri:'',cbv:0,cbn:0,gi:''};
+  var FIELDS=['rdy','dead','gs','atk','seed','gv','it','sv','lk','iq','ik','ie','oi','pz','bk','cc','g','sc','sw','swn','swt','sr','srn','srt','sh','swi','sri','cbv','cbn','gi'];
+  var localState={rdy:false,dead:false,gs:0,atk:0,seed:0,gv:0,it:0,sv:0,lk:0,iq:0,ik:'',ie:[],oi:'',pz:0,bk:0,cc:myCC||'',t:Date.now(),g:'',sc:0,sw:'',swn:0,swt:'',sr:'',srn:0,srt:'',sh:0,swi:'',sri:'',cbv:0,cbn:0,gi:''};
   var remote={},seenKeys={},peerHandler=null,lostHandler=null,lostTimer=null,retryTimer=null,hbTimer=null,flushTimer=null,lastFlush=0;
   var retries=0,subscribed=false,left=false,verCounter=0,channel=null,firstDone=false,lastStatus='';
   function validValue(k,v){
@@ -2725,6 +2733,7 @@ function createSupabaseRoom(code,keepId){
     if(k==='cbv')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=99;
     if(k==='cbn')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=1000000;
     if(k==='gi')return v===''||(typeof v==='string'&&v.length<=400&&/^\d{1,3}:[a-z]+(,\d{1,3}:[a-z]+)*$/.test(v));
+    if(k==='swt'||k==='srt')return v===''||(typeof v==='string'&&v.length<=2600&&/^\d{1,3}:[a-z]+(,\d{1,3}:[a-z]+)*$/.test(v));   /* item cells on a swapped board: index:kind, ... */
     if(k==='sh')return typeof v==='number'&&Number.isInteger(v)&&v>=0&&v<=99;
     if(k==='oi'||k==='swi'||k==='sri')return typeof v==='string'&&v.length<=60&&(v===''||v.split(',').every(function(x){return STORE.indexOf(x)>=0}));
     if(k==='cc')return typeof v==='string'&&(/^$|^[A-Z]{2}$/.test(v));
@@ -2844,7 +2853,7 @@ function createSupabaseRoom(code,keepId){
       data=data||{};
       /* A new match resets the event stream; otherwise append each attack to a bounded
          replay window. The 150ms broadcast coalescer can no longer overwrite attacks. */
-      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.oi='';localState.bk=0;localState.sw='';localState.swn=0;localState.sr='';localState.srn=0;localState.sh=0;localState.swi='';localState.sri='';localState.cbv=0;localState.cbn=0;localState.gi='';}
+      if(data.iq===0){localState.iq=0;localState.ik='';localState.ie=[];localState.oi='';localState.bk=0;localState.sw='';localState.swn=0;localState.swt='';localState.sr='';localState.srn=0;localState.srt='';localState.sh=0;localState.swi='';localState.sri='';localState.cbv=0;localState.cbn=0;localState.gi='';}
       if(Number.isInteger(data.iq)&&data.iq>localState.iq&&typeof data.ik==='string'&&ATTACKS.indexOf(data.ik)>=0){
         localState.iq=data.iq;localState.ik=data.ik;
         localState.ie.push({id:data.iq,k:data.ik});
